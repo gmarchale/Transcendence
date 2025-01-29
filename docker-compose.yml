@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=pongdb
+      - POSTGRES_USER=ponguser
+      - POSTGRES_PASSWORD=pongpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             daphne -b 0.0.0.0 -p 8000 transcendence.asgi:application"
+    volumes:
+      - ./backend:/app
+      - ./frontend:/app/frontend
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    environment:
+      - DB_HOST=db
+      - DB_NAME=pongdb
+      - DB_USER=ponguser
+      - DB_PASSWORD=pongpass
+      - REDIS_HOST=redis
+      - DJANGO_SETTINGS_MODULE=transcendence.settings
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./frontend/static:/usr/share/nginx/html/static
+      - ./nginx/conf:/etc/nginx/conf.d
+      - static_volume:/usr/share/nginx/html/static/django
+      - media_volume:/usr/share/nginx/html/media
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
