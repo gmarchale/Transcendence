@@ -651,48 +651,27 @@ class PongGame {
         buttonsContainer.style.gap = '20px';
         
         // Create "Create New Game" button
-        const createButton = document.createElement('button');
-        createButton.innerText = 'Create New Game';
-        createButton.style.padding = '15px 30px';
-        createButton.style.fontSize = '1.2em';
-        createButton.style.cursor = 'pointer';
-        createButton.style.backgroundColor = '#4CAF50';
-        createButton.style.color = 'white';
-        createButton.style.border = 'none';
-        createButton.style.borderRadius = '5px';
-        createButton.onclick = () => {
+        const homeButton = document.createElement('button');
+        homeButton.innerText = 'Go to Lobby';
+        homeButton.style.padding = '15px 30px';
+        homeButton.style.fontSize = '1.2em';
+        homeButton.style.cursor = 'pointer';
+        homeButton.style.backgroundColor = '#4CAF50';
+        homeButton.style.color = 'white';
+        homeButton.style.border = 'none';
+        homeButton.style.borderRadius = '5px';
+        homeButton.onclick = () => {
             // Clean up WebSocket before navigating
             if (this.gameSocket) {
                 this.gameSocket.onclose = null; // Remove onclose handler
                 this.gameSocket.close();
                 this.gameSocket = null;
             }
-            window.location.href = '/game/';  
-        };
-        
-        // Create "Join Game" button
-        const joinButton = document.createElement('button');
-        joinButton.innerText = 'Join Game';
-        joinButton.style.padding = '15px 30px';
-        joinButton.style.fontSize = '1.2em';
-        joinButton.style.cursor = 'pointer';
-        joinButton.style.backgroundColor = '#2196F3';
-        joinButton.style.color = 'white';
-        joinButton.style.border = 'none';
-        joinButton.style.borderRadius = '5px';
-        joinButton.onclick = () => {
-            // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
-            }
-            window.location.href = '/game/join/';  
+            window.location.href = '/game.html';  
         };
         
         // Add buttons to container
-        buttonsContainer.appendChild(createButton);
-        buttonsContainer.appendChild(joinButton);
+        buttonsContainer.appendChild(homeButton);
         
         // Add elements to overlay
         overlay.appendChild(resultText);

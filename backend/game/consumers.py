@@ -361,6 +361,18 @@ class GameConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error in game_state_update: {str(e)}", exc_info=True)
 
+    @database_sync_to_async
+    def update_game_scores(self, score_player1, score_player2):
+        """Update game scores in database"""
+        try:
+            Game.objects.filter(id=self.game.id).update(
+                score_player1=score_player1,
+                score_player2=score_player2,
+                updated_at=timezone.now()
+            )
+        except Exception as e:
+            logger.error(f"Error updating game scores: {str(e)}", exc_info=True)
+
     async def end_game(self, winner):
         """End the game and update the database"""
         try:
@@ -371,8 +383,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             game = await self.get_game(self.game.id)
             final_score = None
             if game and game.game_state:
-                final_score = game.game_state['score']
+                final_score = game.game_state.get('score', {})
                 logger.warning(f"Final Score: {final_score}")
+
+                # Update scores in database
+                if isinstance(final_score, dict):
+                    score_player1 = final_score.get('player1', 0)
+                    score_player2 = final_score.get('player2', 0)
+                    await self.update_game_scores(score_player1, score_player2)
             
             # Calculate game duration
             if self.game_start_time:
@@ -392,7 +410,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 winner_id = self.game.player2_id
             
             # Update game status in database
-            await self.update_game_status('ended', winner_id, game_duration, duration_formatted)
+            await self.update_game_status('finished', winner_id, game_duration, duration_formatted)
             
             # Notify all players that game has ended
             await self.channel_layer.group_send(
