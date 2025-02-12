@@ -396,10 +396,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             if final_state:
                 logger.info(f"[GAME] Final Score: {final_state['score']}")
                 
-                # Update game status in database
+                # Update game status in database with winner's ID
                 await self.update_game_status(
                     status='finished',
-                    winner=winner
+                    winner=final_state.get('winner_id')  # Use winner_id from game state
                 )
 
                 # Broadcast final state to all players

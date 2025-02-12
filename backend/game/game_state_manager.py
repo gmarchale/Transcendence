@@ -161,10 +161,13 @@ class GameStateManager:
             if 'winner' not in game_state:
                 if game_state['score']['player1'] > game_state['score']['player2']:
                     game_state['winner'] = 'player1'
+                    game_state['winner_id'] = game_state['players']['player1'].id
                 elif game_state['score']['player2'] > game_state['score']['player1']:
                     game_state['winner'] = 'player2'
+                    game_state['winner_id'] = game_state['players']['player2'].id
                 else:
-                    game_state['winner'] = None  # Draw
+                    game_state['winner'] = None
+                    game_state['winner_id'] = None
                     
             return cls._serialize_game_state(game_state)
         return None
