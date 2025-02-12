@@ -4,7 +4,7 @@ services:
     environment:
       - POSTGRES_DB=pongdb
       - POSTGRES_USER=ponguser
-      - POSTGRES_PASSWORD=
+      - POSTGRES_PASSWORD=pongpass
 
     volumes:
       - postgres_data:/var/lib/postgresql/data/

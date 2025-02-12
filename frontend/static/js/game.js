@@ -347,7 +347,7 @@ class PongGame {
 
         const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         // Use localhost:8000 for development
-        const wsUrl = `${wsScheme}://localhost:8000/ws/game/`;
+        const wsUrl = `${wsScheme}://${window.location.host}/ws/game/`;
         console.log('Attempting to connect to:', wsUrl);
         
         try {
