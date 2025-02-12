@@ -396,10 +396,21 @@ class GameConsumer(AsyncWebsocketConsumer):
             if final_state:
                 logger.info(f"[GAME] Final Score: {final_state['score']}")
                 
-                # Update game status in database with winner's ID
+                # Get winner ID based on who won
+                winner_id = None
+                if winner == 'player1':
+                    winner_id = self.game.player1.id
+                elif winner == 'player2':
+                    winner_id = self.game.player2.id
+                
+                # Update game status and stats in database
                 await self.update_game_status(
                     status='finished',
-                    winner=final_state.get('winner_id')  # Use winner_id from game state
+                    winner=winner_id,
+                    duration=final_state.get('duration'),
+                    duration_formatted=final_state.get('duration_formatted'),
+                    score_player1=final_state['score']['player1'],
+                    score_player2=final_state['score']['player2']
                 )
 
                 # Broadcast final state to all players
@@ -471,7 +482,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error sending message: {str(e)}", exc_info=True)
 
     @database_sync_to_async
-    def update_game_status(self, status, winner=None, duration=None, duration_formatted=None):
+    def update_game_status(self, status, winner=None, duration=None, duration_formatted=None, score_player1=None, score_player2=None):
         """Update game status and statistics in database"""
         try:
             update_fields = {
@@ -481,11 +492,20 @@ class GameConsumer(AsyncWebsocketConsumer):
             
             if winner is not None:
                 update_fields['winner_id'] = winner
-            
+                
             if duration is not None:
                 update_fields['duration'] = duration
+                
+            if duration_formatted is not None:
                 update_fields['duration_formatted'] = duration_formatted
-            
+
+            if score_player1 is not None:
+                update_fields['score_player1'] = score_player1
+
+            if score_player2 is not None:
+                update_fields['score_player2'] = score_player2
+
             Game.objects.filter(id=self.game.id).update(**update_fields)
+            
         except Exception as e:
-            logger.error(f"Error updating game status: {str(e)}", exc_info=True)
+            logger.error(f"[GAME] Error updating game status: {str(e)}")

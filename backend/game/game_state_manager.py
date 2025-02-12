@@ -50,6 +50,7 @@ class GameStateManager:
                 'player1': PlayerState(id=player1_id, username=player1_username),
                 'player2': None
             },
+            'start_time': None,
             'last_update': time.time()
         }
         return cls._serialize_game_state(cls._instances[game_id])
@@ -65,6 +66,7 @@ class GameStateManager:
                     username=player2_username
                 )
                 game_state['status'] = 'playing'
+                game_state['start_time'] = time.time()  # Set start time when game begins
                 return True
         return False
 
@@ -143,7 +145,7 @@ class GameStateManager:
             cls._reset_ball(game_state)
 
         # Check for game end
-        if game_state['score']['player1'] >= 11 or game_state['score']['player2'] >= 11:
+        if game_state['score']['player1'] >= 5 or game_state['score']['player2'] >= 5:
             game_state['status'] = 'finished'
             game_state['winner'] = 'player1' if game_state['score']['player1'] > game_state['score']['player2'] else 'player2'
 
@@ -157,17 +159,34 @@ class GameStateManager:
             game_state['status'] = 'finished'
             game_state['end_reason'] = reason
             
+            # Calculate duration
+            if game_state['start_time']:
+                duration = int(time.time() - game_state['start_time'])
+                minutes = duration // 60
+                seconds = duration % 60
+                game_state['duration'] = duration
+                game_state['duration_formatted'] = f"{minutes:02d}:{seconds:02d}"
+            else:
+                game_state['duration'] = 0
+                game_state['duration_formatted'] = "00:00"
+            
             # Determine winner if not already set
             if 'winner' not in game_state:
                 if game_state['score']['player1'] > game_state['score']['player2']:
                     game_state['winner'] = 'player1'
                     game_state['winner_id'] = game_state['players']['player1'].id
+                    game_state['score_player1'] = game_state['score']['player1']
+                    game_state['score_player2'] = game_state['score']['player2']
                 elif game_state['score']['player2'] > game_state['score']['player1']:
                     game_state['winner'] = 'player2'
                     game_state['winner_id'] = game_state['players']['player2'].id
+                    game_state['score_player1'] = game_state['score']['player1']
+                    game_state['score_player2'] = game_state['score']['player2']
                 else:
                     game_state['winner'] = None
                     game_state['winner_id'] = None
+                    game_state['score_player1'] = game_state['score']['player1']
+                    game_state['score_player2'] = game_state['score']['player2']
                     
             return cls._serialize_game_state(game_state)
         return None
