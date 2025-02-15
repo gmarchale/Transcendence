@@ -63,7 +63,7 @@ def oauth_callback(request):
     )
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     login(request, user)
-    return redirect("http://localhost/game")
+    return redirect("http://localhost/#game")
 
 
 @api_view(["GET"])

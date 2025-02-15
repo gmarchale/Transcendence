@@ -46,7 +46,7 @@ class PongGame {
             const valid = await this.checkSession();
             if (!valid) {
                 console.error('Invalid session, redirecting to login...');
-                window.location.href = '/login';
+                window.location.href = '#login';
                 return;
             }
             
