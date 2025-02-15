@@ -16,6 +16,35 @@ import logging
 # Create your views here.
 User = get_user_model()
 
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def test(request):
+    id_user_0 = request.user.id
+    id_user_1 = request.data.get('id_user_1')
+
+    if not id_user_0 or not id_user_1:
+        return Response({'error': 'id_user_0 and id_user_1 is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if id_user_0 == id_user_1:
+        return Response({'error': 'id_user_0 and id_user_1 must be different'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user_to_add = User.objects.get(id=id_user_0)
+    except User.DoesNotExist:
+        return Response({'error': 'User id_user_0 not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        user_adding = User.objects.get(id=id_user_1)
+    except User.DoesNotExist:
+        return Response({'error': 'User id_user_1 found'}, status=status.HTTP_404_NOT_FOUND)
+    try:
+        user_0 = get_object_or_404(User, id=id_user_0)
+        user_1 = get_object_or_404(User, id=id_user_1)
+        username = user_1.get_username()
+        return Response({"username": username}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 @api_view(['GET'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
@@ -31,7 +60,6 @@ def test_view(request):
     except Exception as e:
         return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @api_view(['POST'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
@@ -40,24 +68,33 @@ def block_user(request):
     id_user_1 = request.data.get('id_user_1')
 
     if not id_user_0 or not id_user_1:
-        return Response({'error': 'id_user_0 and id_user_1 is required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'id_user_0 and id_user_1 are required'}, status=status.HTTP_400_BAD_REQUEST)
     if id_user_0 == id_user_1:
         return Response({'error': 'id_user_0 and id_user_1 must be different'}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
         user_to_block = User.objects.get(id=id_user_1)
-    except User.DoesNotExist:
-        return Response({'error': 'User to block not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    try:
         user_blocking = User.objects.get(id=id_user_0)
+
+        if BlockedUser.objects.filter(id_user_0=user_blocking, id_user_1=user_to_block).exists():
+            return Response({'message': 'User is already blocked'}, status=status.HTTP_400_BAD_REQUEST)
+
+        FriendUser.objects.filter(
+            Q(id_user_0=user_blocking, id_user_1=user_to_block) |
+            Q(id_user_0=user_to_block, id_user_1=user_blocking)
+        ).delete()
+
+        BlockedUser.objects.create(id_user_0=user_blocking, id_user_1=user_to_block)
+
+        return Response({'message': f'{user_to_block.username} has been blocked by {user_blocking.username} and any friend request has been canceled'},
+                        status=status.HTTP_201_CREATED)
+
     except User.DoesNotExist:
-        return Response({'error': 'User blocking not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'One of the users not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    if BlockedUser.objects.filter(id_user_0=user_blocking, id_user_1=user_to_block).exists():
-        return Response({'message': 'User is already blocked'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    BlockedUser.objects.create(id_user_0=user_blocking, id_user_1=user_to_block)
-    return Response({'message': f'{user_to_block.username} has been blocked by {user_blocking.username}'}, status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
@@ -69,7 +106,7 @@ def add_friend_user(request):
 
     if not id_user_0 or not id_user_1:
         return Response({'error': 'id_user_0 and id_user_1 is required'}, status=status.HTTP_400_BAD_REQUEST)
-    if id_user_0 == id_user_1:
+    if int(id_user_0) == int(id_user_1):
         return Response({'error': 'id_user_0 and id_user_1 must be different'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         user_to_add = User.objects.get(id=id_user_1)
@@ -86,9 +123,6 @@ def add_friend_user(request):
 
     if BlockedUser.objects.filter(id_user_0=user_adding, id_user_1=user_to_add).exists():
         return Response({'message': 'You cannot add friend someone you blocked'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if BlockedUser.objects.filter(id_user_0=user_to_add, id_user_1=user_adding).exists():
-        return Response({'message': 'You cannot add friend someone that blocked you'}, status=status.HTTP_400_BAD_REQUEST)
 
     FriendUser.objects.create(id_user_0=user_adding, id_user_1=user_to_add)
     return Response({'message': f'{user_to_add.username} has been added friend by {user_adding.username}'}, status=status.HTTP_201_CREATED)
@@ -192,9 +226,27 @@ def check_friendship(request):
         user_0 = get_object_or_404(User, id=id_user_0)
         user_1 = get_object_or_404(User, id=id_user_1)
         is_friends = False
-        if FriendUser.objects.filter(id_user_0=id_user_0, id_user_1=id_user_1).exists() and FriendUser.objects.filter(id_user_0=id_user_1, id_user_1=id_user_0).exists():
+        invitation_pending = False
+        accept_friend_request = False
+
+        if FriendUser.objects.filter(id_user_0=id_user_0, id_user_1=id_user_1).exists() and \
+           FriendUser.objects.filter(id_user_0=id_user_1, id_user_1=id_user_0).exists():
             is_friends = True
-        return Response({"is_friends": is_friends}, status=status.HTTP_200_OK)
+
+        elif FriendUser.objects.filter(id_user_0=id_user_0, id_user_1=id_user_1).exists():
+            invitation_pending = True
+
+        elif FriendUser.objects.filter(id_user_0=id_user_1, id_user_1=id_user_0).exists():
+            accept_friend_request = True
+
+        if is_friends:
+            return Response({"is_friends": "true"}, status=status.HTTP_200_OK)
+        elif invitation_pending:
+            return Response({"is_friends": "pending"}, status=status.HTTP_200_OK)
+        elif accept_friend_request:
+            return Response({"is_friends": "waiting"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"is_friends": "false"}, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -265,6 +317,11 @@ def delete_friend_user(request):
         return Response({'error': 'One or both users not found'}, status=status.HTTP_404_NOT_FOUND)
 
     friendship = FriendUser.objects.filter((Q(id_user_0=user_0, id_user_1=user_1)))
+
+    friendship = FriendUser.objects.filter(
+        (Q(id_user_0=user_0, id_user_1=user_1)) |
+        (Q(id_user_0=user_1, id_user_1=user_0))
+    )
 
     if not friendship.exists():
         return Response({'message': 'Users are not friends'}, status=status.HTTP_400_BAD_REQUEST)

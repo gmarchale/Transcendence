@@ -1,0 +1,205 @@
+body {
+	margin: 0;
+	padding: 0;
+	font-family: 'Orbitron', sans-serif;
+	background: linear-gradient(45deg, #000000, #1a1a1a);
+	color: #fff;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.page {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.page.active {
+    display: block;
+    opacity: 1;
+}
+
+.header {
+	display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.header.active {
+	display: block;
+    opacity: 1;
+	background-color: rgba(0, 0, 0, 0.8);
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 2px solid #00ff88;
+	box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+}
+
+.header-brand {
+	background: transparent;
+	border: #000;
+	color: #00ff88;
+	font-size: 1.5rem;
+	font-weight: bold;
+	cursor: pointer;
+	text-decoration: none;
+	font-family: 'Orbitron', sans-serif;
+	transition: all 0.3s ease;
+	margin-left: 10%;
+}
+
+.header-brand:hover {
+	color: #00ff88;
+	font-size: 1.5rem;
+	text-shadow: 0 0 5px #00ff88, 0 0 10px #00ff88;
+}
+
+.nav-buttons {
+	display: flex;
+	gap: 1rem;
+	align-items: center;
+	margin-right: 10%;
+}
+
+.user-info {
+	display: flex;
+	align-items: center;
+}
+
+.user-avatar_head {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	margin-left: 0.5rem;
+	background-color: #00ff88;
+	background-position: center;
+	background-size: cover;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-family: 'Orbitron', sans-serif;
+	color: #000;
+}
+
+.username_head {
+	color: #00ff88;
+}
+
+.logout {
+	border-radius: 5px;
+	background: transparent;
+	color: #00ff88;
+	border: 1px solid #00ff88;
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+	font-family: 'Orbitron', sans-serif;
+	transition: all 0.3s ease;
+}
+
+.logout:hover {
+	background: #00ff88;
+	color: #000;
+	box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+}
+
+.logout:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.user-button {
+    display: flex;
+    align-items: center;
+    padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	padding-right: 0;
+    background-color: #000;
+    cursor: pointer;
+	border: #000;
+	position: relative;
+}
+
+.user-avatar_head {
+    width: 40px;
+    height: 40px;
+    background-color: #00ff88;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: bold;
+	font-size: 1.2rem;
+    margin-left: 0.5rem;
+}
+
+.username_head {
+    color: #00ff88;
+	font-size: 1.2rem;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: -1rem;
+    background-color: #000;
+    border: 1px solid #00ff88;
+    border-radius: 5px;
+    margin-top: 0.5rem;
+    width: max-content;
+	font-family: 'Orbitron', sans-serif;
+	font-size: 1rem;
+}
+
+.dropdown-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dropdown-menu li {
+    padding: 0.5rem;
+}
+
+.dropdown-menu li a {
+    color: #00ff88;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-menu li a:hover {
+    background-color: #00ff88;
+    color: #000;
+}
+
+.dropdown-menu .logout_head a {
+    color: #dc3545;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-menu .logout_head a:hover {
+    background-color: #dc3545;
+    color: #000;
+}
+
+.dropdown-divider {
+    border: none;
+    height: 1px;
+    background-color: #666; /* Gris */
+    margin: 0.1rem 0; /* Espace autour */
+}
+
+
+@keyframes glow {
+	0% { text-shadow: 0 0 5px #00ff88; }
+	50% { text-shadow: 0 0 20px #00ff88; }
+	100% { text-shadow: 0 0 5px #00ff88; }
+}

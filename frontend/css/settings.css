@@ -1,0 +1,126 @@
+.settings_container {
+    display: flex;
+    opacity: 1;
+    margin-top: 1.5rem;
+    margin-right: 1.5rem;
+    margin-bottom: 1.5rem;
+    margin-left: 10%;
+    margin-right: 10%;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.settings_updates_container {
+    margin-top: 1.5rem;
+	margin-bottom: 1.5rem;
+    padding: 20px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    width: 50%;
+    margin-left: 1.5rem;
+    text-align: center;
+}
+
+.settings_buttons_container {
+    margin-top: 1.5rem;
+	margin-bottom: 1.5rem;
+    padding: 20px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    width: 50%;
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
+    text-align: center;
+}
+
+.settings_title {
+    color: #00ff88;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.settings_group {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.settings_label {
+    color: #00ff88;
+    font-size: 1.15rem;
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.settings_input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+	margin-bottom: 1rem;
+	color: white;
+	background: #2a2a2a;
+}
+
+.settings_input::placeholder {
+    color: #747474;
+}
+
+.settings_profile {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+}
+
+.settings_profile:hover {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+}
+
+.settings_language-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+
+}
+
+.settings_language_btn {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    background: #2a2a2a;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+	color: rgba(0, 255, 136, 0.5);
+}
+
+.settings_language_btn:hover {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+}
+
+.settings_language_btn.active {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+

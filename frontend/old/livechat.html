@@ -93,6 +93,8 @@
     </style>
 </head>
 <body>
+    <div id="header-container"></div>
+
     <div class="container">
         <div class="friends-container">
             <h2>My Friends</h2>
@@ -132,8 +134,12 @@
     <div id="blockedOptions" class="blocked-options">
         <button onclick="unblockUser()">Unblock</button>
     </div>
-
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        $(document).ready(function() {
+            $('#header-container').load('header.html');
+        });
+
         let loggedInUserId = 0;
         let selectedFriendId = null;
         let selectedBlockedId = null;

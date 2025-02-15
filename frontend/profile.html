@@ -1,0 +1,48 @@
+<div id="profile_not_found_container" class="profile_not_found_container">
+    <p id="profile_user_not_found"></p>
+</div>
+<div id="profile_container" class="profile_container">
+    <div class="profile_user-infos">
+        <div class="profile_header">
+            <div class="profile_avatar-container">
+                <img src="/images/logo.jpg" alt="User Avatar" class="profile_avatar">
+            </div>
+            <div class="profile_username-container">
+                <span class="profile_username" id="profile_username" data-username="{{ user.username }}">Username</span>
+                <div class="profile_username-subinfo-container">
+                    <p class="profile_ranking">Ranking: Diamond</p>
+                    <p class="profile_ranking">Email: todo@todo.be</p>
+                    <p class="profile_ranking">42 profile: not linked</p>
+                </div>
+            </div>
+        </div>
+        <div class="profile_interaction-header">
+            <div class="profile_interaction-container">
+                <div class="profile_interaction-subinfo-container">
+                    <ul>
+                        <li><button id="profile_friend_manage" class="profile_ranking"></button></li>
+                        <li><button id="profile_send_msg" class="profile_ranking"></button></li>
+                        <div class="profile_block">
+                            <li><button id="profile_block_manage" class="profile_ranking"></button></li>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile_stats-container">
+        <div class="profile_stat-box">
+            <h3>Matches Played</h3>
+            <p>250</p>
+        </div>
+        <div class="profile_stat-box">
+            <h3>Victories</h3>
+            <p>180</p>
+        </div>
+        <div class="profile_stat-box">
+            <h3>Defeats</h3>
+            <p>70</p>
+        </div>
+    </div>
+</div>

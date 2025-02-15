@@ -1,0 +1,20 @@
+{
+    "fr": {
+        "profile_block_manage_block": "Bloquer",
+		"profile_block_manage_unblock": "Débloquer",
+		"profile_friend_manage_add": "Demander en ami",
+		"profile_friend_manage_remove": "Retirer l'ami",
+		"profile_friend_manage_pending": "Annuler la demande d'ami",
+		"profile_friend_manage_accept": "Accepter la demnade d'ami",
+		"profile_user_not_found" : "Utilisateur inconnu."
+    },
+    "en": {
+        "profile_block_manage_block": "Block",
+		"profile_block_manage_unblock": "Unblock",
+		"profile_friend_manage_add": "Add friend",
+		"profile_friend_manage_remove": "Remove friend",
+		"profile_friend_manage_pending": "Cancel friend request",
+		"profile_friend_manage_accept": "Accept friend request",
+		"profile_user_not_found" : "User not found."
+    }
+}

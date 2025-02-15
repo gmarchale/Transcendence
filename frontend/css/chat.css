@@ -1,0 +1,104 @@
+.chat_collapsible {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 600px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    overflow: hidden;
+    transition: height 0.3s ease-in-out;
+}
+
+.chat_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #00ff88;
+    color: black;
+    padding: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.chat_toggle-button {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.chat_close-button {
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.chat_body {
+    display: none;
+    padding: 10px;
+    /* max-height: 400px; */
+    overflow-y: auto;
+}
+
+.chat_collapsible.expanded .chat_body {
+    display: block;
+}
+
+.chat_messages {
+    height: 250px;
+    overflow-y: auto;
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid #00ff88;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.chat_avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+    flex-shrink: 0;
+}
+
+.chat_text {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+.chat_user_message {
+    text-align: right;
+}
+
+.chat_friend_message {
+    text-align: left;
+}
+
+.chat_settings_input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    border-radius: 5px;
+    font-size: 1rem;
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+}
+
+.chat_settings_profile {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+}
+
+.chat_settings_profile:hover {
+    background-color: #00ff88;
+    color: white;
+}

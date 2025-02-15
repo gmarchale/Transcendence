@@ -1,0 +1,36 @@
+{
+    "fr": {
+        "settings_new_username": "Modifier le pseudo :",
+        "settings_new_username_placeholder": "Nouveau nom d'utilisateur",
+        "settings_change_username": "Mettre à jour",
+		"settings_new_password": "Modifier le mot de passe :",
+		"settings_new_password_placeholder": "Nouveau mot de passe",
+		"settings_confirm_password": "Confirmez le mot de passe",
+		"settings_confirm_password_placeholder": "Confirmation du mot de passe",
+		"settings_change_password": "Mettre à jour",
+		"settings_language_title": "Changer la langue",
+		"settings_42_account_title": "Le compte 42 n'est pas lié.",
+		"settings_42_account_link": "Lier un compte 42",
+		"settings_users_blocked_title": "Utilisateurs bloqués.",
+
+		"profile_send_msg": "Envoyer un message",
+		"profile_user_not_found" : "Utilisateur inconnu."
+    },
+    "en": {
+        "settings_new_username": "Change Username :",
+        "settings_new_username_placeholder": "New name",
+        "settings_change_username": "Update Username",
+		"settings_new_password": "Change Password",
+		"settings_new_password_placeholder": "New password",
+		"settings_confirm_password": "Confirm Password",
+		"settings_confirm_password_placeholder": "Password confirmation",
+		"settings_change_password": "Update Password",
+		"settings_language_title": "Switch language",
+		"settings_42_account_title": "42 Account is not linked",
+		"settings_42_account_link": "Link 42 account",
+		"settings_users_blocked_title": "Users blocked",
+
+		"profile_send_msg": "Send private message",
+		"profile_user_not_found" : "User not found."
+    }
+}

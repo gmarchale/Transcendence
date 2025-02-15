@@ -1,16 +1,18 @@
-document.getElementById('createTournamentBtn').addEventListener('click', function() {
-    const tournamentName = prompt('Enter tournament name:');
-    if (tournamentName) {
-        createTournament(tournamentName);
-    }
-});
-
-document.getElementById('joinTournamentBtn').addEventListener('click', function() {
-    const tournamentId = prompt('Enter tournament ID:');
-    if (tournamentId) {
-        joinTournament(tournamentId);
-    }
-});
+function initTournament(){
+    document.getElementById('game_createTournamentBtn').addEventListener('click', function() {
+        const tournamentName = prompt('Enter tournament name:');
+        if (tournamentName) {
+            createTournament(tournamentName);
+        }
+    });
+    
+    document.getElementById('game_joinTournamentBtn').addEventListener('click', function() {
+        const tournamentId = prompt('Enter tournament ID:');
+        if (tournamentId) {
+            joinTournament(tournamentId);
+        }
+    });
+}
 
 async function createTournament(name) {
     try {

@@ -88,8 +88,8 @@ class PongGame {
             this.currentUser = userData;
             
             // Update UI with user info
-            const usernameElement = document.getElementById('username');
-            const userAvatarElement = document.getElementById('userAvatar');
+            const usernameElement = document.getElementById('game_username');
+            const userAvatarElement = document.getElementById('game_userAvatar');
             
             console.log('Username element:', usernameElement);
             console.log('Avatar element:', userAvatarElement);
@@ -136,25 +136,25 @@ class PongGame {
         
         try {
             // Get DOM elements
-            this.canvas = document.getElementById('gameCanvas');
+            this.canvas = document.getElementById('game_Canvas');
             console.log('Canvas element:', this.canvas);
             
-            this.canvasContainer = document.getElementById('gameCanvasContainer');
+            this.canvasContainer = document.getElementById('game_CanvasContainer');
             console.log('Canvas container:', this.canvasContainer);
             
-            this.createGameBtn = document.getElementById('createGameBtn');
+            this.createGameBtn = document.getElementById('game_createGameBtn');
             console.log('Create game button:', this.createGameBtn);
             
-            this.joinGameBtn = document.getElementById('joinGameBtn');
+            this.joinGameBtn = document.getElementById('game_joinGameBtn');
             console.log('Join game button:', this.joinGameBtn);
             
-            this.gameStatus = document.getElementById('gameStatus');
+            this.gameStatus = document.getElementById('game_Status');
             console.log('Game status:', this.gameStatus);
             
-            this.player1Score = document.getElementById('player1Score');
+            this.player1Score = document.getElementById('game_player1Score');
             console.log('Player 1 score:', this.player1Score);
             
-            this.player2Score = document.getElementById('player2Score');
+            this.player2Score = document.getElementById('game_player2Score');
             console.log('Player 2 score:', this.player2Score);
             
             // Initialize canvas if it exists
@@ -283,7 +283,7 @@ class PongGame {
     showCanvas() {
         try {
             console.log('Attempting to show canvas container...');
-            const container = document.getElementById('gameCanvasContainer');
+            const container = document.getElementById('game_CanvasContainer');
             
             if (!container) {
                 throw new Error('Canvas container element not found');
@@ -308,7 +308,7 @@ class PongGame {
     hideCanvas() {
         try {
             console.log('Attempting to hide canvas container...');
-            const container = document.getElementById('gameCanvasContainer');
+            const container = document.getElementById('game_CanvasContainer');
             
             if (!container) {
                 throw new Error('Canvas container element not found');
@@ -667,7 +667,7 @@ class PongGame {
                 this.gameSocket.close();
                 this.gameSocket = null;
             }
-            window.location.href = '/game.html';  
+            window.location.href = '#game';  
         };
         
         // Add buttons to container
@@ -1101,7 +1101,3 @@ class PongGame {
     }
 };  
 
-// Initialize game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const game = new PongGame();
-});
