@@ -1,4 +1,3 @@
-
 <div id="settings_container" class="settings_container">
     <div class="settings_updates_container">
         <!-- <h2 class="settings_title"></h2> -->
@@ -29,8 +28,24 @@
         </div>
 
         <div class="settings_group">
-            <label id="settings_42_account_title" class="settings_label"></label>
-            <button id="settings_42_account_link" class="settings_language_btn"></button>
+            <label id="settings_avatar_title" class="settings_label"></label>
+            <input class="settings_language_btn" type="file" id="settings_avatar_upload" accept="image/jpeg" />
+            
+            <div id="settings_popupContainer" class="settings_popup-container">
+                <p class="settings_popup-title">Voulez-vous utiliser cette image ?</p>
+                
+                <!-- Zone de recadrage de l'image -->
+                <div class="settings_crop-container">
+                    <img id="settings_cropImage" alt="Image en cours de recadrage">
+                </div>
+            
+                <!-- Boutons de confirmation et d'annulation -->
+                <div class="settings_popup-buttons">
+                    <button class="settings_btn-confirm" id="settings_confirmUpload">Confirmer</button>
+                    <button class="settings_btn-cancel" id="settings_cancelUpload">Annuler</button>
+                </div>
+            </div>
+            
         </div>
 
         <div class="settings_group">
