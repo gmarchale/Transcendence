@@ -63,12 +63,14 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./frontend:/usr/share/nginx/html
       - ./frontend/static:/usr/share/nginx/html/static
       - ./nginx/conf:/etc/nginx/conf.d
       - static_volume:/usr/share/nginx/html/static/django
       - media_volume:/usr/share/nginx/html/media
+      - ./ssl:/etc/nginx/ssl
     depends_on:
       backend:
         condition: service_started
