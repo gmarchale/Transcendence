@@ -196,9 +196,12 @@ CHANNEL_LAYERS = {
 WEBSOCKET_ACCEPT_ALL = True  # Accept WebSocket upgrade requests
 WEBSOCKET_TIMEOUT = 3600  # 1 hour timeout for WebSocket connections
 
+# https://forum.djangoproject.com/t/origin-checking-failed-with-ssl-https/20158/16
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # CORS settings
-# CORS settings
-CORS_ALLOWED_ORIGINS = ['http://localhost', 'http://localhost:80']
+CORS_ORIGINS_WHITELIST = ["https://localhost"]
+CORS_ALLOWED_ORIGINS = ['http://localhost', 'http://localhost:80', 'https://localhost', 'https://localhost:443']
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = [
@@ -214,12 +217,12 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # CSRF settings
-CSRF_COOKIE_SECURE = False  # Set to True in production
+CSRF_COOKIE_SECURE = True  # Set to True in production
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
-CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://localhost:80']
+CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://localhost:80', 'https://localhost', 'https://localhost:443']
 CSRF_USE_SESSIONS = False
 
 # Session settings
