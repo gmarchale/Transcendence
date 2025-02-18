@@ -10,7 +10,7 @@ from game.models import Game
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import math
-from game.state_manager import GameStateManager  # Assuming GameStateManager is in game.state_manager
+from game.game_state_manager import GameStateManager  # Import from the correct module
 
 class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.all()
