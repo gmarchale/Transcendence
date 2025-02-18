@@ -205,3 +205,22 @@
     background-color: #00ff88;
     color: white;
 }
+
+.chat_friends_ul {
+    list-style: none;
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+}
+
+.chat_friends_ul:hover {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+}

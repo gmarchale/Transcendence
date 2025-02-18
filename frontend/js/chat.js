@@ -4,8 +4,10 @@ function loadChat(){
 	usernameWith = null;
 	let chatContainer = document.getElementById("chat_main_container");
 	let isClosed = !chatContainer.classList.contains("expanded");
-	if (!isClosed)
+	if (!isClosed){
 		chatContainer.classList.toggle("expanded");
+		document.getElementById("chat_title").textContent = "Chat";
+	}
 	closeChat()
 
 	fetch("/api/chat/get_friends/", { method: "GET", credentials: "include" })
@@ -140,10 +142,15 @@ async function fetchMessages(friendId) {
 
 function updateChatLanguage(){
 	if(currentlyWith != 0){
-		document.getElementById("chat_title").textContent = "Chat " + getTranslation("chat_chatwith_title") + usernameWith;
+		document.getElementById("chat_title").textContent = "Chat - " + usernameWith;
 		document.getElementById("chat_send_message").textContent = getTranslation("chat_send_message");
 		document.getElementById("back_to_friends").textContent = getTranslation("chat_back_to_friends");
 		document.getElementById("chat_input").placeholder = getTranslation("chat_input");
+	} else {
+		let chatContainer = document.getElementById("chat_main_container");
+		let isClosed = !chatContainer.classList.contains("expanded");
+		if (!isClosed) document.getElementById("chat_title").textContent = "Chat - " + getTranslation("chat_friendlist_title");
+		else document.getElementById("chat_title").textContent = "Chat";
 	}
 }
 
@@ -178,8 +185,14 @@ function initChat(){
 		let clickedElement = event.target;
 		if (!clickedElement.closest("#chat_settings") && !clickedElement.closest("#chat_dropdownMenu")) {
 			let isClosed = !chatContainer.classList.contains("expanded");
-			if (isClosed)
+			if (isClosed){
 				loadChat()
+				document.getElementById("chat_title").textContent = "Chat - " + getTranslation("chat_friendlist_title");
+			} else {
+				document.getElementById("chat_title").textContent = "Chat";
+				settings.style.display = "none";
+				currentlyWith = 0;
+			}
 			chatContainer.classList.toggle("expanded");
 		}
 	});
@@ -246,7 +259,10 @@ function closeChat(){
 	friendsList.style.display = "block";
 	currentlyWith = 0;
 	usernameWith = null;
-	document.getElementById("chat_title").textContent = "Chat";
+	let chatContainer = document.getElementById("chat_main_container");
+	let isClosed = !chatContainer.classList.contains("expanded");
+	if (!isClosed)
+		document.getElementById("chat_title").textContent = "Chat - " + getTranslation("chat_friendlist_title");
 }
 
 function closeMenu(menu){
