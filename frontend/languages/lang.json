@@ -18,7 +18,8 @@
 
 		"chat_dropdownMenuButton_Profile": "Accéder au profil",
 		"chat_dropdownMenuButton_PlayPong": "Affrontrer au PONG!",
-		"chat_block": "Bloquer"
+		"chat_block": "Bloquer",
+		"chat_nofriends": "Vous n'avez pas d'amis."
     },
     "en": {
         "settings_new_username": "Edit Username :",
@@ -39,6 +40,7 @@
 
 		"chat_dropdownMenuButton_Profile": "Check profile",
 		"chat_dropdownMenuButton_PlayPong": "Ask for a PONG!",
-		"chat_block": "Block"
+		"chat_block": "Block",
+		"chat_nofriends": "You don't have any friend."
     }
 }

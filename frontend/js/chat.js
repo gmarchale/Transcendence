@@ -16,7 +16,14 @@ function loadChat(){
 		if (data.mutual_friends) {
 			let friendsUl = document.getElementById("chat_friends_ul");
 			friendsUl.innerHTML = "";
-
+			if(data.mutual_friends.length != 0){
+				document.getElementById("chat_friends_ul").classList.add("active");
+				document.getElementById("chat_nofriends_ul").classList.remove("active");
+			} else {
+				document.getElementById("chat_friends_ul").classList.remove("active");
+				document.getElementById("chat_nofriends_ul").classList.add("active");
+			}
+				
 			data.mutual_friends.forEach(friend => {
 				let li = document.createElement("li");
 				li.textContent = friend.username;
@@ -29,11 +36,10 @@ function loadChat(){
 				});
 			});
 		} else {
-			console.warn("T'a pas d'amis !!!"); // TODO
+			console.warn("Error while getting friends from API");
 		}
 	})
 	.catch(error => console.error("Error while getting friend list :", error));
-
 	
     let inputField = document.getElementById("chat_input");
     let sendButton = document.getElementById("chat_send_message");
