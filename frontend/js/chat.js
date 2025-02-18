@@ -1,7 +1,7 @@
 function loadChat(){
 	console.log("Loading chat.")
-	currentlyWith = 0;
-	usernameWith = null;
+	chat_currentlyWith = 0;
+	chat_usernameWith = null;
 	let chatContainer = document.getElementById("chat_main_container");
 	let isClosed = !chatContainer.classList.contains("expanded");
 	if (!isClosed){
@@ -44,18 +44,18 @@ function loadChat(){
     let inputField = document.getElementById("chat_input");
     let sendButton = document.getElementById("chat_send_message");
 
-    sendButton.addEventListener("click", sendMessage);
+    sendButton.addEventListener("click", chat_sendMessage);
 
     inputField.addEventListener("keypress", function (event) {
 		const hash = location.hash.split('?')[0].slice(1) || 'game';
-		if ((event.code === "Enter" || event.code === "NumpadEnter") && currentlyWith != 0 && hash != "login" && hash != "register") {
-            sendMessage();
+		if ((event.code === "Enter" || event.code === "NumpadEnter") && chat_currentlyWith != 0 && hash != "login" && hash != "register") {
+            chat_sendMessage();
         }
     });
 }
 
-let usernameWith = null;
-let currentlyWith = 0;
+let chat_usernameWith = null;
+let chat_currentlyWith = 0;
 let chatSocket = null;
 let reconnectTimeout = null;
 const WS_URL = "";
@@ -73,7 +73,7 @@ function initWebSocket() {
     chatSocket.onmessage = function (event) {
         const data = JSON.parse(event.data);
         if (data.message && data.sender) {
-            appendMessage(data.sender, data.message);
+            chat_appendMessage(data.sender, data.message);
         } else {
             console.warn("Message invalide reçu :", data);
         }
@@ -89,19 +89,19 @@ function initWebSocket() {
     };
 }
 
-async function sendMessage() {
+async function chat_sendMessage() {
 	// if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
     //     console.error("WebSocket non connecté, message non envoyé.");
     //     return;
     // }
 
-	const userId = currentlyWith;
+	const userId = chat_currentlyWith;
 
 	let inputField = document.getElementById("chat_input");
 	let message = inputField.value.trim();
 	if (message === "") return;
 
-	appendMessage("You", message, true);
+	chat_appendMessage("You", message, true);
 	inputField.value = "";
 
 	// chatSocket.send(JSON.stringify({
@@ -115,7 +115,7 @@ async function sendMessage() {
 	});
 }
 
-function appendMessage(sender, message, isUser) {
+function chat_appendMessage(sender, message, isUser) {
 	let messagesContainer = document.getElementById("chat_messages");
 	let messageDiv = document.createElement("div");
 	messageDiv.classList.add("chat_message");
@@ -142,13 +142,13 @@ async function fetchMessages(friendId) {
 	document.getElementById("chat_messages").innerHTML = "";
 	data.messages.forEach(msg => {
 		let isUser = msg.sender === getCookie("username") ? true : false;
-		appendMessage(msg.sender, msg.text, isUser);
+		chat_appendMessage(msg.sender, msg.text, isUser);
 	});
 }
 
 function updateChatLanguage(){
-	if(currentlyWith != 0){
-		document.getElementById("chat_title").textContent = "Chat - " + usernameWith;
+	if(chat_currentlyWith != 0){
+		document.getElementById("chat_title").textContent = "Chat - " + chat_usernameWith;
 		document.getElementById("chat_send_message").textContent = getTranslation("chat_send_message");
 		document.getElementById("back_to_friends").textContent = getTranslation("chat_back_to_friends");
 		document.getElementById("chat_input").placeholder = getTranslation("chat_input");
@@ -171,8 +171,8 @@ function openChat(username, friendId) {
 	friendsList.style.display = "none"; 
 	chatBox.style.display = "block";
 	settings.style.display = "block";
-	currentlyWith = friendId;
-	usernameWith = username;
+	chat_currentlyWith = friendId;
+	chat_usernameWith = username;
 	updateChatLanguage()
 	document.getElementById("chat_messages").innerHTML = "<p>Loading messages with " + username + "...</p>";
 }
@@ -197,7 +197,7 @@ function initChat(){
 			} else {
 				document.getElementById("chat_title").textContent = "Chat";
 				settings.style.display = "none";
-				currentlyWith = 0;
+				chat_currentlyWith = 0;
 			}
 			chatContainer.classList.toggle("expanded");
 		}
@@ -210,14 +210,14 @@ function initChat(){
 
 	document.getElementById('chat_settings').addEventListener('click', function() {
         if(menu.style.display == 'block' && !menu.matches(':hover'))
-            closeMenu(menu);
-        else openMenu(menu);
+            chat_closeMenu(menu);
+        else chat_openMenu(menu);
     });
 
 	document.getElementById('chat_dropdownMenuButton_Profile').addEventListener('click', function() {
-        if(currentlyWith != null){
-			window.location.href = "#profile?id=" + currentlyWith;
-			closeMenu(menu);
+        if(chat_currentlyWith != null){
+			window.location.href = "#profile?id=" + chat_currentlyWith;
+			chat_closeMenu(menu);
 		}
     });
 
@@ -227,25 +227,25 @@ function initChat(){
 
         elements.forEach(element => {
             if(element.matches(':hover'))
-                closeMenu(menu);
+                chat_closeMenu(menu);
         });
         if(document.getElementById("chat_block").matches(':hover'))
-            closeMenu(menu);
+            chat_closeMenu(menu);
 
         if ((!settings.matches(':hover') && !menu.matches(':hover')))
-            closeMenu(menu);
+            chat_closeMenu(menu);
     });
 
 	document.getElementById('chat_block').addEventListener('click', async () => {
 		let cmd = "block_user";
 
         try {
-			console.log("Managing block status with "+ currentlyWith);
+			console.log("Managing block status with "+ chat_currentlyWith);
 
             const response = await fetch('/api/chat/'+ cmd +'/', {
                 method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-				body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: currentlyWith })
+				body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: chat_currentlyWith })
             });
 			document.getElementById("chat_block").textContent = getTranslation("profile_block_manage_block")
         } catch (error) {
@@ -263,18 +263,18 @@ function closeChat(){
 	chatBox.style.display = "none";
 	settings.style.display = "none";
 	friendsList.style.display = "block";
-	currentlyWith = 0;
-	usernameWith = null;
+	chat_currentlyWith = 0;
+	chat_usernameWith = null;
 	let chatContainer = document.getElementById("chat_main_container");
 	let isClosed = !chatContainer.classList.contains("expanded");
 	if (!isClosed)
 		document.getElementById("chat_title").textContent = "Chat - " + getTranslation("chat_friendlist_title");
 }
 
-function closeMenu(menu){
+function chat_closeMenu(menu){
     menu.style.display = 'none';
 }
 
-function openMenu(menu){
+function chat_openMenu(menu){
     menu.style.display = 'block';
 }
