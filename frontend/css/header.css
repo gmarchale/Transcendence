@@ -193,8 +193,8 @@ body {
 .dropdown-divider {
     border: none;
     height: 1px;
-    background-color: #666; /* Gris */
-    margin: 0.1rem 0; /* Espace autour */
+    background-color: #666;
+    margin: 0.1rem 0; 
 }
 
 

@@ -36,6 +36,7 @@ async function initSettings(){
         });
         document.getElementById("settings_lang_fr").classList.toggle("active", lang === "fr");
         document.getElementById("settings_lang_en").classList.toggle("active", lang === "en");
+        updateChatLanguage();
     }
     await loadTranslations();
 

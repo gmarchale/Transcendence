@@ -6,7 +6,12 @@
 		"profile_friend_manage_remove": "Retirer l'ami",
 		"profile_friend_manage_pending": "Annuler la demande d'ami",
 		"profile_friend_manage_accept": "Accepter la demnade d'ami",
-		"profile_user_not_found" : "Utilisateur inconnu."
+		"profile_user_not_found" : "Utilisateur inconnu.",
+
+		"chat_chatwith_title": "avec ",
+		"chat_send_message": "Envoyer",
+		"chat_back_to_friends": "Retour",
+		"chat_input": "Écris un message.."
     },
     "en": {
         "profile_block_manage_block": "Block",
@@ -15,6 +20,11 @@
 		"profile_friend_manage_remove": "Remove friend",
 		"profile_friend_manage_pending": "Cancel friend request",
 		"profile_friend_manage_accept": "Accept friend request",
-		"profile_user_not_found" : "User not found."
+		"profile_user_not_found" : "User not found.",
+
+		"chat_chatwith_title": "with ",
+		"chat_send_message": "Send",
+		"chat_back_to_friends": "Back",
+		"chat_input": "Write a message.."
     }
 }

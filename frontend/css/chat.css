@@ -1,4 +1,12 @@
 .chat_collapsible {
+	display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.chat_collapsible.active {
+	display: block;
+    opacity: 1;
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -9,28 +17,109 @@
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
     overflow: hidden;
     transition: height 0.3s ease-in-out;
+
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .chat_header {
+    user-select: none;          /* Avoid text selection */
+    -webkit-user-select: none;  /* Chrome, Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* Edge */
+
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: #00ff88;
-    color: black;
+    background: rgba(0, 255, 136, 0.5);
+    color: white;
     padding: 10px;
     font-weight: bold;
     cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .chat_toggle-button {
+    position: absolute;
+    left: 10px;
     font-size: 1.5rem;
     cursor: pointer;
 }
 
-.chat_close-button {
+.chat_title {
+    flex-grow: 1;
+    text-align: center;
     font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.chat_settings-button {
+    display: none;
+    position: absolute;
+    right: 10px;
+    font-size: 1.5rem;
     cursor: pointer;
 }
+
+
+
+.chat_dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0.5rem;
+    background-color: #000;
+    border: 1px solid #00ff88;
+    border-radius: 5px;
+    margin-top: 0.5rem;
+    width: max-content;
+	font-family: 'Orbitron', sans-serif;
+	font-size: 1rem;
+}
+
+.chat_dropdown-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.chat_dropdown-menu li {
+    padding: 0.5rem;
+}
+
+.chat_dropdownMenuButton {
+    color: #00ff88;
+    text-decoration: none;
+    display: block;
+}
+
+.chat_dropdownMenuButton:hover {
+    background-color: #00ff88;
+    color: #000;
+}
+
+.chat_dropdownMenuButton_block {
+    color: #dc3545;
+    text-decoration: none;
+    display: block;
+}
+
+.chat_dropdownMenuButton_block:hover {
+    background-color: #dc3545;
+    color: #000;
+}
+
+.chat_dropdown-divider {
+    border: none;
+    height: 1px;
+    background-color: #666; 
+    margin: 0.1rem 0; 
+}
+
+
+
 
 .chat_body {
     display: none;
@@ -62,17 +151,31 @@
     flex-shrink: 0;
 }
 
-.chat_text {
+.chat_text_user {
     margin-left: 0.5rem;
+}
+
+.chat_text_friend {
     margin-right: 0.5rem;
 }
 
 .chat_user_message {
     text-align: right;
+    display: flex;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: right;
+    gap: 10px;
+    margin-left: 50px;
 }
 
 .chat_friend_message {
     text-align: left;
+    display: flex;
+    margin-bottom: 20px;
+    align-items: center;
+    gap: 10px;
+    margin-right: 50px;
 }
 
 .chat_settings_input {

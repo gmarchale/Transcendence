@@ -1,6 +1,13 @@
 function loadChat(){
 	console.log("Loading chat.")
-	return;
+	currentlyWith = 0;
+	usernameWith = null;
+	let chatContainer = document.getElementById("chat_main_container");
+	let isClosed = !chatContainer.classList.contains("expanded");
+	if (!isClosed)
+		chatContainer.classList.toggle("expanded");
+	closeChat()
+
 	fetch("/api/chat/get_friends/", { method: "GET", credentials: "include" })
 	.then(response => response.json())
 	.then(data => {
@@ -32,12 +39,15 @@ function loadChat(){
     sendButton.addEventListener("click", sendMessage);
 
     inputField.addEventListener("keypress", function (event) {
-        if (event.key === "Enter") {
+		const hash = location.hash.split('?')[0].slice(1) || 'game';
+		if ((event.code === "Enter" || event.code === "NumpadEnter") && currentlyWith != 0 && hash != "login" && hash != "register") {
             sendMessage();
         }
     });
 }
 
+let usernameWith = null;
+let currentlyWith = 0;
 let chatSocket = null;
 let reconnectTimeout = null;
 const WS_URL = "";
@@ -72,12 +82,12 @@ function initWebSocket() {
 }
 
 async function sendMessage() {
-	if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-        console.error("WebSocket non connecté, message non envoyé.");
-        return;
-    }
+	// if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+    //     console.error("WebSocket non connecté, message non envoyé.");
+    //     return;
+    // }
 
-	const userId = getHashParam("id");
+	const userId = currentlyWith;
 
 	let inputField = document.getElementById("chat_input");
 	let message = inputField.value.trim();
@@ -86,10 +96,10 @@ async function sendMessage() {
 	appendMessage("You", message, true);
 	inputField.value = "";
 
-	chatSocket.send(JSON.stringify({
-        "id_user_1": userId,
-        "message": message
-    }));
+	// chatSocket.send(JSON.stringify({
+    //     "id_user_1": userId,
+    //     "message": message
+    // }));
 	await fetch('/api/chat/send_message/', {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
@@ -106,10 +116,10 @@ function appendMessage(sender, message, isUser) {
 	if(!isUser)
 		messageDiv.innerHTML = `
 			<img src="${avatarUrl}" alt="Avatar de ${sender}" class="chat_avatar">
-			<span class="chat_text">${message}</span>`;
+			<div class="chat_only_message"><span class="chat_text">${message}</span></div>`;
 	else 
 		messageDiv.innerHTML = `
-			<span class="chat_text">${message}</span>
+			<div class="chat_only_message"><span class="chat_text">${message}</span></div>
 			<img src="${avatarUrl}" alt="Avatar de ${sender}" class="chat_avatar">`;
 	messagesContainer.appendChild(messageDiv);
 	messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -128,42 +138,121 @@ async function fetchMessages(friendId) {
 	});
 }
 
+function updateChatLanguage(){
+	if(currentlyWith != 0){
+		document.getElementById("chat_title").textContent = "Chat " + getTranslation("chat_chatwith_title") + usernameWith;
+		document.getElementById("chat_send_message").textContent = getTranslation("chat_send_message");
+		document.getElementById("back_to_friends").textContent = getTranslation("chat_back_to_friends");
+		document.getElementById("chat_input").placeholder = getTranslation("chat_input");
+	}
+}
+
 function openChat(username, friendId) {
 	const userId = friendId;
 	fetchMessages(userId)
 
 	let friendsList = document.getElementById("chat_friends_list");
 	let chatBox = document.getElementById("chat_container");
+	let settings = document.getElementById("chat_settings");
 
 	friendsList.style.display = "none"; 
-	chatBox.style.display = "block"; 
-	document.getElementById("chat_username").textContent = username; 
-
+	chatBox.style.display = "block";
+	settings.style.display = "block";
+	currentlyWith = friendId;
+	usernameWith = username;
+	updateChatLanguage()
 	document.getElementById("chat_messages").innerHTML = "<p>Loading messages with " + username + "...</p>";
-	// setInterval(() => {
-	// 	fetchMessages(friendId);
-	// }, 200);
 }
 
 function initChat(){
 	console.log("Initializing chat.")
-	return;
-	initWebSocket()
+	// initWebSocket()
 
-	let chatContainer = document.getElementById("chat_main_container");
-	let chatToggle = document.getElementById("chat_toggle");
+	const chatContainer = document.getElementById("chat_main_container");
+	const chatToggle = document.getElementById("chat_header");
+	const backToFriends = document.getElementById("back_to_friends");
+	const settings = document.getElementById("chat_settings");
+	const menu = document.getElementById('chat_dropdownMenu');
 
-	let friendsList = document.getElementById("chat_friends_list");
-	let chatBox = document.getElementById("chat_container");
-	let backToFriends = document.getElementById("back_to_friends");
-
-	chatToggle.addEventListener("click", function () {
-		chatContainer.classList.toggle("expanded");
+	chatToggle.addEventListener("click", function(event) {
+		let clickedElement = event.target;
+		if (!clickedElement.closest("#chat_settings") && !clickedElement.closest("#chat_dropdownMenu")) {
+			let isClosed = !chatContainer.classList.contains("expanded");
+			if (isClosed)
+				loadChat()
+			chatContainer.classList.toggle("expanded");
+		}
 	});
+	
 
 	backToFriends.addEventListener("click", function () {
-		chatBox.style.display = "none";
-		friendsList.style.display = "block";
+		closeChat()
 	});
 
+	document.getElementById('chat_settings').addEventListener('click', function() {
+        if(menu.style.display == 'block' && !menu.matches(':hover'))
+            closeMenu(menu);
+        else openMenu(menu);
+    });
+
+	document.getElementById('chat_dropdownMenuButton_Profile').addEventListener('click', function() {
+        if(currentlyWith != null){
+			window.location.href = "#profile?id=" + currentlyWith;
+			closeMenu(menu);
+		}
+    });
+
+	document.addEventListener('click', function(event) {
+        const menu = document.getElementById('chat_dropdownMenu');
+        const elements = document.querySelectorAll("#chat_dropdownMenuButton");
+
+        elements.forEach(element => {
+            if(element.matches(':hover'))
+                closeMenu(menu);
+        });
+        if(document.getElementById("chat_block").matches(':hover'))
+            closeMenu(menu);
+
+        if ((!settings.matches(':hover') && !menu.matches(':hover')))
+            closeMenu(menu);
+    });
+
+	document.getElementById('chat_block').addEventListener('click', async () => {
+		let cmd = "block_user";
+
+        try {
+			console.log("Managing block status with "+ currentlyWith);
+
+            const response = await fetch('/api/chat/'+ cmd +'/', {
+                method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+				body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: currentlyWith })
+            });
+			document.getElementById("chat_block").textContent = getTranslation("profile_block_manage_block")
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    });
+
+}
+
+function closeChat(){
+	let friendsList = document.getElementById("chat_friends_list");
+	let chatBox = document.getElementById("chat_container");
+	let settings = document.getElementById("chat_settings");
+
+	chatBox.style.display = "none";
+	settings.style.display = "none";
+	friendsList.style.display = "block";
+	currentlyWith = 0;
+	usernameWith = null;
+	document.getElementById("chat_title").textContent = "Chat";
+}
+
+function closeMenu(menu){
+    menu.style.display = 'none';
+}
+
+function openMenu(menu){
+    menu.style.display = 'block';
 }

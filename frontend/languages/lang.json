@@ -14,7 +14,11 @@
 		"settings_users_blocked_title": "Utilisateurs bloqués.",
 
 		"profile_send_msg": "Envoyer un message",
-		"profile_user_not_found" : "Utilisateur inconnu."
+		"profile_user_not_found" : "Utilisateur inconnu.",
+
+		"chat_dropdownMenuButton_Profile": "Accéder au profil",
+		"chat_dropdownMenuButton_PlayPong": "Affrontrer au PONG!",
+		"chat_block": "Bloquer"
     },
     "en": {
         "settings_new_username": "Edit Username :",
@@ -31,6 +35,10 @@
 		"settings_users_blocked_title": "Users blocked",
 
 		"profile_send_msg": "Send private message",
-		"profile_user_not_found" : "User not found."
+		"profile_user_not_found" : "User not found.",
+
+		"chat_dropdownMenuButton_Profile": "Check profile",
+		"chat_dropdownMenuButton_PlayPong": "Ask for a PONG!",
+		"chat_block": "Block"
     }
 }

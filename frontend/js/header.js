@@ -46,7 +46,7 @@ function initHeader(){
             if(element.matches(':hover'))
                 closeMenu(menu);
         });
-        if(document.getElementById("header_logout").matches('hover'))
+        if(document.getElementById("header_logout").matches(':hover'))
             closeMenu(menu);
 
         if ((!button.matches(':hover') && !menu.matches(':hover')))
