@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'game',
     'debug_toolbar',
     'livechat',
+    'tournament',
     'django.contrib.sites',
     'allauth',
     'allauth.account',

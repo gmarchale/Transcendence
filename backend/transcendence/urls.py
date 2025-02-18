@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/game/', include('game.urls')),
     path('api/chat/', include('livechat.urls')),
+    path('api/tournaments/', include('tournament.urls')),
     path('api/ping/', csrf_exempt(ping), name='ping'),
     path('auth/callback/', oauth_callback, name='oauth_callback'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

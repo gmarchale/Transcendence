@@ -210,6 +210,11 @@ class GameStateManager:
         return None
 
     @classmethod
+    def game_exists(cls, game_id: str) -> bool:
+        """Check if a game exists in memory"""
+        return game_id in cls._instances
+
+    @classmethod
     def remove_game(cls, game_id: str):
         """Remove a game from memory"""
         if game_id in cls._instances:
