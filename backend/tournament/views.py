@@ -3,7 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Tournament, TournamentMatch
+from .models import Tournament, TournamentMatch, TournamentPlayer
 from .serializers import TournamentSerializer, TournamentMatchSerializer
 from django.utils import timezone
 from game.models import Game
@@ -22,26 +22,65 @@ class TournamentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+        tournament = serializer.save(creator=self.request.user)
+        display_name = self.request.data.get('display_name', self.request.user.username)
+        
+        # Créer l'entrée TournamentPlayer pour le créateur
+        TournamentPlayer.objects.create(
+            tournament=tournament,
+            player=self.request.user,
+            display_name=display_name
+        )
 
     @action(detail=True, methods=['post'])
     def join(self, request, pk=None):
         tournament = self.get_object()
-        
-        if tournament.status != 'pending':
-            return Response(
-                {'error': 'Tournament has already started or is completed'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
+        display_name = request.data.get('display_name', request.user.username)
+
+        # Vérifier si le tournoi peut accepter plus de joueurs
         if tournament.players.count() >= tournament.max_players:
             return Response(
                 {'error': 'Tournament is full'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-            
-        tournament.players.add(request.user)
-        return Response({'status': 'joined tournament'})
+
+        # Vérifier si le joueur est déjà dans le tournoi
+        if tournament.players.filter(id=request.user.id).exists():
+            return Response(
+                {'error': 'You are already in this tournament'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Vérifier si le display_name est unique dans ce tournoi
+        if tournament.tournament_players.filter(display_name=display_name).exists():
+            return Response(
+                {'error': 'This display name is already taken in this tournament'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Ajouter le joueur avec son display_name
+        TournamentPlayer.objects.create(
+            tournament=tournament,
+            player=request.user,
+            display_name=display_name
+        )
+
+        # Notifier via WebSocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'tournament_{tournament.id}',
+            {
+                'type': 'player_joined',
+                'player': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'display_name': display_name
+                }
+            }
+        )
+
+        serializer = self.get_serializer(tournament)
+        return Response(serializer.data)
 
     def create_tournament_game(self, match):
         """Create a game for a tournament match and notify players"""
