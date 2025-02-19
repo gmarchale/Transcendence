@@ -53,7 +53,6 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
-		new PongGame();
 
 		loadContentFromHash();
     });
