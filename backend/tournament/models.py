@@ -44,6 +44,8 @@ class TournamentMatch(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
+    player1_ready = models.BooleanField(default=False)
+    player2_ready = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['round_number', 'match_number']

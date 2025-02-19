@@ -42,5 +42,18 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'type': 'match_update',
             'match_id': event['match_id'],
             'status': event.get('status'),
-            'winner_id': event.get('winner_id')
+            'winner_id': event.get('winner_id'),
+            'player1_ready': event.get('player1_ready'),
+            'player2_ready': event.get('player2_ready'),
+            'forfeit': event.get('forfeit'),
+            'forfeited_by': event.get('forfeited_by')
+        }))
+
+    async def tournament_update(self, event):
+        # Send tournament update to client
+        await self.send(text_data=json.dumps({
+            'type': 'tournament_update',
+            'status': event.get('status'),
+            'winner_id': event.get('winner_id'),
+            'message': event.get('message')
         }))

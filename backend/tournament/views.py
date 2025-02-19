@@ -187,3 +187,96 @@ class TournamentViewSet(viewsets.ModelViewSet):
             self.create_tournament_game(next_match)
         
         return Response({'status': 'match completed'})
+
+    @action(detail=True, methods=['post'])
+    def player_ready(self, request, pk=None):
+        tournament = self.get_object()
+        match_id = request.data.get('match_id')
+        
+        match = get_object_or_404(TournamentMatch, id=match_id, tournament=tournament)
+        
+        # Vérifier que le joueur fait partie du match
+        if request.user != match.player1 and request.user != match.player2:
+            return Response(
+                {'error': 'You are not a player in this match'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Mettre à jour le statut ready du joueur
+        if request.user == match.player1:
+            match.player1_ready = True
+        else:
+            match.player2_ready = True
+        match.save()
+        
+        # Si les deux joueurs sont prêts, démarrer le match
+        if match.player1_ready and match.player2_ready:
+            self.create_tournament_game(match)
+            
+        # Notifier via WebSocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'tournament_{tournament.id}',
+            {
+                'type': 'match_update',
+                'match_id': match.id,
+                'player1_ready': match.player1_ready,
+                'player2_ready': match.player2_ready,
+                'status': match.status
+            }
+        )
+        
+        return Response({'status': 'ready status updated'})
+
+    @action(detail=True, methods=['post'])
+    def forfeit(self, request, pk=None):
+        tournament = self.get_object()
+        match_id = request.data.get('match_id')
+        
+        match = get_object_or_404(TournamentMatch, id=match_id, tournament=tournament)
+        
+        # Vérifier que le joueur fait partie du match
+        if request.user != match.player1 and request.user != match.player2:
+            return Response(
+                {'error': 'You are not a player in this match'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Déclarer l'autre joueur comme vainqueur
+        winner = match.player2 if request.user == match.player1 else match.player1
+        
+        # Mettre à jour le match
+        match.winner = winner
+        match.status = 'completed'
+        match.ended_at = timezone.now()
+        match.save()
+        
+        # Mettre à jour le jeu si existant
+        if match.game:
+            match.game.status = 'finished'
+            match.game.winner = winner
+            match.game.save()
+            
+        # Notifier via WebSocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'tournament_{tournament.id}',
+            {
+                'type': 'match_update',
+                'match_id': match.id,
+                'status': 'completed',
+                'winner_id': winner.id,
+                'forfeit': True,
+                'forfeited_by': request.user.id
+            }
+        )
+        
+        # Si c'était le dernier match, terminer le tournoi
+        if match.round_number == math.ceil(math.log2(tournament.players.count())):
+            tournament.status = 'completed'
+            tournament.winner = winner
+            tournament.ended_at = timezone.now()
+            tournament.save()
+            return Response({'status': 'tournament completed', 'winner': winner.username})
+            
+        return Response({'status': 'match forfeited'})
