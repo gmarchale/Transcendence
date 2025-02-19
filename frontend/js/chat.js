@@ -14,22 +14,32 @@ function loadChat(){
 	.then(response => response.json())
 	.then(data => {
 		if (data.mutual_friends) {
-			let friendsUl = document.getElementById("chat_friends_ul");
-			friendsUl.innerHTML = "";
-			if(data.mutual_friends.length != 0){
-				document.getElementById("chat_friends_ul").classList.add("active");
-				document.getElementById("chat_nofriends_ul").classList.remove("active");
-			} else {
-				document.getElementById("chat_friends_ul").classList.remove("active");
-				document.getElementById("chat_nofriends_ul").classList.add("active");
+			let friendsList = document.getElementById("chat_friends_list");
+			friendsList.innerHTML = "";
+			if(data.mutual_friends.length == 0){
+				let noFriendsUl = document.createElement("ul");
+				noFriendsUl.classList.add("chat_nofriends_ul");
+				noFriendsUl.classList.add("active");
+				noFriendsUl.id = "chat_nofriends_ul";
+
+				let noFriendsP = document.createElement("p");
+				noFriendsP.id = "chat_nofriends";
+				noFriendsP.textContent = getTranslation("chat_nofriends");
+				
+				noFriendsUl.appendChild(noFriendsP);
+				friendsList.appendChild(noFriendsUl);
 			}
+
 				
 			data.mutual_friends.forEach(friend => {
-				let li = document.createElement("li");
+				let li = document.createElement("ul");
+				li.id = "chat_friends_ul"
 				li.textContent = friend.username;
-				li.classList.add("friend-item");
+				li.classList.add("active");
+				li.classList.add("chat_friends_ul")
 				li.dataset.friendId = friend.id;
-				friendsUl.appendChild(li);
+
+				friendsList.appendChild(li);
 
 				li.addEventListener("click", function () {
 					openChat(friend.username, friend.id);
@@ -56,45 +66,8 @@ function loadChat(){
 
 let chat_usernameWith = null;
 let chat_currentlyWith = 0;
-let chatSocket = null;
-let reconnectTimeout = null;
-const WS_URL = "";
-
-function initWebSocket() {
-    // if (chatSocket && chatSocket.readyState === WebSocket.OPEN) return;
-	chatSocket = new WebSocket(WS_URL);
-    chatSocket.onopen = function () {
-        console.log("WebSocket connecté");
-        if (reconnectTimeout) {
-            clearTimeout(reconnectTimeout);
-        }
-    };
-
-    chatSocket.onmessage = function (event) {
-        const data = JSON.parse(event.data);
-        if (data.message && data.sender) {
-            chat_appendMessage(data.sender, data.message);
-        } else {
-            console.warn("Message invalide reçu :", data);
-        }
-    };
-
-    chatSocket.onerror = function (error) {
-        console.error("WebSocket erreur :", error);
-    };
-
-    chatSocket.onclose = function () {
-        console.warn("WebSocket déconnecté, tentative de reconnexion...");
-        reconnectTimeout = setTimeout(initWebSocket, 3000);
-    };
-}
 
 async function chat_sendMessage() {
-	// if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-    //     console.error("WebSocket non connecté, message non envoyé.");
-    //     return;
-    // }
-
 	const userId = chat_currentlyWith;
 
 	let inputField = document.getElementById("chat_input");
@@ -104,10 +77,6 @@ async function chat_sendMessage() {
 	chat_appendMessage("You", message, true);
 	inputField.value = "";
 
-	// chatSocket.send(JSON.stringify({
-    //     "id_user_1": userId,
-    //     "message": message
-    // }));
 	await fetch('/api/chat/send_message/', {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
@@ -179,7 +148,6 @@ function openChat(username, friendId) {
 
 function initChat(){
 	console.log("Initializing chat.")
-	// initWebSocket()
 
 	const chatContainer = document.getElementById("chat_main_container");
 	const chatToggle = document.getElementById("chat_header");

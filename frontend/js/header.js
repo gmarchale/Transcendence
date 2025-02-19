@@ -1,6 +1,9 @@
 async function loadHeader() {
     console.log("Loading header.");
 
+    const blur = document.getElementById("blur-overlay")
+    blur.classList.remove("active");
+
     let isAuthenticated = await checkAuth();
     console.log("Is user auth? " + isAuthenticated);
 
@@ -14,7 +17,6 @@ async function loadHeader() {
     const avatarUrl = "images/logo.jpg";
     const avatarDiv = document.getElementById("header_userAvatar");
     avatarDiv.style.backgroundImage = `url('${avatarUrl}')`;
-    // document.getElementById('header_userAvatar').textContent = getCookie("avatar");
 }
 
 function closeMenu_header(menu){
