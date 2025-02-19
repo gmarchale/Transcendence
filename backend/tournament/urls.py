@@ -15,4 +15,5 @@ urlpatterns = [
     path('<int:pk>/complete-match/', views.TournamentViewSet.as_view({'post': 'complete_match'}), name='tournament-complete-match'),
     path('<int:pk>/player-ready/', views.TournamentViewSet.as_view({'post': 'player_ready'}), name='tournament-player-ready'),
     path('<int:pk>/forfeit/', views.TournamentViewSet.as_view({'post': 'forfeit'}), name='tournament-forfeit'),
+    path('player-tournaments/<int:player_id>/', views.TournamentViewSet.as_view({'get': 'get_player_tournaments'}), name='player-tournaments'),
 ]
