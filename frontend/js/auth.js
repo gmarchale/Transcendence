@@ -56,8 +56,10 @@ async function getid(){
 			const userData = await response.json();
 			setCookie("id", userData.id);
             console.log("id = " + userData.id);
+            return userData.id;
 		}
 	} catch (error) {
 		console.error('Error checking auth:', error);
 	}
+    return null;
 }

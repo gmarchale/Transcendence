@@ -44,7 +44,7 @@ def test(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
 @api_view(['GET'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
@@ -191,8 +191,8 @@ def get_message(request):
         {
             "id": message.id,
             "text": message.message,
-            "sender": message.id_user_0.username,
-            "receiver": message.id_user_1.username,
+            "sender": message.id_user_0.id,
+            "receiver": message.id_user_1.id,
             "timestamp": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
         for message in messages
