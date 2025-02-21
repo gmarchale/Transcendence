@@ -24,6 +24,7 @@ async function loadContentFromHash() {
 			case "game": loadGame();break;
 			case "login": loadLogin();break;
 			case "register": loadRegister();break;
+			case "friends" : loadFriends();break;
 
 			case "chat": loadChat();break;
 		}
@@ -31,7 +32,7 @@ async function loadContentFromHash() {
 }
 
 function preloadPages() {
-    const pages = ["game", "profile", "settings", "login", "register", "chat"];
+    const pages = ["game", "profile", "settings", "login", "register", "chat", "friends"];
     const promises = pages.map(page =>
         fetch(page + ".html")
             .then(response => response.text())
