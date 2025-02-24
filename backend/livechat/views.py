@@ -98,10 +98,11 @@ def block_user(request):
 
 
 @api_view(['POST'])
-@ensure_csrf_cookie
-@permission_classes([IsAuthenticated])
+#@ensure_csrf_cookie
+@permission_classes([AllowAny])
 def add_friend_user(request):
-    id_user_0 = request.user.id
+    #id_user_0 = request.user.id
+    id_user_0 = request.data.get('id_user_0')
     id_user_1 = request.data.get('id_user_1')
 
     if not id_user_0 or not id_user_1:
