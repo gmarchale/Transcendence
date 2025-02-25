@@ -1,252 +1,63 @@
 function initTournament() {
-    initTournamentList();
-
-    const modal = document.getElementById('tournamentModal');
-    const nameInput = document.getElementById('tournamentNameInput');
-    const inputSection = document.getElementById('inputSection');
-    const resultSection = document.getElementById('resultSection');
-    const modalTitle = document.getElementById('modalTitle');
-    const chips = document.querySelectorAll('.game_chip');
-    let selectedPlayers = 8;
-
-    //montrer la valeur par defaut
-    document.querySelector('[data-players="8"]').classList.add('selected');
-    
-    // update l'affichage de la chip selection
-    chips.forEach(chip => {
-        chip.addEventListener('click', function() {
-            chips.forEach(c => c.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedPlayers = parseInt(this.dataset.players);
-        });
-    });
-    
-    document.getElementById('game_createTournamentBtn').addEventListener('click', function() {
-        modalTitle.textContent = 'Create Tournament'; // retablit le content si on veut recreer un tournoi
-        inputSection.style.display = 'block'; // retablit le display si on veut recreer un tournoi
-        resultSection.style.display = 'none'; // cache le resultat
-        nameInput.value = ''; // vide le buffer
-        document.getElementById('displayName').value = ''; // clear nickname too
-        
-        modal.style.display = 'flex'; // change la fenetre de none a flex
-        nameInput.focus(); // pas besoin de clicker sur l'input pour ecrire dedans
-    });
-    
-    // cree le tournoi que si il y a une valeur
-    document.getElementById('confirmTournament').addEventListener('click', function() {
-        const tournamentName = nameInput.value.trim();
-        const displayName = document.getElementById('displayName').value.trim();
-        if (tournamentName && displayName && selectedPlayers) {
-            createTournament(tournamentName, selectedPlayers);
-        }
-    });
-    
-    document.getElementById('closeResult').addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-    
-    document.getElementById('cancelTournament').addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-
-    //focus sur nickname
-    nameInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('displayName').focus();
-        }
-    });
-    
-    // cache la fenetre si on click sur le background
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    // Enter clique sur ok
-    document.getElementById('displayName').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('confirmTournament').click();
-        }
-    });
-    
-    // idem mais pour le join
-    const joinModal = document.getElementById('joinTournamentModal');
-    const idInput = document.getElementById('tournamentIdInput');
-    const joinInputSection = document.getElementById('joinInputSection');
-    const joinResultSection = document.getElementById('joinResultSection');
-    const joinModalTitle = document.getElementById('joinModalTitle');
-    
-    document.getElementById('game_joinTournamentBtn').addEventListener('click', function() {
-        joinModalTitle.textContent = 'Join Tournament';
-        joinInputSection.style.display = 'block';
-        joinResultSection.style.display = 'none';
-        idInput.value = '';
-        document.getElementById('joinDisplayName').value = '';
-        
-        joinModal.style.display = 'flex';
-        idInput.focus();
-    });
-    
-    document.getElementById('confirmJoinTournament').addEventListener('click', function() {
-        const tournamentId = idInput.value.trim();
-        const displayName = document.getElementById('joinDisplayName').value.trim();
-        if (tournamentId && displayName) {
-            joinTournament(tournamentId, displayName);
-        }
-    });
-    
-    document.getElementById('closeJoinResult').addEventListener('click', function() {
-        joinModal.style.display = 'none';
-    });
-    
-    document.getElementById('cancelJoinTournament').addEventListener('click', function() {
-        joinModal.style.display = 'none';
-    });
-
-    joinModal.addEventListener('click', function(e) {
-        if (e.target === joinModal) {
-            joinModal.style.display = 'none';
-        }
-    });
-
-    idInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('joinDisplayName').focus();
-        }
-    });
-    
-    document.getElementById('joinDisplayName').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('confirmJoinTournament').click();
-        }
-    });
+    initTournamentPageList();
+    loadTournament(getHashParam('id'));
 }
 
-//TEST voir si ca marche
-async function getPlayerTournaments() {
+async function loadTournament(tournamentId) {
     try {
-        const playerId = await getid(); // pas forcement opti mais ca fonctionne
-        // console.log(playerId);
-        const response = await fetch(`/api/tournaments/player-tournaments/${playerId}/`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        return await response.json();
-    } catch (error) {
-        console.error('Error:', error);
-        return [];
-    }
-}
-
-async function createTournament(name, playersNum) {
-    const modal = document.getElementById('tournamentModal');
-    const inputSection = document.getElementById('inputSection');
-    const resultSection = document.getElementById('resultSection');
-    const resultMessage = document.getElementById('resultMessage');
-    const modalTitle = document.getElementById('modalTitle');
-    const displayName = document.getElementById('displayName').value.trim();
-
-    // envoie tout a l'API
-    try {
-        const response = await fetch('/api/tournaments/', {
-            method: 'POST',
+        const response = await fetch(`api/tournaments/${tournamentId}/`, {
+            method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                name: name,
-                max_players: playersNum,
-                display_name: displayName
-            })
-        });
-
-        // appelle les fonctions d'affichage en fonction du resultat
-        const data = await response.json();
-        if (response.ok) {
-            modalTitle.textContent = 'Success!';
-            resultMessage.className = 'game_success-message';
-            resultMessage.textContent = `Tournament created!\nTournament ID: ${data.id}\nShare this ID with other players to join.`;
-        } else {
-            modalTitle.textContent = 'Error';
-            resultMessage.className = 'game_error-message';
-            resultMessage.textContent = 'Error creating tournament: ' + data.error;
-        }
-    } catch (error) {
-        modalTitle.textContent = 'Error';
-        resultMessage.className = 'game_error-message';
-        resultMessage.textContent = 'Error creating tournament. Please try again.';
-        console.error('Error:', error);
-    }
-
-    inputSection.style.display = 'none'; // cache l'input
-    resultSection.style.display = 'block'; // montre le resultat
-}
-
-async function joinTournament(tournamentId, displayName) {
-    const modal = document.getElementById('joinTournamentModal');
-    const inputSection = document.getElementById('joinInputSection');
-    const resultSection = document.getElementById('joinResultSection');
-    const resultMessage = document.getElementById('joinResultMessage');
-    const modalTitle = document.getElementById('joinModalTitle');
-
-    try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/join/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                display_name: displayName
-            })
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            modalTitle.textContent = 'Success!';
-            resultMessage.className = 'game_success-message';
-            resultMessage.textContent = 'Successfully joined tournament!';
-        } else {
-            modalTitle.textContent = 'Error';
-            resultMessage.className = 'game_error-message';
-            let errorMessage = 'Error joining tournament';
-            
-            // erreurs specifiques
-            if (data.error === 'Tournament is full') {
-                errorMessage = 'Tournament is full';
-            } else if (data.error === 'This display name is already taken in this tournament') {
-                errorMessage = 'This nickname is already taken in this tournament';
-            } else if (data.error === 'You are already in this tournament') {
-                errorMessage = 'You are already in this tournament';
             }
-            
-            resultMessage.textContent = errorMessage;
-        }
-    } catch (error) {
-        modalTitle.textContent = 'Error';
-        resultMessage.className = 'game_error-message';
-        resultMessage.textContent = 'Error joining tournament. Please try again.';
-        console.error('Error:', error);
-    }
+        });
 
-    inputSection.style.display = 'none';
-    resultSection.style.display = 'block';
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const tournament = await response.json();
+        displayTournamentName(tournament.name);
+
+        return tournament; // Return the full tournament object for further use
+    } catch (error) {
+        console.error('Error:', error);
+        return null; // Return null or an empty object on error
+    }
 }
 
-function initTournamentList() {
-    const modal = document.getElementById('tournamentListModal');
-    const tournamentList = document.getElementById('tournamentList');
-    
-    document.getElementById('game_playIABtn').addEventListener('click', async function() {
+function displayTournamentName(name) {
+    const titleElement = document.querySelector('#tournamentName');
+
+    if (titleElement) {
+        titleElement.textContent = name;
+        // No need to add a click event here, it's already handled in initTournamentPageList()
+    } else {
+        console.error('Tournament title element not found');
+    }
+}
+
+function initTournamentPageList() {
+    const modal = document.getElementById('tournamentPageListModal');
+    const tournamentList = document.getElementById('tournamentPageList');
+    const titleElement = document.getElementById('tournamentTitle');
+
+    if (!titleElement) {
+        console.error("Element #tournamentTitle not found");
+        return;
+    }
+
+    titleElement.addEventListener('click', async function() {
         modal.style.display = 'flex';
-        const tournaments = await getPlayerTournaments();
-        displayTournaments(tournaments);
+        const tournaments = await getPlayerTournaments(); // Ensure this function is defined
+        displayTournamentsPage(tournaments);
     });
-    
-    document.getElementById('closeTournamentList').addEventListener('click', function() {
+
+    document.getElementById('closeTournamentPageList').addEventListener('click', function() {
         modal.style.display = 'none';
     });
-    
+
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
             modal.style.display = 'none';
@@ -254,15 +65,15 @@ function initTournamentList() {
     });
 }
 
-function displayTournaments(tournaments) {
-    const tournamentList = document.getElementById('tournamentList');
-    tournamentList.innerHTML = '';
-    
-    if (tournaments.length === 0) {
+function displayTournamentsPage(tournaments) {
+    const tournamentList = document.getElementById('tournamentPageList');
+    tournamentList.innerHTML = ''; // Clear the list
+
+    if (!tournaments || tournaments.length === 0) {
         tournamentList.innerHTML = '<p class="game_error-message">No tournaments found</p>';
         return;
     }
-    
+
     tournaments.forEach(tournament => {
         const button = document.createElement('button');
         button.className = 'game_tournament-btn';
@@ -272,7 +83,7 @@ function displayTournaments(tournaments) {
         `;
         button.addEventListener('click', () => {
             window.location.hash = `#tournament/${tournament.id}`;
-            document.getElementById('tournamentListModal').style.display = 'none';
+            document.getElementById('tournamentPageListModal').style.display = 'none';
         });
         tournamentList.appendChild(button);
     });

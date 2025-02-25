@@ -1,37 +1,43 @@
 let isPreloaded = 0
 async function loadContentFromHash() {
-	const hash = location.hash.split('?')[0].slice(1) || 'game';
-	document.querySelectorAll(".page").forEach(div => {
-		div.classList.remove("active");
-	});
-	let loadPage = 1;
-	if(hash != "login" && hash != "register"){
-		let result = await loadHeader();
+    const fullHash = location.hash.split('?')[0].slice(1) || 'game';
+    const hashParts = fullHash.split('/');
+    const mainPath = hashParts[0]; // 'tournament'
+    const pathParam = hashParts[1]; // tournament ID, e.g., '123'
+    
+    document.querySelectorAll(".page").forEach(div => {
+        div.classList.remove("active");
+    });
+    
+    let loadPage = 1;
+    if(mainPath != "login" && mainPath != "register"){
+        let result = await loadHeader();
         if (result === false)
             loadPage = 0;
-		document.getElementById("header").classList.add("active");
-	} else document.getElementById("header").classList.remove("active");
-	document.title = hash.charAt(0).toUpperCase() + hash.slice(1) + " - PONG"
-	if(isPreloaded == 0 || loadPage == 0)
-		return;
+        document.getElementById("header").classList.add("active");
+    } else document.getElementById("header").classList.remove("active");
+    
+    document.title = mainPath.charAt(0).toUpperCase() + mainPath.slice(1) + " - PONG";
+    if(isPreloaded == 0 || loadPage == 0)
+        return;
 
-	let pageDiv = document.getElementById(hash);
-	if (pageDiv) {
-		pageDiv.classList.add("active");
-		switch (hash){
-			case "profile": loadProfile();break;
-			case "settings": loadSettings();break;
-			case "game": loadGame();break;
-			case "login": loadLogin();break;
-			case "register": loadRegister();break;
-
-			case "chat": loadChat();break;
-		}
-	}
+    let pageDiv = document.getElementById(mainPath);
+    if (pageDiv) {
+        pageDiv.classList.add("active");
+        switch (mainPath){
+            case "profile": loadProfile();break;
+            case "settings": loadSettings();break;
+            case "game": loadGame();break;
+            case "login": loadLogin();break;
+            case "register": loadRegister();break;
+            case "chat": loadChat();break;
+            case "tournament": loadTournament(pathParam);break;
+        }
+    }
 }
 
 function preloadPages() {
-    const pages = ["game", "profile", "settings", "login", "register", "chat"];
+    const pages = ["game", "profile", "settings", "login", "register", "chat", "tournament"];
     const promises = pages.map(page =>
         fetch(page + ".html")
             .then(response => response.text())
@@ -50,6 +56,8 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
+		initTournamentButtons();
+		initTournament();
 		new PongGame();
 
 		loadContentFromHash();
