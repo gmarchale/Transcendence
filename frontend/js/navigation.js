@@ -2,8 +2,8 @@ let isPreloaded = 0
 async function loadContentFromHash() {
     const fullHash = location.hash.split('?')[0].slice(1) || 'game';
     const hashParts = fullHash.split('/');
-    const mainPath = hashParts[0]; // 'tournament'
-    const pathParam = hashParts[1]; // tournament ID, e.g., '123'
+    const mainPath = hashParts[0];
+    const pathParam = hashParts[1];
     
     document.querySelectorAll(".page").forEach(div => {
         div.classList.remove("active");
