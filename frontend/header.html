@@ -23,14 +23,15 @@
         <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
 
-		<script src="js/navigation.js"></script>
-        <script src="js/auth.js"></script>
-
+        <script src="js/header.js"></script>
         <script src="js/log-utils.js"></script>
         <script src="js/login.js"></script>
         <script src="js/register.js"></script>
+        <script src="js/auth.js"></script>
+		<script src="js/navigation.js"></script>
+        
 
-        <script src="js/header.js"></script>
+
         <script src="js/profile.js"></script>
         <script src="js/settings.js"></script>
         <script src="js/game.js"></script>
@@ -42,6 +43,7 @@
         <script src="js/chat.js"></script>
 	</head>
 	<body>
+        <!-- HEADER PART -->
         <nav id="header" class="header">
             <a href="/#game" class="header-brand">PONG</a>
             <div class="nav-buttons">
@@ -51,11 +53,11 @@
                         <div class="user-avatar_head" id="header_userAvatar"></div>
                         <div class="dropdown-menu" id="header_dropdownMenu">
                             <ul>
-                                <li><a id="header_dropdownMenuButton" href="#profile">View Profile</a></li>
-                                <li><a id="header_dropdownMenuButton" href="#settings">Settings</a></li>
-                                <li><a id="header_dropdownMenuButton" href="#chat">Chat (beta)</a></li>
+                                <li><a id="header_dropdownMenuButton" href="#profile"><div id="header_profilebutton"></div></a></li>
+                                <li><a id="header_dropdownMenuButton" href="#settings"><div id="header_settingsbutton"></div></a></li>
+                                <li><a id="header_dropdownMenuButton" href="#friends">Add friends (beta)</a></li>
                                 <hr class="dropdown-divider">
-                                <li class="logout_head"><a href="#" id="header_logout">Logout</a></li>
+                                <li class="logout_head"><a href="#" id="header_logout"><div id="header_logoutbutton"></div></a></li>
                             </ul>
                         </div>
                     </button>
@@ -63,14 +65,62 @@
             </div>
         </nav>
 
+
+
+        
+        <!-- PAGE PART -->
 		<div id="content">
-            <div class="page" id="chat"></div> <!-- TODO -->
             <div class="page" id="game"></div>
             <div class="page" id="profile"></div>
             <div class="page" id="settings"></div>
             <div class="page" id="login"></div>
             <div class="page" id="register"></div>
             <div class="page" id="tournament"></div>
+            <div class="page" id="friends"></div>
         </div>
+
+
+
+
+        <!-- CHAT PART -->
+        <div id="chat_main_container" class="chat_collapsible">
+            <!-- En-tête du chat -->
+            <div class="chat_header">
+              <span id="chat_toggle" class="chat_toggle-button">💬</span>
+              <span id="chat_title">Chat</span>
+            </div>
+            <!-- Corps du chat -->
+            <div id="chat_body" class="chat_body">
+              <!-- Barre latérale : liste d'amis -->
+              <div id="chat_friends_list" class="chat_sidebar">
+                <h2 class="chat_settings_title">Friends</h2>
+                <ul id="chat_friends_ul">
+      
+                </ul>
+              </div>
+      
+              <!-- Zone de conversation -->
+              <div id="chat_container" class="chat_container" style="display: none;">
+                <div class="chat_conversation_header">
+                  <h2 class="chat_settings_title">
+                    Chat with <span id="chat_username"></span>
+                  </h2>
+                </div>
+                <!-- Affichage des messages -->
+                <div id="chat_messages" class="chat_messages">
+                  <!-- Les messages s'affichent ici -->
+                </div>
+                <!-- Zone d'envoi de message -->
+                <div class="chat_input_area">
+                  <input type="text" id="chat_input" class="chat_settings_input" placeholder="Write a message...">
+                  <button id="chat_send_message" class="chat_settings_profile">Send</button>
+                </div>
+                <!-- Bouton pour revenir à la liste d'amis -->
+                <button id="back_to_friends" class="chat_settings_profile">Back</button>
+              </div>
+            </div>
+          </div>
+
+        <div class="blur-overlay" id="blur-overlay"></div>
 	</body>
 </html>

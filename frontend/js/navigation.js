@@ -14,12 +14,16 @@ async function loadContentFromHash() {
         let result = await loadHeader();
         if (result === false)
             loadPage = 0;
-        document.getElementById("header").classList.add("active");
-    } else document.getElementById("header").classList.remove("active");
-    
+		 loadChat();
+		document.getElementById("header").classList.add("active");
+		document.getElementById("chat_main_container").classList.add("active");
+	} else {
+		document.getElementById("header").classList.remove("active");
+		document.getElementById("chat_main_container").classList.remove("active");
+	}
     document.title = mainPath.charAt(0).toUpperCase() + mainPath.slice(1) + " - PONG";
-    if(isPreloaded == 0 || loadPage == 0)
-        return;
+	if(isPreloaded == 0 || loadPage == 0)
+		return;
 
     let pageDiv = document.getElementById(mainPath);
     if (pageDiv) {
@@ -31,13 +35,14 @@ async function loadContentFromHash() {
             case "login": loadLogin();break;
             case "register": loadRegister();break;
             case "chat": loadChat();break;
+			case "friends": loadFriends();break;
             case "tournament": loadTournament(pathParam);break;
         }
     }
 }
 
 function preloadPages() {
-    const pages = ["game", "profile", "settings", "login", "register", "chat", "tournament"];
+    const pages = ["game", "profile", "settings", "login", "register", "friends", "tournament"];
     const promises = pages.map(page =>
         fetch(page + ".html")
             .then(response => response.text())
@@ -56,9 +61,9 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
+		initFriends();
 		initTournamentButtons();
 		initTournament();
-		new PongGame();
 
 		loadContentFromHash();
     });

@@ -31,7 +31,8 @@ function initLogin(){
             console.log("Is user auth? " + isAuthenticated);
         
             if (isAuthenticated) {
-                console.log("Already logged-in");
+                window.location.href = "#game";
+                console.log("Already logged-in -> redirecting to game page.")
                 return;
             }
             var username = document.getElementById("login_username");
@@ -66,8 +67,10 @@ function initLogin(){
                 const csrfToken = csrfData.csrfToken;
                 console.log('Got CSRF token');
                 const loginResponse = await attemptLogin(username, password, csrfToken);
-                if (loginResponse)
+                if (loginResponse){
                     handleRedirect('#game');
+                    loadChat();
+                }
             } catch (error) {
                 showError(error.message);
             }

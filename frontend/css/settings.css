@@ -126,11 +126,35 @@
 
 
 .settings_popup-container {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.blur-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 998;
+    display: none;
+}
+
+.blur-overlay.active {
+    display: block;
+}
+
+.settings_popup-container.active {
+    display: block;
+    opacity: 1;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 255, 136, 0.9);
+    background: rgb(1, 100, 54);
     padding: 20px;
     border: 2px solid #00ff88;
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
@@ -184,19 +208,93 @@
 }
 
 .settings_btn-confirm {
-    background-color: #00ff88;
-    color: black;
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+    border: 2px solid #00ff88;
 }
 
 .settings_btn-confirm:hover {
-    background-color: #00cc66;
+    background-color: rgba(0, 179, 95, 0.5);
 }
 
+
 .settings_btn-cancel {
-    background-color: red;
+    background-color: #dc3545;
     color: white;
+    border: 2px solid #ff0019;
 }
 
 .settings_btn-cancel:hover {
-    background-color: darkred;
+    background-color: #86222c;
+}
+
+
+#settings_blocked_list {
+    margin-top: 1.5rem;
+	margin-bottom: 1.5rem;
+    padding: 20px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    width: 100%;
+    margin-right: 1.5rem;
+    margin-left: 0;
+    text-align: center;
+    height: 250px;
+    overflow-y: auto;
+}
+
+
+.settings_blocked_ul {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.settings_blocked_ul.active {
+    display: block;
+    opacity: 1;
+    list-style: none;
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.settings_blocked_ul:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+#settings_noblocked_ul {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#settings_noblocked_ul.active{
+    display: block;
+    opacity: 1;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    margin-left: 0%;
+    margin-right: 0%;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* Edge */
+}
+
+#settings_noblocked {
+    color: #dc3545;
+    font-size: 1.5rem;
+    text-align: center;
+    margin: 0;
 }
