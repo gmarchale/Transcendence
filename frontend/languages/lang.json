@@ -12,9 +12,22 @@
 		"settings_avatar_title": "Modifier votre avatar",
 		"settings_42_account_link": "Lier un compte 42",
 		"settings_users_blocked_title": "Utilisateurs bloqués.",
+		"settings_confirmUpload": "Confirmer",
+		"settings_cancelUpload": "Annuler",
+		"settings_image_popup": "Recadrez et confirmer votre nouvel avatar!",
+		"settings_avatar_upload_button": "📂 Sélectionner un nouvel avatar..",
 
 		"profile_send_msg": "Envoyer un message",
-		"profile_user_not_found" : "Utilisateur inconnu."
+		"profile_user_not_found" : "Utilisateur inconnu.",
+
+		"chat_dropdownMenuButton_Profile": "Accéder au profil",
+		"chat_dropdownMenuButton_PlayPong": "Affrontrer au PONG!",
+		"chat_block": "Bloquer",
+
+		"header_profilebutton": "Profile",
+		"header_settingsbutton": "Paramètres",
+		"header_friendsbutton": "Amis",
+		"header_logoutbutton": "Déconexion"
     },
     "en": {
         "settings_new_username": "Edit Username :",
@@ -28,9 +41,21 @@
 		"settings_language_title": "Switch language",
 		"settings_avatar_title": "Edit avatar",
 		"settings_42_account_link": "Link 42 account",
-		"settings_users_blocked_title": "Users blocked",
+		"settings_users_blocked_title": "Blocked users",
+		"settings_confirmUpload": "Confirm",
+		"settings_cancelUpload": "Cancel",
+		"settings_image_popup": "Crop and confirm your new logo!",
+		"settings_avatar_upload_button": "📂 Select a new logo..",
 
 		"profile_send_msg": "Send private message",
-		"profile_user_not_found" : "User not found."
+		"profile_user_not_found" : "User not found.",
+
+		"chat_dropdownMenuButton_Profile": "Check profile",
+		"chat_dropdownMenuButton_PlayPong": "Ask for a PONG!",
+		"chat_block": "Block",
+
+		"header_profilebutton": "Profile",
+		"header_settingsbutton": "Settings",
+		"header_logoutbutton": "Logout"
     }
 }

@@ -1,6 +1,9 @@
 async function loadHeader() {
     console.log("Loading header.");
 
+    const blur = document.getElementById("blur-overlay")
+    blur.classList.remove("active");
+
     let isAuthenticated = await checkAuth();
     console.log("Is user auth? " + isAuthenticated);
 
@@ -14,15 +17,14 @@ async function loadHeader() {
     const avatarUrl = "images/logo.jpg";
     const avatarDiv = document.getElementById("header_userAvatar");
     avatarDiv.style.backgroundImage = `url('${avatarUrl}')`;
-    // document.getElementById('header_userAvatar').textContent = getCookie("avatar");
 }
 
-function closeMenu(menu){
+function closeMenu_header(menu){
     menu.style.display = 'none';
     document.getElementById('header_username').textContent = getCookie("username") + "▾";
 }
 
-function openMenu(menu){
+function openMenu_header(menu){
     menu.style.display = 'block';
     document.getElementById('header_username').textContent = getCookie("username") + "▴";
 }
@@ -33,8 +35,8 @@ function initHeader(){
     document.getElementById('header_userButton').addEventListener('click', function() {
         const menu = document.getElementById('header_dropdownMenu');
         if(menu.style.display == 'block' && !menu.matches(':hover'))
-            closeMenu(menu);
-        else openMenu(menu);
+            closeMenu_header(menu);
+        else openMenu_header(menu);
     });
 
     document.addEventListener('click', function(event) {
@@ -44,18 +46,18 @@ function initHeader(){
 
         elements.forEach(element => {
             if(element.matches(':hover'))
-                closeMenu(menu);
+                closeMenu_header(menu);
         });
-        if(document.getElementById("header_logout").matches('hover'))
-            closeMenu(menu);
+        if(document.getElementById("header_logout").matches(':hover'))
+            closeMenu_header(menu);
 
         if ((!button.matches(':hover') && !menu.matches(':hover')))
-            closeMenu(menu);
+            closeMenu_header(menu);
     });
 
     document.addEventListener('scroll', function() {
         const menu = document.getElementById('header_dropdownMenu');
-        closeMenu(menu);
+        closeMenu_header(menu);
     });
 
     document.getElementById('header_logout').addEventListener('click', async () => {

@@ -29,17 +29,17 @@
 
         <div class="settings_group">
             <label id="settings_avatar_title" class="settings_label"></label>
-            <input class="settings_language_btn" type="file" id="settings_avatar_upload" accept="image/jpeg" />
+            <input type="file" id="settings_avatar_upload" accept="image/jpeg, image/png" hidden />
+            <label for="settings_avatar_upload" class="settings_language_btn" id="settings_avatar_upload_button"></label>
+            
             
             <div id="settings_popupContainer" class="settings_popup-container">
-                <p class="settings_popup-title">Voulez-vous utiliser cette image ?</p>
-                
-                <!-- Zone de recadrage de l'image -->
+                <p class="settings_popup-title" id="settings_image_popup"></p> <!-- TODO -->
+
                 <div class="settings_crop-container">
                     <img id="settings_cropImage" alt="Image en cours de recadrage">
                 </div>
             
-                <!-- Boutons de confirmation et d'annulation -->
                 <div class="settings_popup-buttons">
                     <button class="settings_btn-confirm" id="settings_confirmUpload">Confirmer</button>
                     <button class="settings_btn-cancel" id="settings_cancelUpload">Annuler</button>
@@ -50,7 +50,10 @@
 
         <div class="settings_group">
             <label id="settings_users_blocked_title" class="settings_label"></label>
-            <div class="settings_updates_container"></div>
+            <div id="settings_blocked_list" class="settings_updates_container">
+                <ul class="settings_blocked_ul" id="settings_blocked_ul"></ul>
+                <ul class="settings_noblocked_ul" id="settings_noblocked_ul"><p id="settings_noblocked"></p></ul>
+            </div>
         </div>
 
     </div>

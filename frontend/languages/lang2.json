@@ -6,7 +6,17 @@
 		"profile_friend_manage_remove": "Retirer l'ami",
 		"profile_friend_manage_pending": "Annuler la demande d'ami",
 		"profile_friend_manage_accept": "Accepter la demnade d'ami",
-		"profile_user_not_found" : "Utilisateur inconnu."
+		"profile_user_not_found" : "Utilisateur inconnu.",
+
+		"chat_nofriends": "Vous n'avez pas d'amis.",
+		"chat_friendlist_title": "Amis",
+		"chat_send_message": "Envoyer",
+		"chat_back_to_friends": "Retour",
+		"chat_input": "Écris un message.. (max 400 caractères.)",
+
+		"settings_unblock_button": "Débloquer ",
+		"settings_noblocked": "Aucun utilisateur n'est bloqué.",
+		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !"
     },
     "en": {
         "profile_block_manage_block": "Block",
@@ -15,6 +25,16 @@
 		"profile_friend_manage_remove": "Remove friend",
 		"profile_friend_manage_pending": "Cancel friend request",
 		"profile_friend_manage_accept": "Accept friend request",
-		"profile_user_not_found" : "User not found."
+		"profile_user_not_found" : "User not found.",
+
+		"chat_nofriends": "You don't have any friend.",
+		"chat_friendlist_title": "Friends",
+		"chat_send_message": "Send",
+		"chat_back_to_friends": "Back",
+		"chat_input": "Write a message.. (max 400 char.)",
+
+		"settings_unblock_button": "Unblock ",
+		"settings_noblocked": "No users are blocked.",
+		"settings_select_png": "Please only select a JPEG or PNG file."
     }
 }

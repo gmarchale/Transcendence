@@ -9,8 +9,13 @@ async function loadContentFromHash() {
 		let result = await loadHeader();
         if (result === false)
             loadPage = 0;
+		 loadChat();
 		document.getElementById("header").classList.add("active");
-	} else document.getElementById("header").classList.remove("active");
+		document.getElementById("chat_main_container").classList.add("active");
+	} else {
+		document.getElementById("header").classList.remove("active");
+		document.getElementById("chat_main_container").classList.remove("active");
+	}
 	document.title = hash.charAt(0).toUpperCase() + hash.slice(1) + " - PONG"
 	if(isPreloaded == 0 || loadPage == 0)
 		return;
@@ -24,14 +29,13 @@ async function loadContentFromHash() {
 			case "game": loadGame();break;
 			case "login": loadLogin();break;
 			case "register": loadRegister();break;
-
-			case "chat": loadChat();break;
+			case "friends": loadFriends();break;
 		}
 	}
 }
 
 function preloadPages() {
-    const pages = ["game", "profile", "settings", "login", "register", "chat"];
+    const pages = ["game", "profile", "settings", "login", "register", "friends"];
     const promises = pages.map(page =>
         fetch(page + ".html")
             .then(response => response.text())
@@ -50,7 +54,7 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
-		new PongGame();
+		initFriends();
 
 		loadContentFromHash();
     });

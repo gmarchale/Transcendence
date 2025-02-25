@@ -42,7 +42,7 @@ class PongGame {
 
     async init() {
         console.log('Initializing game...');
-        try {
+        try {            
             const valid = await this.checkSession();
             if (!valid) {
                 console.error('Invalid session, redirecting to login...');
@@ -88,21 +88,21 @@ class PongGame {
             this.currentUser = userData;
             
             // Update UI with user info
-            const usernameElement = document.getElementById('game_username');
-            const userAvatarElement = document.getElementById('game_userAvatar');
+            const usernameElement = document.getElementById('header_username');
+            const userAvatarElement = document.getElementById('header_userAvatar');
             
             console.log('Username element:', usernameElement);
             console.log('Avatar element:', userAvatarElement);
             
             if (usernameElement) {
-                usernameElement.textContent = userData.username;
+                // usernameElement.textContent = userData.username;
                 console.log('Username updated to:', userData.username);
             } else {
                 console.error('Username element not found');
             }
             
             if (userAvatarElement) {
-                userAvatarElement.textContent = userData.username[0].toUpperCase();
+                // userAvatarElement.textContent = userData.username[0].toUpperCase();
                 console.log('Avatar updated to:', userData.username[0].toUpperCase());
             } else {
                 console.error('Avatar element not found');
@@ -526,16 +526,16 @@ class PongGame {
 
                 case 'game_state_update':
                     if (message.game_state) {
-                        console.log('Received game state update:', {
-                            currentState: this.gameState ? {
-                                player1Y: this.gameState.paddles.player1.y,
-                                player2Y: this.gameState.paddles.player2.y
-                            } : null,
-                            newState: {
-                                player1Y: message.game_state.paddles.player1.y,
-                                player2Y: message.game_state.paddles.player2.y
-                            }
-                        });
+                        // console.log('Received game state update:', {
+                        //     currentState: this.gameState ? {
+                        //         player1Y: this.gameState.paddles.player1.y,
+                        //         player2Y: this.gameState.paddles.player2.y
+                        //     } : null,
+                        //     newState: {
+                        //         player1Y: message.game_state.paddles.player1.y,
+                        //         player2Y: message.game_state.paddles.player2.y
+                        //     }
+                        // });
 
                         // Preserve player IDs when updating game state
                         const player1_id = this.gameState?.player1_id;
@@ -552,10 +552,10 @@ class PongGame {
                             if (this.player2Score) this.player2Score.textContent = this.gameState.score.player2;
                         }
 
-                        console.log('Game state updated:', {
-                            player1Y: this.gameState.paddles.player1.y,
-                            player2Y: this.gameState.paddles.player2.y
-                        });
+                        // console.log('Game state updated:', {
+                        //     player1Y: this.gameState.paddles.player1.y,
+                        //     player2Y: this.gameState.paddles.player2.y
+                        // });
                     }
                     break;
 
@@ -667,7 +667,7 @@ class PongGame {
                 this.gameSocket.close();
                 this.gameSocket = null;
             }
-            window.location.href = '#game';  
+            window.location.href = '/game.html';  
         };
         
         // Add buttons to container
@@ -774,7 +774,7 @@ class PongGame {
     }
     
     updatePaddlePosition() {
-        console.log('updatePaddlePosition called');
+        // console.log('updatePaddlePosition called');
         if (!this.gameSocket || this.gameSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot update paddle: socket:', !!this.gameSocket, 'state:', this.gameSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
             return;
@@ -931,7 +931,7 @@ class PongGame {
         const logInterval = 2000; // Log every 500ms
         const currentTime = Date.now();
         if (currentTime - this.lastLogTime > logInterval) {
-            console.log('Paddle positions:', this.gameState.paddles);
+            // console.log('Paddle positions:', this.gameState.paddles);
             //console.log('Key state:', this.keyState);
             //console.log('Game state:', this.gameState);
             this.lastLogTime = currentTime;
@@ -1100,4 +1100,3 @@ class PongGame {
         }
     }
 };  
-
