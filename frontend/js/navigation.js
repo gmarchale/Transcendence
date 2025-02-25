@@ -64,7 +64,6 @@ function preloadPages() {
 		initFriends();
 		initTournamentButtons();
 		initTournament();
-
 		loadContentFromHash();
     });
 }

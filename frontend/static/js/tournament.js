@@ -1,4 +1,5 @@
 function initTournament() {
+    console.log("Tournament page loaded");
     initTournamentPageList();
     loadTournament(getHashParam('id'));
 }
@@ -20,10 +21,10 @@ async function loadTournament(tournamentId) {
         const tournament = await response.json();
         displayTournamentName(tournament.name);
 
-        return tournament; // Return the full tournament object for further use
+        return tournament;
     } catch (error) {
         console.error('Error:', error);
-        return null; // Return null or an empty object on error
+        return null;
     }
 }
 
@@ -32,7 +33,6 @@ function displayTournamentName(name) {
 
     if (titleElement) {
         titleElement.textContent = name;
-        // No need to add a click event here, it's already handled in initTournamentPageList()
     } else {
         console.error('Tournament title element not found');
     }
@@ -50,7 +50,7 @@ function initTournamentPageList() {
 
     titleElement.addEventListener('click', async function() {
         modal.style.display = 'flex';
-        const tournaments = await getPlayerTournaments(); // Ensure this function is defined
+        const tournaments = await getPlayerTournaments();
         displayTournamentsPage(tournaments);
     });
 
@@ -67,7 +67,7 @@ function initTournamentPageList() {
 
 function displayTournamentsPage(tournaments) {
     const tournamentList = document.getElementById('tournamentPageList');
-    tournamentList.innerHTML = ''; // Clear the list
+    tournamentList.innerHTML = '';
 
     if (!tournaments || tournaments.length === 0) {
         tournamentList.innerHTML = '<p class="game_error-message">No tournaments found</p>';
