@@ -66,22 +66,68 @@ function loadChat(){
 
 let chat_usernameWith = null;
 let chat_currentlyWith = 0;
+let chat_Socket = null;
+let chat_reconnectTimeout = null;
+let chat_shouldReconnect = true;
+
+function initWebSocket(ws_url) {
+    chat_Socket = new WebSocket(ws_url);
+    chat_shouldReconnect = true;
+    chat_Socket.onopen = function () {
+        console.log("WebSocket connected");
+        if (chat_reconnectTimeout) {
+            clearTimeout(chat_reconnectTimeout);
+        }
+    };
+
+    chat_Socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        if (data.message && data.sender_id) {
+            chat_appendMessage(data.sender_id, data.message, data.sender_id == getCookie("id") ? true: false);
+        } else {
+            console.warn("Invalid message received :", data);
+        }
+    };
+
+    chat_Socket.onerror = function (error) {
+        console.error("WebSocket error :", error);
+    };
+
+    chat_Socket.onclose = function () {
+        console.warn("WebSocket disconnected.");
+        if (chat_shouldReconnect == true) {
+            console.warn("Trying to reconnect websocket...");
+            chat_reconnectTimeout = setTimeout(() => initWebSocket(ws_url), 3000);
+        }
+    };
+}
 
 async function chat_sendMessage() {
+	if (!chat_Socket || chat_Socket.readyState !== WebSocket.OPEN) {
+        console.error("WebSocket non connecte, message non envoye.");
+        return;
+    }
+
 	const userId = chat_currentlyWith;
 
 	let inputField = document.getElementById("chat_input");
 	let message = inputField.value.trim();
 	if (message === "") return;
 
-	chat_appendMessage("You", message, true);
+	// chat_appendMessage("You", message, true);
 	inputField.value = "";
 
-	await fetch('/api/chat/send_message/', {
-		method: 'POST',
-		headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
-		body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: userId, message: message })
-	});
+	chat_Socket.send(JSON.stringify({
+        "sender_id": getCookie("id"),
+        "receiver_id": userId,
+        "message": message
+    }));
+
+	// await fetch('/api/chat/send_message/', {
+	// 	method: 'POST',
+	// 	headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+	// 	body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: userId, message: message })
+	// });
 }
 
 function chat_appendMessage(sender, message, isUser) {
@@ -110,7 +156,7 @@ async function fetchMessages(friendId) {
 	
 	document.getElementById("chat_messages").innerHTML = "";
 	data.messages.forEach(msg => {
-		let isUser = msg.sender === getCookie("username") ? true : false;
+		let isUser = msg.sender == getCookie("id") ? true : false;
 		chat_appendMessage(msg.sender, msg.text, isUser);
 	});
 }
@@ -130,8 +176,17 @@ function updateChatLanguage(){
 }
 
 function openChat(username, friendId) {
-	const userId = friendId;
-	fetchMessages(userId)
+	const roomName = "chat_" + Math.min(getCookie("id"), friendId) + "_" + Math.max(getCookie("id"), friendId);
+	const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const WS_URL = `${wsScheme}://${window.location.host}/ws/chat/${roomName}/`;
+
+	console.log("userId =", getCookie("id"));
+    console.log("friendId =", friendId);
+    console.log("Room name:", roomName);
+
+	initWebSocket(WS_URL);
+
+	fetchMessages(friendId)
 
 	let friendsList = document.getElementById("chat_friends_list");
 	let chatBox = document.getElementById("chat_container");
@@ -163,6 +218,11 @@ function initChat(){
 				loadChat()
 				document.getElementById("chat_title").textContent = "Chat - " + getTranslation("chat_friendlist_title");
 			} else {
+				if (chat_Socket && chat_Socket.readyState === WebSocket.OPEN) {
+					chat_shouldReconnect = false;
+					chat_Socket.close();
+				}
+
 				document.getElementById("chat_title").textContent = "Chat";
 				settings.style.display = "none";
 				chat_currentlyWith = 0;
@@ -221,9 +281,20 @@ function initChat(){
         }
     });
 
+	window.addEventListener("beforeunload", function() {
+        if (chat_Socket && chat_Socket.readyState === WebSocket.OPEN) {
+            chat_Socket.close();
+            chat_shouldReconnect = false;
+        }
+    });
 }
 
 function closeChat(){
+	if (chat_Socket && chat_Socket.readyState === WebSocket.OPEN) {
+		chat_shouldReconnect = false;
+		chat_Socket.close();
+	}
+
 	let friendsList = document.getElementById("chat_friends_list");
 	let chatBox = document.getElementById("chat_container");
 	let settings = document.getElementById("chat_settings");
@@ -244,5 +315,6 @@ function chat_closeMenu(menu){
 }
 
 function chat_openMenu(menu){
+	console.log("[Chat] openMenu called.")
     menu.style.display = 'block';
 }
