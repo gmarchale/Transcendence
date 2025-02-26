@@ -52,35 +52,46 @@ class TournamentViewSet(viewsets.ModelViewSet):
             )
 
         # Vérifier si le display_name est unique dans ce tournoi
-        if tournament.tournament_players.filter(display_name=display_name).exists():
+        if TournamentPlayer.objects.filter(tournament=tournament, display_name=display_name).exists():
             return Response(
                 {'error': 'This display name is already taken in this tournament'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Ajouter le joueur avec son display_name
-        TournamentPlayer.objects.create(
-            tournament=tournament,
-            player=request.user,
-            display_name=display_name
-        )
+        try:
+            # Add player to the tournament's players
+            tournament.players.add(self.request.user)
+            
+            # Create TournamentPlayer entry
+            TournamentPlayer.objects.create(
+                tournament=tournament,
+                player=self.request.user,
+                display_name=display_name
+            )
 
-        # Notifier via WebSocket
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'tournament_{tournament.id}',
-            {
-                'type': 'player_joined',
-                'player': {
-                    'id': request.user.id,
-                    'username': request.user.username,
-                    'display_name': display_name
+            # Notifier via WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'tournament_{tournament.id}',
+                {
+                    'type': 'player_joined',
+                    'player': {
+                        'id': request.user.id,
+                        'username': request.user.username,
+                        'display_name': display_name
+                    }
                 }
-            }
-        )
+            )
 
-        serializer = self.get_serializer(tournament)
-        return Response(serializer.data)
+            serializer = self.get_serializer(tournament)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            # If anything fails, return a 500 error with the error message
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def create_tournament_game(self, match):
         """Create a game for a tournament match and notify players"""
