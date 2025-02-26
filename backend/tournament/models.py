@@ -29,6 +29,7 @@ class TournamentPlayer(models.Model):
     player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tournament_display_names')
     display_name = models.CharField(max_length=50)
     joined_at = models.DateTimeField(default=timezone.now)
+    alive = models.BooleanField(default=True)  # True if player is still in tournament, False if eliminated
 
     class Meta:
         unique_together = [

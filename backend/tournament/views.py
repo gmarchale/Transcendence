@@ -25,7 +25,10 @@ class TournamentViewSet(viewsets.ModelViewSet):
         tournament = serializer.save(creator=self.request.user)
         display_name = self.request.data.get('display_name', self.request.user.username)
         
-        # Créer l'entrée TournamentPlayer pour le créateur
+        # Add creator to tournament's players
+        tournament.players.add(self.request.user)
+        
+        # Create TournamentPlayer entry for the creator
         TournamentPlayer.objects.create(
             tournament=tournament,
             player=self.request.user,
@@ -184,6 +187,17 @@ class TournamentViewSet(viewsets.ModelViewSet):
         
         return Response({'status': 'tournament started'})
 
+    def update_player_alive_status(self, tournament, match, winner):
+        """Update the alive status of players after a match"""
+        # Get the loser of the match
+        loser = match.player2 if winner == match.player1 else match.player1
+        
+        # Update the loser's alive status to False
+        TournamentPlayer.objects.filter(
+            tournament=tournament,
+            player=loser
+        ).update(alive=False)
+
     @action(detail=True, methods=['post'])
     def complete_match(self, request, pk=None):
         tournament = self.get_object()
@@ -198,7 +212,9 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 {'error': 'Match is not in progress'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-            
+        
+        self.update_player_alive_status(tournament, match, winner)
+        
         match.winner = winner
         match.status = 'completed'
         match.ended_at = timezone.now()
@@ -210,13 +226,23 @@ class TournamentViewSet(viewsets.ModelViewSet):
             match.game.winner = winner
             match.game.save()
         
-        # If this was the final match, complete the tournament
-        if match.round_number == math.ceil(math.log2(tournament.players.count())):
+        # Check if there's only one player alive
+        alive_players = TournamentPlayer.objects.filter(
+            tournament=tournament,
+            alive=True
+        ).count()
+
+        # If only one player is alive or this was the final match, complete the tournament
+        if alive_players == 1 or match.round_number == math.ceil(math.log2(tournament.players.count())):
             tournament.status = 'completed'
             tournament.winner = winner
             tournament.ended_at = timezone.now()
             tournament.save()
-            return Response({'status': 'tournament completed', 'winner': winner.username})
+            return Response({
+                'status': 'tournament completed',
+                'winner': winner.username,
+                'alive_players': alive_players
+            })
         
         # If not final match, create the next round match if both matches are complete
         next_match_number = (match.match_number + 1) // 2
