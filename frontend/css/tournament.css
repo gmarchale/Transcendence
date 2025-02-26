@@ -29,16 +29,9 @@
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
 }
 
-.game_tournament-icon {
-    font-size: 1rem;
-    transition: transform 0.3s ease;
-}
 
-.game_tournament-title-btn.active .game_tournament-icon {
-    transform: rotate(180deg);
-}
-
-.tournament_players-container {
+/* LISTES */
+.tournament_list-container {
     width: 25%;
     max-height: 80vh;
     background: rgba(0, 0, 0, 0.8);
@@ -51,7 +44,7 @@
     margin-right: 1rem;
 }
 
-.tournament_players-title {
+.tournament_list-title {
     font-family: 'Orbitron', sans-serif;
     color: #00ff88;
     margin-bottom: 1rem;

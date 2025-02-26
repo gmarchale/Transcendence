@@ -105,7 +105,7 @@ function displayPlayers(tournament) {
     tournament.players.forEach(player => {
         const playerItem = document.createElement('div');
 
-        const isCreator = player.id === tournament.creator.id;
+        const isCreator = player.player.id === tournament.creator.id;
         // const isEliminated = player.eliminated === true;
         const isEliminated = false;
         if (isCreator) {
@@ -117,7 +117,7 @@ function displayPlayers(tournament) {
         }
 
         let playerContent = `
-            <span class="tournament_player-name">${player.username || 'Anonymous'}</span>
+            <span class="tournament_player-name">${player.display_name || 'Anonymous'}</span>
         `;
  
         if (isCreator) {
