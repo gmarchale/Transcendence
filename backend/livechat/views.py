@@ -192,8 +192,8 @@ def get_message(request):
         {
             "id": message.id,
             "text": message.message,
-            "sender": message.id_user_0.username,
-            "receiver": message.id_user_1.username,
+            "sender": message.id_user_0.id,
+            "receiver": message.id_user_1.id,
             "timestamp": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
         for message in messages
