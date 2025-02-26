@@ -54,7 +54,7 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
-		initFriends();
+		// initFriends();
 
 		loadContentFromHash();
     });
