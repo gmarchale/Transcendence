@@ -1,10 +1,13 @@
-.game_tournament-title-btn {
-    position: relative;
-	align-items: flex-start;
-    top: 1rem;
-    left: 1rem;
+.game_container#tournamentPage {
+    display: flex;
+    flex-direction: row;
     justify-content: space-between;
-    gap: 0.5rem;
+    align-items: flex-start;
+    width: 100%;
+    position: relative;
+}
+
+.game_tournament-title-btn {
     padding: 0.8rem 1.2rem;
     background: transparent;
     border: 2px solid #00ff88;
@@ -15,6 +18,10 @@
     font-size: 1rem;
     transition: all 0.3s ease;
     text-align: left;
+    margin-left: 1rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
 }
 
 .game_tournament-title-btn:hover {
@@ -29,4 +36,95 @@
 
 .game_tournament-title-btn.active .game_tournament-icon {
     transform: rotate(180deg);
+}
+
+.tournament_players-container {
+    width: 25%;
+    max-height: 80vh;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ff88;
+    border-radius: 5px;
+    padding: 1rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-right: 1rem;
+}
+
+.tournament_players-title {
+    font-family: 'Orbitron', sans-serif;
+    color: #00ff88;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.tournament_players-list {
+    overflow-y: auto;
+    max-height: calc(80vh - 4rem);
+    padding-right: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: #00ff88 #111;
+}
+
+.tournament_players-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tournament_players-list::-webkit-scrollbar-track {
+    background: #111;
+}
+
+.tournament_players-list::-webkit-scrollbar-thumb {
+    background-color: #00ff88;
+    border-radius: 3px;
+}
+
+.tournament_player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    margin-bottom: 0.5rem;
+    border-radius: 3px;
+    font-family: 'Orbitron', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.tournament_player-item:hover {
+    transform: translateX(5px);
+}
+
+.tournament_player-creator {
+    background: rgba(0, 100, 255, 0.2);
+    border: 1px solid #0064ff;
+    color: #0064ff;
+}
+
+.tournament_player-creator .game_player-badge {
+    background: #0064ff;
+    color: #000;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.tournament_player-active {
+    background: rgba(0, 255, 136, 0.2);
+    border: 1px solid #00ff88;
+    color: #00ff88;
+}
+
+.tournament_player-eliminated {
+    background: rgba(255, 50, 50, 0.2);
+    border: 1px solid #ff3232;
+    color: #ff3232;
+    text-decoration: line-through;
+}
+
+.tournament_no-players {
+    text-align: center;
+    color: #666;
+    padding: 1rem;
+    font-style: italic;
 }

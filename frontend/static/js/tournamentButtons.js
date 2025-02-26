@@ -26,7 +26,7 @@ function initTournamentButtons() {
         inputSection.style.display = 'block'; // retablit le display si on veut recreer un tournoi
         resultSection.style.display = 'none'; // cache le resultat
         nameInput.value = ''; // vide le buffer
-        document.getElementById('displayName').value = ''; // clear nickname too
+        document.getElementById('displayName').value = ''; // clear nickname
         
         modal.style.display = 'flex'; // change la fenetre de none a flex
         nameInput.focus(); // pas besoin de clicker sur l'input pour ecrire dedans

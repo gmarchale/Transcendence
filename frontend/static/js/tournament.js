@@ -19,7 +19,9 @@ async function loadTournament(tournamentId) {
         }
 
         const tournament = await response.json();
+        console.log('Tournament:', tournament);
         displayTournamentName(tournament.name);
+        displayPlayers(tournament);
 
         return tournament;
     } catch (error) {
@@ -86,5 +88,43 @@ function displayTournamentsPage(tournaments) {
             document.getElementById('tournamentPageListModal').style.display = 'none';
         });
         tournamentList.appendChild(button);
+    });
+}
+
+function displayPlayers(tournament) {
+    const playersListElement = document.getElementById('playersList');
+
+    playersListElement.innerHTML = '';
+
+    if (!tournament.players || tournament.players.length === 0) {
+        playersListElement.innerHTML = '<div class="tournament_no-players">No players have joined this tournament yet</div>';
+        return;
+    }
+    
+    // Ajoute les joueurs
+    tournament.players.forEach(player => {
+        const playerItem = document.createElement('div');
+
+        const isCreator = player.id === tournament.creator.id;
+        // const isEliminated = player.eliminated === true;
+        const isEliminated = false;
+        if (isCreator) {
+            playerItem.className = 'tournament_player-item tournament_player-creator';
+        } else if (isEliminated) {
+            playerItem.className = 'tournament_player-item tournament_player-eliminated';
+        } else {
+            playerItem.className = 'tournament_player-item tournament_player-active';
+        }
+
+        let playerContent = `
+            <span class="tournament_player-name">${player.username || 'Anonymous'}</span>
+        `;
+ 
+        if (isCreator) {
+            playerContent += `<span class="tournament_player-badge">Creator</span>`;
+        }
+        
+        playerItem.innerHTML = playerContent;
+        playersListElement.appendChild(playerItem);
     });
 }

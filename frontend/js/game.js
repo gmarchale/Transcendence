@@ -4,7 +4,6 @@ function loadGame(){
 
 function initGame(){
 	console.log("Initializing game.")
-    initTournamentButtons()
     setTimeout(initializeGame, 300);
 }
 
