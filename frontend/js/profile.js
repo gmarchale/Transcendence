@@ -126,7 +126,7 @@ async function loadFriendship(){
 			body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: userId })
 		});
 		const data = await response.json();
-		
+
 		if(data.is_friends == "false" || await isBlocked(getHashParam("id"))) document.getElementById("profile_friend_manage").textContent = getTranslation("profile_friend_manage_add")
 		else if(data.is_friends == "true") document.getElementById("profile_friend_manage").textContent = getTranslation("profile_friend_manage_remove")
 		else if(data.is_friends == "pending") document.getElementById("profile_friend_manage").textContent = getTranslation("profile_friend_manage_pending")
