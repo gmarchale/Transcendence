@@ -17,6 +17,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
+        # Accept the connection first
+        await self.accept()
+        logger.info(f"[WS] Tournament WebSocket connection accepted for user {self.user.username}")
+
         # Join tournament group
         self.tournament_id = self.scope['url_route']['kwargs']['tournament_id']
         self.tournament_group_name = f'tournament_{self.tournament_id}'
@@ -31,8 +35,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         self.active_match = await self.get_active_match()
         if self.active_match:
             logger.info(f"Player {self.user.username} reconnected to match {self.active_match.id}")
-
-        await self.accept()
 
     @database_sync_to_async
     def get_active_match(self):
@@ -185,3 +187,16 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'winner_id': event.get('winner_id'),
             'message': event.get('message')
         }))
+
+    async def player_joined(self, event):
+        """
+        Handler for when a new player joins the tournament.
+        Sends the player info to all connected clients in the tournament group.
+        """
+        logger.info(f"[WS] Player joined event received: {event}")
+        # Forward the player_joined event to WebSocket
+        await self.send(text_data=json.dumps({
+            'type': 'player_joined',
+            'player': event['player']
+        }))
+        logger.info(f"[WS] Player joined event sent to client")

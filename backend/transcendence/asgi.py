@@ -20,13 +20,14 @@ from channels.security.websocket import AllowedHostsOriginValidator
 
 from game.routing import websocket_urlpatterns as game_ws_patterns
 from livechat.routing import websocket_urlpatterns as livechat_ws_patterns
+from tournament.routing import websocket_urlpatterns as tournament_ws_patterns
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
             URLRouter(
-                game_ws_patterns + livechat_ws_patterns
+                game_ws_patterns + livechat_ws_patterns + tournament_ws_patterns
             )
         )
     ),

@@ -23,6 +23,28 @@ async function loadTournament(tournamentId) {
         displayTournamentName(tournament.name);
         displayPlayers(tournament);
 
+        // Setup WebSocket connection
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/tournament/${tournamentId}/`);
+        
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log('WebSocket message received:', data);
+            
+            if (data.type === 'player_joined') {
+                // Reload tournament data to update players list
+                loadTournament(tournamentId);
+            }
+        };
+
+        ws.onclose = function(e) {
+            console.log('Tournament WebSocket connection closed');
+        };
+
+        ws.onerror = function(e) {
+            console.error('Tournament WebSocket error:', e);
+        };
+
         return tournament;
     } catch (error) {
         console.error('Error:', error);
