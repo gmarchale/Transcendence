@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Game
@@ -70,7 +71,7 @@ def game_status(request):
             'player1': active_game.player1.username,
             'player2': active_game.player2.username if active_game.player2 else None,
             'score1': active_game.player1_score,
-            'score2': active_game.player2_score
+            'score2': active_game.player2_score,
         })
 
     waiting_game = Game.objects.filter(status='waiting').first()
@@ -83,7 +84,8 @@ def game_status(request):
     return Response({'status': 'no_game'})
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
 def get_games(request):
     id_user = request.query_params.get('id_user')
     if not id_user:
@@ -111,13 +113,15 @@ def get_games(request):
                 "username": game.winner.username if game.winner else None,
             },
             "timestamp": game.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration_formatted": game.duration_formatted,
         }
         for game in games
     ]
     return Response({"games": formatted_games}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
 def get_stats(request):
     id_user = request.query_params.get('id_user')
     if not id_user:
