@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
+from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Game
@@ -9,6 +10,8 @@ from django.utils import timezone
 from django.db.models import Q
 
 # Create your views here.
+
+User = get_user_model()
 
 class GameViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -80,26 +83,61 @@ def game_status(request):
     return Response({'status': 'no_game'})
 
 @api_view(['GET'])
-#@ensure_csrf_cookie
 @permission_classes([AllowAny])
 def get_games(request):
-    #id_user_0 = request.user.id
     id_user = request.query_params.get('id_user')
     if not id_user:
         return Response({'error': 'id_user is required'}, status=status.HTTP_400_BAD_REQUEST)
+
     games = Game.objects.filter(
         Q(player1_id=id_user) | Q(player2_id=id_user)
     ).order_by('created_at')
-    formatted_messages = [
+
+    formatted_games = [
         {
-            "id": message.id,
-            "score_player1": message.score_player1,
-            "score_player2": message.score_player2,
-            "id_player1": message.player1_id,
-            "id_player2": message.player2_id,
-            "id_winner": message.winner_id,
-            "timestamp": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "id": game.id,
+            "score_player1": game.score_player1,
+            "score_player2": game.score_player2,
+            "player1": {
+                "id": game.player1.id,
+                "username": game.player1.username,
+            },
+            "player2": {
+                "id": game.player2.id if game.player2 else None,
+                "username": game.player2.username if game.player2 else None,
+            },
+            "winner": {
+                "id": game.winner.id if game.winner else None,
+                "username": game.winner.username if game.winner else None,
+            },
+            "timestamp": game.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
-        for message in games
+        for game in games
     ]
-    return Response({"games": formatted_messages}, status=status.HTTP_200_OK)
+    return Response({"games": formatted_games}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_stats(request):
+    id_user = request.query_params.get('id_user')
+    if not id_user:
+        return Response({'error': 'id_user is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    games_played = Game.objects.filter(
+        Q(player1_id=id_user) | Q(player2_id=id_user)
+    ).count()
+
+    games_won = Game.objects.filter(winner_id=id_user).count()
+
+    defeats = Game.objects.filter(
+        Q(player1_id=id_user) | Q(player2_id=id_user),
+        winner__isnull=False
+    ).exclude(winner_id=id_user).count()
+
+    stats = {
+        "games_played": games_played,
+        "games_won": games_won,
+        "defeats": defeats,
+    }
+
+    return Response({"stats": stats}, status=status.HTTP_200_OK)
