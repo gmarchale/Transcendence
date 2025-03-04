@@ -90,7 +90,7 @@ async function fetchFriends() {
                 friendsUl.appendChild(li);
 
                 li.addEventListener("click", function () {
-                    openChat(friend.username, friend.id);
+                    window.location.href = `#profile?id=${friend.id}`;
                 });
             });
         } else {
@@ -121,7 +121,7 @@ async function fetchBlockedUsers() {
                 friendsUl.appendChild(li);
 
                 li.addEventListener("click", function () {
-                    openChat(friend.username, friend.id);
+                    window.location.href = `#profile?id=${friend.id}`;
                 });
             });
         } else {
