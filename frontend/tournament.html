@@ -1,20 +1,30 @@
-<div class="game_container" id="tournamentPage">
-    <button class="game_tournament-title-btn" id="tournamentTitle">
-        <span id="tournamentName"></span>
-    </button>
+<div class="tournament_container" id="tournamentPage">
+	<div id="tournamentNotFound" class="tournament_not-found">Tournament not found</div>
+	<div id="tournamentContent" class="tournament_content">
+		<div class="tournament_buttons_cointainer">
+			<button class="tournament-title-btn" id="tournamentTitle">
+				<span id="tournamentName"></span>
+			</button>
+			<button class="tournament_btn" id="tournamentStart">Start</button>
+			<button class="tournament_btn" id="tournamentReady">Ready</button>
+			<button class="tournament_btn" id="tournamentLeave">Leave</button>
+		</div>
+		
+		<div class="tournament_lists-container" id="tournament_teams-container">
+			<div class="tournament_list-container" id="tournament_players-container">
+				<h3 class="tournament_list-title">Players</h3>
+				<div id="playersList" class="tournament_list">
 
-	<div class="tournament_list-container" id="tournament_players-container">
-        <h3 class="tournament_list-title">Players</h3>
-        <div id="playersList" class="tournament_list">
+				</div>
+			</div>
+			<div class="tournament_list-container" id="tournament_games-container">
+				<h3 class="tournament_list-title">Games</h3>
+				<div id="gamesList" class="tournament_list">
 
-        </div>
-    </div>
-	<div class="tournament_list-container" id="tournament_games-container">
-        <h3 class="tournament_list-title">Games</h3>
-        <div id="gamesList" class="tournament_list">
-
-        </div>
-    </div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 <div id="tournamentPageListModal" class="game_modal">

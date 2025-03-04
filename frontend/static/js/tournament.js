@@ -1,8 +1,41 @@
-function initTournament() {
-    console.log("Tournament page loaded");
-    initTournamentPageList();
-    loadTournament(getHashParam('id'));
+function getTournamentId() {
+    const hash = window.location.hash;
+    const matches = hash.match(/^#tournament\/(\d+)/);
+    return matches ? matches[1] : null;
 }
+
+function initTournament() {
+    const tournamentId = getTournamentId();
+    const notFoundElement = document.getElementById('tournamentNotFound');
+    const contentElement = document.getElementById('tournamentContent');
+    
+    if (!tournamentId) {
+        notFoundElement.style.display = 'block';
+        contentElement.style.display = 'none';
+        return;
+    }
+    
+    notFoundElement.style.display = 'none';
+    contentElement.style.display = 'flex';
+    
+    resetButtonListeners();
+    
+    loadTournament(tournamentId).then(tournament => {
+        if (tournament) {
+            initTournamentPageList();
+            initTournamentActions(tournament);
+        } else {
+            notFoundElement.style.display = 'block';
+            contentElement.style.display = 'none';
+        }
+    });
+}
+
+window.addEventListener('hashchange', () => {
+    if (window.location.hash.startsWith('#tournament')) {
+        initTournament();
+    }
+});
 
 async function loadTournament(tournamentId) {
     try {
@@ -19,7 +52,6 @@ async function loadTournament(tournamentId) {
         }
 
         const tournament = await response.json();
-        console.log('Tournament:', tournament);
         displayTournamentName(tournament.name);
         displayPlayers(tournament);
 
@@ -47,18 +79,14 @@ async function loadTournament(tournamentId) {
 
         return tournament;
     } catch (error) {
-        console.error('Error:', error);
         return null;
     }
 }
 
 function displayTournamentName(name) {
     const titleElement = document.querySelector('#tournamentName');
-
     if (titleElement) {
         titleElement.textContent = name;
-    } else {
-        console.error('Tournament title element not found');
     }
 }
 
@@ -68,7 +96,6 @@ function initTournamentPageList() {
     const titleElement = document.getElementById('tournamentTitle');
 
     if (!titleElement) {
-        console.error("Element #tournamentTitle not found");
         return;
     }
 
@@ -105,9 +132,18 @@ function displayTournamentsPage(tournaments) {
             <span>${tournament.name}</span>
             <span class="game_tournament-status">${tournament.status}</span>
         `;
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             window.location.hash = `#tournament/${tournament.id}`;
             document.getElementById('tournamentPageListModal').style.display = 'none';
+            
+            const startButton = document.getElementById('tournamentStart');
+            const readyButton = document.getElementById('tournamentReady');
+            startButton.style.display = 'none';
+            startButton.disabled = false;
+            startButton.classList.remove('tournament_btn-disabled');
+            startButton.title = '';
+            readyButton.classList.remove('tournament_btn-active');
+            readyButton.textContent = 'Ready';
         });
         tournamentList.appendChild(button);
     });
@@ -115,7 +151,6 @@ function displayTournamentsPage(tournaments) {
 
 function displayPlayers(tournament) {
     const playersListElement = document.getElementById('playersList');
-
     playersListElement.innerHTML = '';
 
     if (!tournament.players || tournament.players.length === 0) {
@@ -123,13 +158,11 @@ function displayPlayers(tournament) {
         return;
     }
     
-    // Ajoute les joueurs
     tournament.players.forEach(player => {
         const playerItem = document.createElement('div');
-
         const isCreator = player.player.id === tournament.creator.id;
-        // const isEliminated = player.eliminated === true;
         const isEliminated = false;
+
         if (isCreator) {
             playerItem.className = 'tournament_player-item tournament_player-creator';
         } else if (isEliminated) {
@@ -148,5 +181,121 @@ function displayPlayers(tournament) {
         
         playerItem.innerHTML = playerContent;
         playersListElement.appendChild(playerItem);
+    });
+
+    const playerCountElement = document.createElement('div');
+    playerCountElement.className = 'tournament_player-count';
+    playerCountElement.textContent = `Players: ${tournament.players.length}/${tournament.max_players}`;
+    playersListElement.appendChild(playerCountElement);
+}
+
+function resetButtonListeners() {
+    const elements = [
+        'tournamentStart', 
+        'tournamentReady', 
+        'tournamentLeave',
+        'tournamentTitle',
+        'closeTournamentPageList'
+    ];
+    
+    elements.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) { // clone and replace pattern: cree une copie de l'element et remplace l'element original par la copie ce qui enleve les event listeners
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
+        }
+    });
+    
+    const modal = document.getElementById('tournamentPageListModal');
+    if (modal) {
+        const newModal = modal.cloneNode(true);
+        modal.parentNode.replaceChild(newModal, modal);
+    }
+}
+
+async function initTournamentActions(tournament) {
+    const startButton = document.getElementById('tournamentStart');
+    const readyButton = document.getElementById('tournamentReady');
+    const leaveButton = document.getElementById('tournamentLeave');
+    const userId = await getid();
+    
+    const isCreator = userId === tournament.creator.id;
+    
+    if (isCreator) {
+        startButton.style.display = 'block';
+        
+        const isTournamentFull = tournament.players.length >= tournament.max_players;
+        
+        if (!isTournamentFull) {
+            startButton.disabled = true;
+            startButton.classList.add('tournament_btn-disabled');
+            startButton.title = `Waiting for more players (${tournament.players.length}/${tournament.max_players})`;
+        } else {
+            startButton.disabled = false;
+            startButton.classList.remove('tournament_btn-disabled');
+            startButton.title = 'Start the tournament';
+        }
+        
+        startButton.addEventListener('click', async function() {
+            if (isTournamentFull) {
+                const tournamentId = getTournamentId();
+                const response = await fetch(`api/tournaments/${tournamentId}/start/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (response.ok) {
+                    loadTournament(tournamentId);
+                } else {
+                    const errorData = await response.json();
+                    alert('Failed to start tournament: ' + (errorData.error || 'Unknown error'));
+                }
+            }
+        });
+    } else {
+        startButton.style.display = 'none';
+    }
+
+    readyButton.addEventListener('click', async function() {
+        const tournamentId = getTournamentId();
+        
+        const response = await fetch(`api/tournaments/${tournamentId}/player-ready/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        if (response.ok) {
+            readyButton.classList.add('tournament_btn-active');
+            readyButton.textContent = 'Ready ✓';
+            loadTournament(tournamentId);
+        } else {
+            const errorData = await response.json();
+            alert('Failed to set player ready: ' + (errorData.error || 'Unknown error'));
+        }
+    });
+
+    leaveButton.addEventListener('click', async function() {
+        const tournamentId = getTournamentId();
+        
+        const response = await fetch(`api/tournaments/${tournamentId}/player-leave/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        if (response.ok) {
+            window.location.hash = '#tournament';
+        } else {
+            const errorData = await response.json();
+            alert('Failed to leave tournament: ' + (errorData.error || 'Unknown error'));
+        }
     });
 }
