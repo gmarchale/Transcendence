@@ -1,15 +1,15 @@
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Tournament, TournamentMatch, TournamentPlayer
-from .serializers import TournamentSerializer, TournamentMatchSerializer
-from django.utils import timezone
-from game.models import Game
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from .models import Tournament, TournamentMatch, TournamentPlayer
+from .serializers import TournamentSerializer, TournamentMatchSerializer
 import math
+from game.models import Game
 from game.game_state_manager import GameStateManager  # Import from the correct module
 from django.contrib.auth import get_user_model
 from django.db.models import Q
@@ -167,6 +167,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
         players = list(tournament.players.all())
         num_players = len(players)
         num_rounds = math.ceil(math.log2(num_players))
+        matches_data = []
         
         # Create first round matches and their games
         matches_in_round = num_players // 2
@@ -181,9 +182,45 @@ class TournamentViewSet(viewsets.ModelViewSet):
             # Create a game for this match
             self.create_tournament_game(match)
             
+            # Add match data for WebSocket
+            player1_data = TournamentPlayer.objects.get(tournament=tournament, player=players[i*2])
+            player2_data = TournamentPlayer.objects.get(tournament=tournament, player=players[i*2 + 1]) if i*2 + 1 < num_players else None
+            matches_data.append({
+                'match_number': i + 1,
+                'round_size': 2 ** (num_rounds - 1),  # Will be 8 for eighth-finals, 4 for quarters, etc.
+                'player1': {'id': players[i*2].id, 'display_name': player1_data.display_name},
+                'player2': {'id': players[i*2 + 1].id, 'display_name': player2_data.display_name} if player2_data else None
+            })
+
+            # Send match ready notification for this match
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'tournament_{tournament.id}',
+                {
+                    'type': 'match_ready_notification',
+                    'match_id': match.id,
+                    'match_number': i + 1,
+                    'round_size': 2 ** (num_rounds - 1),
+                    'players': [
+                        {'id': players[i*2].id, 'display_name': player1_data.display_name},
+                        {'id': players[i*2 + 1].id, 'display_name': player2_data.display_name} if player2_data else None
+                    ]
+                }
+            )
+            
         tournament.status = 'in_progress'
         tournament.started_at = timezone.now()
         tournament.save()
+
+        # Send WebSocket message with matches info
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'tournament_{tournament.id}',
+            {
+                'type': 'tournament_matches',
+                'matches': matches_data
+            }
+        )
         
         return Response({'status': 'tournament started'})
 
@@ -219,6 +256,28 @@ class TournamentViewSet(viewsets.ModelViewSet):
         match.status = 'completed'
         match.ended_at = timezone.now()
         match.save()
+
+        # Get winner's display name
+        winner_display_name = TournamentPlayer.objects.get(tournament=tournament, player=winner).display_name
+
+        # Calculate round size (8 for eighth-finals, 4 for quarters, etc.)
+        num_rounds = math.ceil(math.log2(tournament.players.count()))
+        round_size = 2 ** (num_rounds - match.round_number)
+
+        # Send WebSocket message about match completion
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'tournament_{tournament.id}',
+            {
+                'type': 'match_update',
+                'match_number': match.match_number,
+                'round_size': round_size,
+                'winner': {
+                    'id': winner.id,
+                    'display_name': winner_display_name
+                }
+            }
+        )
 
         # Update the game status
         if match.game:
@@ -265,6 +324,26 @@ class TournamentViewSet(viewsets.ModelViewSet):
             )
             # Create a game for the next match
             self.create_tournament_game(next_match)
+
+            # Get display names for the players
+            player1_data = TournamentPlayer.objects.get(tournament=tournament, player=winners[0])
+            player2_data = TournamentPlayer.objects.get(tournament=tournament, player=winners[1]) if len(winners) > 1 else None
+
+            # Send match ready notification for next match
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'tournament_{tournament.id}',
+                {
+                    'type': 'match_ready_notification',
+                    'match_id': next_match.id,
+                    'match_number': next_match_number,
+                    'round_size': 2 ** (num_rounds - next_match.round_number),
+                    'players': [
+                        {'id': winners[0].id, 'display_name': player1_data.display_name},
+                        {'id': winners[1].id, 'display_name': player2_data.display_name} if player2_data else None
+                    ]
+                }
+            )
         
         return Response({'status': 'match completed'})
 

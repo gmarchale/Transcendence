@@ -165,6 +165,15 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'player2_id': event['player2_id']
         }))
 
+    async def match_ready_notification(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'match_ready_notification',
+            'match_id': event['match_id'],
+            'match_number': event['match_number'],
+            'round_size': event['round_size'],
+            'players': event['players']
+        }))
+
     async def match_update(self, event):
         # Send match update to client
         await self.send(text_data=json.dumps({
@@ -200,3 +209,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'player': event['player']
         }))
         logger.info(f"[WS] Player joined event sent to client")
+
+    async def tournament_matches(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'tournament_matches',
+            'matches': event['matches']
+        }))
