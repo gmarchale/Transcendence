@@ -17,16 +17,18 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
-from game.routing import websocket_urlpatterns as game_ws_patern
-from livechat.routing import websocket_urlpatterns as livechat_ws_patterns
 
-django_asgi_app = get_asgi_application()
+from game.routing import websocket_urlpatterns as game_ws_patterns
+from livechat.routing import websocket_urlpatterns as livechat_ws_patterns
+from tournament.routing import websocket_urlpatterns as tournament_ws_patterns
 
 application = ProtocolTypeRouter({
-    'http': django_asgi_app,
-    'websocket': AllowedHostsOriginValidator(
+    "http": get_asgi_application(),
+    "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
-            URLRouter(game_ws_patern + livechat_ws_patterns)
+            URLRouter(
+                game_ws_patterns + livechat_ws_patterns + tournament_ws_patterns
+            )
         )
     ),
 })

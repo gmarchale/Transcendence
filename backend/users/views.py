@@ -258,3 +258,55 @@ def update_profile(request):
         return Response(serializer.data)
     logger.warning(f"Profile update failed for user {request.user.username}: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def get_email(request):
+    email = request.user.email
+    return Response({'email': email}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def get_avatar(request):
+    avatar_url = request.user.avatar.url if request.user.avatar else None
+    return Response({'avatar': avatar_url}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def change_avatar(request):
+    new_avatar = request.data.get('avatar')
+    if new_avatar:
+        request.user.avatar = new_avatar
+        request.user.save()
+        return Response({'status': 'Avatar changed'}, status=status.HTTP_200_OK)
+    return Response({'error': 'Avatar not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def change_username(request):
+    new_username = request.data.get('username')
+    if new_username:
+        request.user.username = new_username
+        request.user.save()
+        return Response({'status': 'Username changed'}, status=status.HTTP_200_OK)
+    return Response({'error': 'Username not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    new_password = request.data.get('password')
+    if new_password:
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
+    return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)

@@ -24,6 +24,22 @@ class Tournament(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_status_display()})"
 
+class TournamentPlayer(models.Model):
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='display_names')
+    player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tournament_display_names')
+    display_name = models.CharField(max_length=50)
+    joined_at = models.DateTimeField(default=timezone.now)
+    alive = models.BooleanField(default=True)  # True if player is still in tournament, False if eliminated
+
+    class Meta:
+        unique_together = [
+            ('tournament', 'player'),  # Un joueur ne peut être qu'une fois dans un tournoi
+            ('tournament', 'display_name'),  # Le display_name doit être unique dans le tournoi
+        ]
+
+    def __str__(self):
+        return f"{self.display_name} in {self.tournament.name}"
+
 class TournamentMatch(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -44,6 +60,8 @@ class TournamentMatch(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
+    player1_ready = models.BooleanField(default=False)
+    player2_ready = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['round_number', 'match_number']

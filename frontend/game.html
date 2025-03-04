@@ -1,13 +1,12 @@
-
 <div class="game_container">
     <div class="game_buttons">
         <button id="game_createGameBtn" class="game_btn">Create Game</button>
         <button id="game_joinGameBtn" class="game_btn">Join Game</button>
         <button id="game_createTournamentBtn" class="game_btn">Create Tournament</button>
         <button id="game_joinTournamentBtn" class="game_btn">Join Tournament</button>
-        <button id="game_playIABtn" class="game_btn">Play against IA</button>
+        <button id="game_showTournament" class="game_btn">Show Tournament</button>
     </div>
-    
+    <!-- affiché si une game st en cours -->
     <div id="game_Status" class="game_status"></div>
     
     <div id="game_CanvasContainer" class="game_canvas-container">
@@ -16,5 +15,60 @@
             <div id="game_player2Score">0</div>
         </div>
         <canvas id="game_Canvas"></canvas>
+    </div>
+</div>
+<!-- fenetre pour creer un tournoi -->
+<div id="tournamentModal" class="game_modal"> 
+    <div class="game_modal-content">
+        <h2 id="modalTitle">Create Tournament</h2>
+        <div id="inputSection">
+            <input type="text" id="tournamentNameInput" placeholder="Enter tournament name" class="game_input">
+            <input type="text" id="displayName" placeholder="Enter Nickname" class="game_input">
+            <div class="game_chips-container">
+                <p class="game_chips-label">Number of Players</p>
+                <div class="game_chips-group">
+                    <button class="game_chip" data-players="4">4</button>
+                    <button class="game_chip" data-players="8">8</button>
+                    <button class="game_chip" data-players="16">16</button>
+                </div>
+            </div>
+            <div class="game_modal-buttons">
+                <button class="game_btn" id="confirmTournament">OK</button>
+                <button class="game_btn" id="cancelTournament">Cancel</button>
+            </div>
+        </div>
+        <!-- resultat affiche -->
+        <div id="resultSection" style="display: none;">
+            <p id="resultMessage"></p>
+            <button class="game_btn game_btn-full" id="closeResult">OK</button>
+        </div>
+    </div>
+</div>
+<!-- fenetre pour rejoindre -->
+<div id="joinTournamentModal" class="game_modal">
+    <div class="game_modal-content">
+        <h2 id="joinModalTitle">Join Tournament</h2>
+        <div id="joinInputSection">
+            <input type="text" id="tournamentIdInput" placeholder="Enter tournament ID" class="game_input">
+            <input type="text" id="joinDisplayName" placeholder="Enter Nickname" class="game_input">
+            <div class="game_modal-buttons">
+                <button class="game_btn" id="confirmJoinTournament">OK</button>
+                <button class="game_btn" id="cancelJoinTournament">Cancel</button>
+            </div>
+        </div>
+        <!-- resultat affiche -->
+        <div id="joinResultSection" style="display: none;">
+            <p id="joinResultMessage"></p>
+            <button class="game_btn game_btn-full" id="closeJoinResult">OK</button>
+        </div>
+    </div>
+</div>
+<div id="tournamentListModal" class="game_modal">
+    <div class="game_modal-content game_tournament-list">
+        <h2>Available Tournaments</h2>
+        <div id="tournamentList" class="game_tournament-buttons"></div>
+        <div class="game_modal-buttons">
+            <button class="game_btn" id="closeTournamentList">Close</button>
+        </div>
     </div>
 </div>

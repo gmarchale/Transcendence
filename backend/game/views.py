@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Game
 from .serializers import GameSerializer, GameDetailSerializer
 from django.utils import timezone
@@ -69,12 +69,37 @@ def game_status(request):
             'score1': active_game.player1_score,
             'score2': active_game.player2_score
         })
-    
+
     waiting_game = Game.objects.filter(status='waiting').first()
     if waiting_game:
         return Response({
             'status': 'waiting',
             'game_id': str(waiting_game.id)
         })
-    
+
     return Response({'status': 'no_game'})
+
+@api_view(['GET'])
+#@ensure_csrf_cookie
+@permission_classes([AllowAny])
+def get_games(request):
+    #id_user_0 = request.user.id
+    id_user = request.query_params.get('id_user')
+    if not id_user:
+        return Response({'error': 'id_user is required'}, status=status.HTTP_400_BAD_REQUEST)
+    games = Game.objects.filter(
+        Q(player1_id=id_user) | Q(player2_id=id_user)
+    ).order_by('created_at')
+    formatted_messages = [
+        {
+            "id": message.id,
+            "score_player1": message.score_player1,
+            "score_player2": message.score_player2,
+            "id_player1": message.player1_id,
+            "id_player2": message.player2_id,
+            "id_winner": message.winner_id,
+            "timestamp": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        for message in games
+    ]
+    return Response({"games": formatted_messages}, status=status.HTTP_200_OK)

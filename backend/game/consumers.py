@@ -509,3 +509,48 @@ class GameConsumer(AsyncWebsocketConsumer):
             
         except Exception as e:
             logger.error(f"[GAME] Error updating game status: {str(e)}")
+
+    async def game_start(self, event):
+        """Handle game start event, particularly for tournament matches"""
+        try:
+            # Get the game
+            game = await sync_to_async(Game.objects.get)(id=event['game_id'])
+            self.game = game
+            
+            # Join the game's WebSocket group
+            self.channel_group_name = f"game_{game.id}"
+            await self.channel_layer.group_add(
+                self.channel_group_name,
+                self.channel_name
+            )
+
+            # Initialize game state if not already done
+            if not GameStateManager.game_exists(str(game.id)):
+                # Initialize the game state in memory
+                GameStateManager.create_game(str(game.id), str(game.player1.id), game.player1.username)
+                if game.player2:
+                    GameStateManager.join_game(str(game.id), str(game.player2.id), game.player2.username)
+
+            # Get game state
+            game_state = GameStateManager.get_game_state(str(game.id))
+
+            # Send game joined message to both players
+            await self.send_json({
+                'type': 'game_joined',
+                'game_id': str(game.id),
+                'player1_id': str(game.player1.id),
+                'player2_id': str(game.player2.id) if game.player2 else None,
+                'game_state': game_state,
+                'tournament_match_id': event.get('tournament_match_id')
+            })
+
+            # Start game immediately for tournament matches
+            if game.player1 and game.player2 and game.status == 'playing':
+                if not self.game_loop_task:
+                    self.game_loop_task = asyncio.create_task(self.game_loop())
+                    logger.info(f"Started game loop for game {game.id}")
+
+        except Game.DoesNotExist:
+            logger.error(f"Game {event['game_id']} not found")
+        except Exception as e:
+            logger.error(f"Error in game_start: {str(e)}", exc_info=True)
