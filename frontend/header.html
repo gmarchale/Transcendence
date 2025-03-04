@@ -65,7 +65,10 @@
                 </div>
             </div>
         </nav>
-
+        <div id="notification" class="notification">
+          <div id="notification_text">TEST</div>
+        </div>
+      
 
 
         
@@ -85,42 +88,31 @@
 
         <!-- CHAT PART -->
         <div id="chat_main_container" class="chat_collapsible">
-            <!-- En-tête du chat -->
-            <div class="chat_header">
+          <div id="chat_header" class="chat_header">
               <span id="chat_toggle" class="chat_toggle-button">💬</span>
-              <span id="chat_title">Chat</span>
-            </div>
-            <!-- Corps du chat -->
-            <div id="chat_body" class="chat_body">
-              <!-- Barre latérale : liste d'amis -->
-              <div id="chat_friends_list" class="chat_sidebar">
-                <h2 class="chat_settings_title">Friends</h2>
-                <ul id="chat_friends_ul">
-      
-                </ul>
+              <span id="chat_title" class="chat_title">Chat</span>
+              <span id="chat_settings" class="chat_settings-button">⚙️</span>
+              <div class="chat_dropdown-menu" id="chat_dropdownMenu">
+                  <ul>
+                      <li><div id="chat_dropdownMenuButton_Profile" class="chat_dropdownMenuButton"></div></li>
+                      <li><div id="chat_dropdownMenuButton_PlayPong" class="chat_dropdownMenuButton"></div></li>
+                      <hr class="dropdown-divider">
+                      <li class="chat_head"><div class="chat_dropdownMenuButton_block" id="chat_block">Logout</div></li>
+                  </ul>
               </div>
-      
-              <!-- Zone de conversation -->
-              <div id="chat_container" class="chat_container" style="display: none;">
-                <div class="chat_conversation_header">
-                  <h2 class="chat_settings_title">
-                    Chat with <span id="chat_username"></span>
-                  </h2>
-                </div>
-                <!-- Affichage des messages -->
-                <div id="chat_messages" class="chat_messages">
-                  <!-- Les messages s'affichent ici -->
-                </div>
-                <!-- Zone d'envoi de message -->
-                <div class="chat_input_area">
-                  <input type="text" id="chat_input" class="chat_settings_input" placeholder="Write a message...">
-                  <button id="chat_send_message" class="chat_settings_profile">Send</button>
-                </div>
-                <!-- Bouton pour revenir à la liste d'amis -->
-                <button id="back_to_friends" class="chat_settings_profile">Back</button>
-              </div>
-            </div>
           </div>
+      
+          <div id="chat_body" class="chat_body">
+              <div id="chat_friends_list" class="profile_friends-container"></div>
+      
+              <div id="chat_container" class="chat_container" style="display: none;">
+                  <div id="chat_messages" class="chat_messages"></div>
+                  <input type="text" id="chat_input" class="chat_settings_input" maxlength="400">
+                  <button id="chat_send_message" class="chat_settings_profile"></button>
+                  <button id="back_to_friends" class="chat_settings_profile"></button>
+              </div>
+          </div>
+      </div>
 
         <div class="blur-overlay" id="blur-overlay"></div>
 	</body>

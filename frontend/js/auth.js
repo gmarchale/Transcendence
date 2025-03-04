@@ -30,7 +30,8 @@ async function loadLoginInfos(){
         if (response.ok) {
             const userData = await response.json();
             setCookie("username", userData.username);
-            setCookie("avatar", userData.avatar);
+            setCookie("id", userData.id);
+            await getavatar();
             return true;
         }
     } catch (error) {
@@ -63,3 +64,21 @@ async function getid(){
 	}
     return null;
 }
+
+async function getavatar(){
+	try {
+		const response = await fetch("/api/users/get_avatar/"+getCookie("id")+"/");
+		if (response.ok) {
+			const userData = await response.json();
+            if(userData.avatar == null)
+			    setCookie("avatar", "null");
+            else setCookie("avatar", userData.avatar);
+            console.log("avatar = " + userData.avatar);
+            return userData.avatar;
+		}
+	} catch (error) {
+		console.error('Error checking auth:', error);
+	}
+    return null;
+}
+

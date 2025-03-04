@@ -16,6 +16,7 @@
 		"settings_cancelUpload": "Annuler",
 		"settings_image_popup": "Recadrez et confirmer votre nouvel avatar!",
 		"settings_avatar_upload_button": "📂 Sélectionner un nouvel avatar..",
+		"settings_avatar_remove": "Supprimer l'avatar existant.",
 
 		"profile_send_msg": "Envoyer un message",
 		"profile_user_not_found" : "Utilisateur inconnu.",
@@ -46,6 +47,7 @@
 		"settings_cancelUpload": "Cancel",
 		"settings_image_popup": "Crop and confirm your new logo!",
 		"settings_avatar_upload_button": "📂 Select a new logo..",
+		"settings_avatar_remove": "Delete current logo.",
 
 		"profile_send_msg": "Send private message",
 		"profile_user_not_found" : "User not found.",

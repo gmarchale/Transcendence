@@ -125,7 +125,7 @@ async function initSettings(){
 
         if (!file) return;
         if (file.type !== "image/jpeg" && file.type !== "image/png") {
-            alert(getTranslation("settings_select_png")); // TODO
+            showNotification(getTranslation("settings_select_png"), "error");
             event.target.value = "";
             return;
         }
@@ -155,21 +155,22 @@ async function initSettings(){
             const croppedFile = new File([blob], selectedFile.name, { type: "image/jpeg" });
 
             const formData = new FormData();
-            formData.append("image", croppedFile);
+            formData.append("avatar", croppedFile);
 
-            // fetch("/api/upload/", {
-            //     method: "POST",
-            //     body: formData
-            // })
-            // .then(response => response.json())
-            // .then(data => {
-            //     alert("Image envoyée avec succès !");
-            //     document.getElementById("popupContainer").style.display = "none";
-            // })
-            // .catch(error => console.error("Erreur upload :", error));
-            // TODO
+            fetch("/api/users/change_avatar/", {
+                method: "POST",
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("settings_popupContainer").style.display = "none";
+                setCookie("avatar", data.url);
+                loadHeader();
+            })
+            .catch(error => console.error("Erreur upload :", error));
         }, "image/jpeg");
-        alert("Image confirmée ! (Back-end ToDo)"); // TODO
+        showNotification(getTranslation("settings_avatar_upload_success"), "success");
         document.getElementById("settings_popupContainer").classList.remove("active");
 
         const blur = document.getElementById("blur-overlay")
@@ -183,6 +184,64 @@ async function initSettings(){
         const blur = document.getElementById("blur-overlay")
         blur.classList.remove("active");
         selectedFile = null;
+    });
+
+    document.getElementById("settings_avatar_remove").addEventListener("click", function () {
+        fetch("/api/users/delete_avatar/", {
+            method: "POST",
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        })
+        .then(response => response.json())
+        .then(data => {
+            setCookie("avatar", "null");
+            loadHeader();
+        })
+        .catch(error => console.error("Erreur upload :", error));
+    });
+
+    document.getElementById("settings_change_username").addEventListener("click", async function() {
+        let inputField = document.getElementById("settings_new_username_placeholder");
+        let message = inputField.value.trim();
+        if (message === ""){
+            showNotification(getTranslation("settings_username_empty"), "error");
+            return ;
+        }
+        inputField.value = "";
+
+        await fetch('/api/users/change_username/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id_user_0: getCookie("id"), username: message })
+        });
+        showNotification(getTranslation("settings_username_change_success"), "success");
+        setCookie("username", message);
+        loadHeader();
+    });
+
+    document.getElementById("settings_change_password").addEventListener("click", async function() {
+        let inputField1 = document.getElementById("settings_new_password_placeholder");
+        let message1 = inputField1.value.trim();
+        let inputField2 = document.getElementById("settings_confirm_password_placeholder");
+        let message2 = inputField2.value.trim();
+        if (message1 === ""){
+            showNotification(getTranslation("settings_password_empty"), "error");
+            return;
+        }
+        if (message1 !== message2){
+            showNotification(getTranslation("settings_password_not_matching"), "error");
+            return;
+        }
+        inputField1.value = "";
+        inputField2.value = "";
+
+        await fetch('/api/users/change_password/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id_user_0: getCookie("id"), password: message2 })
+        });
+        showNotification(getTranslation("settings_password_change_success"), "success");
+        window.location.href = "#login";
+        deleteAllCookies();
     });
 }
 
