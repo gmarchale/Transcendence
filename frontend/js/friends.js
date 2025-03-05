@@ -46,12 +46,12 @@ async function loadFriends(){
 function initFriends(){
 	console.log("Initializing friends page.")
 	
-	document.getElementById('friends_search_button').addEventListener('click', addFriend);
-	document.getElementById('friends_search').addEventListener('keypress', function(e) {
-		if(e.key === 'Enter') {
-			addFriend();
-		}
-	});
+	// document.getElementById('friends_search_button').addEventListener('click', addFriend);
+	// document.getElementById('friends_search').addEventListener('keypress', function(e) {
+	// 	if(e.key === 'Enter') {
+	// 		addFriend();
+	// 	}
+	// });
 	
 	fetchFriends();
 }
