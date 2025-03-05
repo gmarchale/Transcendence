@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import status, generics
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate, login, logout
@@ -267,24 +268,34 @@ def get_email(request):
     email = request.user.email
     return Response({'email': email}, status=status.HTTP_200_OK)
 
-
 @api_view(['GET'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
-def get_avatar(request):
-    avatar_url = request.user.avatar.url if request.user.avatar else None
-    return Response({'avatar': avatar_url}, status=status.HTTP_200_OK)
+def get_avatar(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    avatar_url = None
 
+    if user.avatar:
+        avatar_url = user.avatar.url
+        if not avatar_url.startswith('http'):
+            avatar_url = request.build_absolute_uri(avatar_url)
+
+    return Response({'avatar': avatar_url}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser])
 def change_avatar(request):
-    new_avatar = request.data.get('avatar')
+    new_avatar = request.FILES.get('avatar') 
     if new_avatar:
         request.user.avatar = new_avatar
         request.user.save()
-        return Response({'status': 'Avatar changed'}, status=status.HTTP_200_OK)
+
+        avatar_url = request.user.avatar.url
+        if not avatar_url.startswith('http'):
+            avatar_url = request.build_absolute_uri(avatar_url)
+        return Response({'url': avatar_url}, status=status.HTTP_200_OK)
     return Response({'error': 'Avatar not changed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -298,6 +309,17 @@ def change_username(request):
         request.user.save()
         return Response({'status': 'Username changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'Username not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def delete_avatar(request):
+    if request.user.avatar:
+        request.user.avatar.delete(save=False)
+        request.user.avatar = None
+        request.user.save()
+        return Response({'status': 'Avatar deleted'}, status=status.HTTP_200_OK)
+    return Response({'error': 'No avatar to delete'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])

@@ -14,9 +14,22 @@ async function loadHeader() {
     }
 
     document.getElementById('header_username').textContent = getCookie("username") + "▾";
-    const avatarUrl = "images/logo.jpg";
-    const avatarDiv = document.getElementById("header_userAvatar");
-    avatarDiv.style.backgroundImage = `url('${avatarUrl}')`;
+    
+    if(getCookie("avatar") != "null"){
+        let imgElement = document.getElementById("header_userAvatar");
+        let placeholder = document.createElement("div");
+        placeholder.className = "user-avatar_head";
+        placeholder.style.backgroundImage =`url('${getCookie("avatar")}')`;
+        placeholder.id = "header_userAvatar";
+        imgElement.parentNode.replaceChild(placeholder, imgElement);
+    } else {
+        let imgElement = document.getElementById("header_userAvatar");
+        let placeholder = document.createElement("div");
+        placeholder.className = "user-avatar_placeholder";
+        placeholder.textContent = getCookie("username")[0];
+        placeholder.id = "header_userAvatar";
+        imgElement.parentNode.replaceChild(placeholder, imgElement);
+    }    
 }
 
 function closeMenu_header(menu){
@@ -83,4 +96,23 @@ function initHeader(){
             document.head.appendChild(prefetch);
         }
     });
+}
+
+
+let notificationTimeout;
+function showNotification(message, type = "success", duration = 3000) {
+    let notification = document.getElementById("notification");
+    let notificationText = document.getElementById("notification_text");
+
+    if (notificationTimeout)
+        clearTimeout(notificationTimeout);
+    notificationText.textContent = message;
+    notification.className = `notification ${type} show`;
+
+    notificationTimeout = setTimeout(() => {
+        notification.classList.add("hide");
+        setTimeout(() => {
+            notification.className = "notification";
+        }, 300);
+    }, duration);
 }

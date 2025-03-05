@@ -212,6 +212,10 @@
     display: none;
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* Edge */
 }
 
 .chat_friends_ul.active {

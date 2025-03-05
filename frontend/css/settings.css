@@ -112,6 +112,16 @@
 	color: rgba(0, 255, 136, 0.5);
 }
 
+.settings_language_btn.red {
+    color: #dc3545;
+}
+
+.settings_language_btn.red:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+
 .settings_language_btn:hover {
     background-color: rgba(0, 255, 136, 0.5);
     color: white;

@@ -9,7 +9,7 @@ from livechat.consumers import ChatConsumer
 websocket_urlpatterns = [
     re_path(r'ws/game/(?P<game_id>\d+)/$', GameConsumer.as_asgi()),
     re_path(r'ws/tournament/(?P<tournament_id>\d+)/$', TournamentConsumer.as_asgi()),
-    re_path(r'ws/chat/(?P<room_name>\w+)/$', ChatConsumer.as_asgi()),
+    re_path(r'^ws/chat/(?P<room_name>\w+)/$', ChatConsumer.as_asgi()),
 ]
 
 application = ProtocolTypeRouter({

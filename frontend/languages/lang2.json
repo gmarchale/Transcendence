@@ -7,6 +7,15 @@
 		"profile_friend_manage_pending": "Annuler la demande d'ami",
 		"profile_friend_manage_accept": "Accepter la demnade d'ami",
 		"profile_user_not_found" : "Utilisateur inconnu.",
+		"profile_cant_friend_yourself": "Vous ne pouvez pas être ami avec vous même.",
+		"profile_friend_cancelled": "Demande d'ami annulée.",
+		"profile_friend_requested": "Demande d'ami envoyée!",
+		"profile_friend_userisblocked": "Vous ne pouvez pas demander en ami un utilisateur que vous avez bloqué!",
+		"profile_friend_removed": "Vous n'êtes plus amis avec ",
+		"profile_friend_accepted": "Vous avez accepté la demande d'ami!",
+		"profile_block_unblocked_success": "Utilisateur débloqué avec succès!",
+		"profile_block_success": "Utilisateur bloqué!",
+		"profile_block_no_yourself": "Vous ne pouvez pas vous bloquer vous même.",
 
 		"chat_nofriends": "Vous n'avez pas d'amis.",
 		"chat_friendlist_title": "Amis",
@@ -16,7 +25,13 @@
 
 		"settings_unblock_button": "Débloquer ",
 		"settings_noblocked": "Aucun utilisateur n'est bloqué.",
-		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !"
+		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !",
+		"settings_avatar_upload_success": "Votre avatar a été mis à jour!",
+		"settings_username_change_success": "Votre nom d'utilisateur a été mis à jour!",
+		"settings_username_empty": "Indiquez un nom d'utilisateur.",
+		"settings_password_empty": "Le mot de passe ne peut pas être nul.",
+		"settings_password_not_matching": "Les mots de passe ne correspondent pas.",
+		"settings_password_change_success": "Mot de passe mis à jour!\nReconnectez-vous."
     },
     "en": {
         "profile_block_manage_block": "Block",
@@ -26,6 +41,15 @@
 		"profile_friend_manage_pending": "Cancel friend request",
 		"profile_friend_manage_accept": "Accept friend request",
 		"profile_user_not_found" : "User not found.",
+		"profile_cant_friend_yourself": "You can't friend yourself.",
+		"profile_friend_cancelled": "Friend request cancelled.",
+		"profile_friend_requested": "Friend request successfully sent!",
+		"profile_friend_userisblocked": "You can't be friend with a user you blocked!",
+		"profile_friend_removed": "You're no longer friend with ",
+		"profile_friend_accepted": "Friend request accepted!",
+		"profile_block_unblocked_success": "User successfully unblocked!",
+		"profile_block_success": "User bocked!",
+		"profile_block_no_yourself": "You can't block yourself.",
 
 		"chat_nofriends": "You don't have any friend.",
 		"chat_friendlist_title": "Friends",
@@ -35,6 +59,12 @@
 
 		"settings_unblock_button": "Unblock ",
 		"settings_noblocked": "No users are blocked.",
-		"settings_select_png": "Please only select a JPEG or PNG file."
+		"settings_select_png": "Please only select a JPEG or PNG file.",
+		"settings_avatar_upload_success": "Sucessfully updated your logo!",
+		"settings_username_change_success": "Sucessfully updated your username!",
+		"settings_username_empty": "Cannot use an empty username.",
+		"settings_password_empty": "Password can't be nul.",
+		"settings_password_not_matching": "Passwords do not match.",
+		"settings_password_change_success": "Successfully updated your password!\nPlease relog."
     }
 }
