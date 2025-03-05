@@ -19,7 +19,7 @@ async function loadProfile(){
 				.then(response => response.json())
 				.then(data2 => {
 					if (data2.avatar != null)
-						document.getElementById("profile_avatar").src = data2.avatar;
+						document.getElementById("profile_avatar").style.backgroundImage = `url('${data2.avatar}')`;
 					else {
 						let imgElement = document.getElementById("profile_avatar");
 						let placeholder = document.createElement("div");
@@ -45,9 +45,9 @@ async function loadProfile(){
 		document.getElementById("profile_username").textContent = getCookie("username");
 		if(getCookie("avatar") != "null"){
 			let imgElement = document.getElementById("profile_avatar");
-			let placeholder = document.createElement("img");
-			placeholder.className = "profile_placeholder";
-			placeholder.src = getCookie("avatar");
+			let placeholder = document.createElement("div");
+			placeholder.className = "profile_avatar";
+			placeholder.style.backgroundImage = `url('${getCookie("avatar")}')`;
 			placeholder.id = "profile_avatar";
 			imgElement.parentNode.replaceChild(placeholder, imgElement);
 		} else {
