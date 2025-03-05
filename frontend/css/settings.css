@@ -110,6 +110,11 @@
     transition: all 0.3s ease-in-out;
     margin-top: 10px;
 	color: rgba(0, 255, 136, 0.5);
+
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* Edge */
 }
 
 .settings_language_btn.red {
@@ -296,6 +301,7 @@
     margin-left: 0%;
     margin-right: 0%;
     padding: 0;
+
     user-select: none;
     -webkit-user-select: none;  /* Chrome, Safari */
     -moz-user-select: none;     /* Firefox */
