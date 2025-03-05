@@ -400,113 +400,145 @@ class TournamentViewSet(viewsets.ModelViewSet):
         # Vérifier si le joueur est le créateur
         is_creator = request.user == tournament.creator
         
-        # Si le joueur est le créateur, gérer ce cas spécial
-        if is_creator:
-            other_players = tournament.players.exclude(id=request.user.id)
-            player_count = other_players.count()
+        # Get the TournamentPlayer instance for this player
+        tournament_player = TournamentPlayer.objects.filter(tournament=tournament, player=request.user).first()
+        
+        if tournament.status == 'pending':
+            # Si le tournoi est en attente, supprimer le TournamentPlayer
+            if tournament_player:
+                tournament_player.delete()
+            tournament.players.remove(request.user)
             
-            if player_count == 0:
-                # Le créateur est seul, annuler le tournoi
-                tournament.status = 'cancelled'
-                tournament.ended_at = timezone.now()
-                tournament.save()
+            # Notifier via WebSocket du retrait du joueur
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'tournament_{tournament.id}',
+                {
+                    'type': 'remove_player',
+                    'player_id': request.user.id,
+                    'player_username': request.user.username,
+                    'tournament_id': tournament.id
+                }
+            )
+            
+            if is_creator:
+                if tournament.players.count() == 0:
+                    # Le créateur est seul, annuler le tournoi
+                    tournament.status = 'cancelled'
+                    tournament.ended_at = timezone.now()
+                    tournament.save()
+                    
+                    # Notifier via WebSocket
+                    async_to_sync(channel_layer.group_send)(
+                        f'tournament_{tournament.id}',
+                        {
+                            'type': 'tournament_update',
+                            'status': 'cancelled',
+                            'message': f"Tournament cancelled: creator left"
+                        }
+                    )
+                    return Response({'status': 'tournament cancelled'})
+                else:
+                    # Désigner un nouveau créateur
+                    new_creator = tournament.players.first()
+                    tournament.creator = new_creator
+                    tournament.save()
+                    
+                    # Notifier du changement de créateur
+                    async_to_sync(channel_layer.group_send)(
+                        f'tournament_{tournament.id}',
+                        {
+                            'type': 'tournament_update',
+                            'status': tournament.status,
+                            'new_creator_id': new_creator.id,
+                            'message': f"New tournament creator: {new_creator.username}"
+                        }
+                    )
+                    return Response({'status': 'creator changed'})
+            return Response({'status': 'player removed'})
+            
+        elif tournament.status == 'in_progress':
+            # Si le tournoi est en cours, marquer le joueur comme éliminé
+            if tournament_player:
+                tournament_player.alive = False
+                tournament_player.save()
                 
                 # Notifier via WebSocket
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     f'tournament_{tournament.id}',
                     {
-                        'type': 'tournament_update',
-                        'status': 'cancelled',
-                        'message': f"Tournament cancelled: creator left"
+                        'type': 'remove_player',
+                        'player_id': request.user.id,
+                        'player_username': request.user.username,
+                        'tournament_id': tournament.id
                     }
                 )
-                return Response({'status': 'tournament cancelled'})
-            else:
-                # Désigner un nouveau créateur (le premier joueur restant)
-                new_creator = other_players.first()
-                tournament.creator = new_creator
-                tournament.save()
+            
+            # Gérer le forfait du match en cours
+            match = tournament.matches.filter(
+                (Q(player1=request.user) | Q(player2=request.user)) &
+                Q(status='in_progress')
+            ).first()
+            
+            if match:
+                # Vérifier que le joueur fait partie du match
+                if request.user != match.player1 and request.user != match.player2:
+                    return Response(
+                        {'error': 'You are not a player in this match'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                    
+                # Déclarer l'autre joueur comme vainqueur
+                winner = match.player2 if request.user == match.player1 else match.player1
                 
-                # Notifier du changement de créateur
+                # Mettre à jour le match
+                match.winner = winner
+                match.status = 'completed'
+                match.ended_at = timezone.now()
+                match.save()
+                
+                # Mettre à jour le jeu si existant
+                if match.game:
+                    match.game.status = 'finished'
+                    match.game.winner = winner
+                    match.game.save()
+                    
+                # Notifier via WebSocket
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     f'tournament_{tournament.id}',
                     {
-                        'type': 'tournament_update',
-                        'status': tournament.status,
-                        'new_creator_id': new_creator.id,
-                        'message': f"New tournament creator: {new_creator.username}"
+                        'type': 'match_update',
+                        'match_id': match.id,
+                        'status': 'completed',
+                        'winner_id': winner.id,
+                        'forfeit': True,
+                        'forfeited_by': request.user.id
                     }
                 )
-        
-        # Gérer le forfait du match en cours
-        match = tournament.matches.filter(
-            (Q(player1=request.user) | Q(player2=request.user)) &
-            Q(status='in_progress')
-        ).first()
-        
-        if match:
-            # Vérifier que le joueur fait partie du match
-            if request.user != match.player1 and request.user != match.player2:
-                return Response(
-                    {'error': 'You are not a player in this match'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
                 
-            # Déclarer l'autre joueur comme vainqueur
-            winner = match.player2 if request.user == match.player1 else match.player1
-            
-            # Mettre à jour le match
-            match.winner = winner
-            match.status = 'completed'
-            match.ended_at = timezone.now()
-            match.save()
-            
-            # Mettre à jour le jeu si existant
-            if match.game:
-                match.game.status = 'finished'
-                match.game.winner = winner
-                match.game.save()
-                
-            # Notifier via WebSocket
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f'tournament_{tournament.id}',
-                {
-                    'type': 'match_update',
-                    'match_id': match.id,
-                    'status': 'completed',
-                    'winner_id': winner.id,
-                    'forfeit': True,
-                    'forfeited_by': request.user.id
-                }
-            )
-            
-            # Si c'était le dernier match, terminer le tournoi
-            if match.round_number == math.ceil(math.log2(tournament.players.count())):
-                tournament.status = 'completed'
-                tournament.winner = winner
-                tournament.ended_at = timezone.now()
-                tournament.save()
+                # Si c'était le dernier match, terminer le tournoi
+                if match.round_number == math.ceil(math.log2(tournament.players.count())):
+                    tournament.status = 'completed'
+                    tournament.winner = winner
+                    tournament.ended_at = timezone.now()
+                    tournament.save()
+                    return Response({
+                        'status': 'tournament completed', 
+                        'winner': winner.username,
+                        'creator_changed': is_creator and tournament.status != 'cancelled'
+                    })
+                    
                 return Response({
-                    'status': 'tournament completed', 
-                    'winner': winner.username,
+                    'status': 'match forfeited',
                     'creator_changed': is_creator and tournament.status != 'cancelled'
                 })
                 
-            return Response({
-                'status': 'match forfeited',
-                'creator_changed': is_creator and tournament.status != 'cancelled'
-            })
+            return Response({'status': 'no active match'})
             
-        # Si le joueur n'a pas de match en cours
-        if is_creator:
-            return Response({
-                'status': 'creator changed' if tournament.status != 'cancelled' else 'tournament cancelled'
-            })
-            
-        return Response({'status': 'no active match'})
+        return Response({'status': 'tournament not started'})
+
 
     @action(detail=False, methods=['get'], url_path='player-tournaments/(?P<player_id>[^/.]+)')
     def get_player_tournaments(self, request, player_id=None):
