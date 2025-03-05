@@ -65,6 +65,7 @@ function loadChat(){
 }
 
 let chat_usernameWith = null;
+let chat_avatarWith = null;
 let chat_currentlyWith = 0;
 let chat_Socket = null;
 let chat_reconnectTimeout = null;
@@ -128,17 +129,30 @@ function chat_appendMessage(sender, message, isUser) {
 	let messageDiv = document.createElement("div");
 	messageDiv.classList.add("chat_message");
 	messageDiv.classList.add(isUser ? "chat_user_message" : "chat_friend_message");
-	let avatarUrl = "/images/logo.jpg";
-	if(!isUser)
-		messageDiv.innerHTML = `
-			<img src="${avatarUrl}" alt="Avatar de ${sender}" class="chat_avatar">
-			<div class="chat_only_message"><span class="chat_text">${message}</span></div>`;
-	else 
-		messageDiv.innerHTML = `
-			<div class="chat_only_message"><span class="chat_text">${message}</span></div>
-			<img src="${avatarUrl}" alt="Avatar de ${sender}" class="chat_avatar">`;
-	messagesContainer.appendChild(messageDiv);
-	messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+	let avatarUrl;
+	if(isUser){
+		avatarUrl = getCookie("avatar");
+		updateavatar();
+	} else {
+		avatarUrl = chat_avatarWith;
+		updateavatar();
+	}
+
+	function updateavatar(){
+		let username = isUser ? getCookie("username"): chat_usernameWith;
+		if(avatarUrl == "null"){
+			messageDiv.innerHTML = `
+				<div class="chat_only_message"><span class="chat_text">${message}</span></div>
+				<div alt="Avatar de ${username}" class="chat_avatar_placeholder">${username[0]}</div>`;
+		} else {
+			messageDiv.innerHTML = `
+				<div class="chat_only_message"><span class="chat_text">${message}</span></div>
+				<div style="background-image: url('${avatarUrl}');" alt="Avatar de ${username}" class="chat_avatar">`;
+		}
+		messagesContainer.appendChild(messageDiv);
+		messagesContainer.scrollTop = messagesContainer.scrollHeight;
+	}
 }
 
 async function fetchMessages(friendId) {
@@ -190,8 +204,26 @@ function openChat(username, friendId) {
 	settings.style.display = "block";
 	chat_currentlyWith = friendId;
 	chat_usernameWith = username;
-	updateChatLanguage()
-	document.getElementById("chat_messages").innerHTML = "<p>Loading messages with " + username + "...</p>";
+
+	fetch("/api/users/get_avatar/"+chat_currentlyWith+"/", {
+		method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+	})
+	.then(response => {
+		chat_avatarWith = "null";
+		continuosity();
+		return response.json();
+	})
+	.then(data2 => {
+		if (data2.avatar != null) chat_avatarWith = data2.avatar;
+		else chat_avatarWith = "null";
+		continuosity();
+	})
+	.catch(error => console.error("Error while getting avatar:", error));
+
+	function continuosity(){
+		updateChatLanguage()
+		document.getElementById("chat_messages").innerHTML = "<p>Loading messages with " + username + "...</p>";
+	}
 }
 
 function initChat(){
@@ -299,6 +331,7 @@ function closeChat(){
 	friendsList.style.display = "block";
 	chat_currentlyWith = 0;
 	chat_usernameWith = null;
+	chat_avatarWith = null;
 	let chatContainer = document.getElementById("chat_main_container");
 	let isClosed = !chatContainer.classList.contains("expanded");
 	if (!isClosed)
