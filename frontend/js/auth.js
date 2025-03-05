@@ -10,7 +10,8 @@ function setCookie(name, value, days) {
 
 function getCookie(name) {
     let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
+    let returnval = match ? decodeURIComponent(match[2]) : null;
+    return returnval;
 }
 
 function deleteCookie(name) {
@@ -31,8 +32,10 @@ async function loadLoginInfos(){
             const userData = await response.json();
             setCookie("username", userData.username);
             setCookie("id", userData.id);
-            await getavatar();
-            return true;
+            if(await getavatar(userData.id) == null)
+                return false;
+            else 
+                return true;
         }
     } catch (error) {
         console.error('Error checking auth:', error);
@@ -43,6 +46,12 @@ async function loadLoginInfos(){
 async function checkAuth() {
     try {
         const response = await fetch('/api/users/profile/');
+        if((getCookie("username") == null || getCookie("id") == null || getCookie("avatar") == null) && getHashParam("oauth") == null){
+            try { await fetch('/api/users/logout/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+            } catch (error) { console.error('Error logging out:', error) }
+            deleteAllCookies();
+            return false;
+        }
         return response.ok
     } catch (error) {
         console.error('Error checking auth:', error);
@@ -65,9 +74,9 @@ async function getid(){
     return null;
 }
 
-async function getavatar(){
+async function getavatar(id){
 	try {
-		const response = await fetch("/api/users/get_avatar/"+getCookie("id")+"/");
+		const response = await fetch("/api/users/get_avatar/"+id+"/");
 		if (response.ok) {
 			const userData = await response.json();
             if(userData.avatar == null)
