@@ -152,6 +152,8 @@
     flex-shrink: 0;
     background-position: center;
     background-size: cover;
+    display: flex;
+
 }
 
 .chat_avatar_placeholder{

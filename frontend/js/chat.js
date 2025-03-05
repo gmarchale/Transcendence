@@ -142,13 +142,25 @@ function chat_appendMessage(sender, message, isUser) {
 	function updateavatar(){
 		let username = isUser ? getCookie("username"): chat_usernameWith;
 		if(avatarUrl == "null"){
-			messageDiv.innerHTML = `
-				<div class="chat_only_message"><span class="chat_text">${message}</span></div>
-				<div alt="Avatar de ${username}" class="chat_avatar_placeholder">${username[0]}</div>`;
+			if(isUser){
+				messageDiv.innerHTML = `
+					<div class="chat_only_message"><span class="chat_text">${message}</span></div>
+					<div alt="Avatar de ${username}" class="chat_avatar_placeholder">${username[0]}</div>`;
+			} else {
+				messageDiv.innerHTML = `
+					<div alt="Avatar de ${username}" class="chat_avatar_placeholder">${username[0]}</div>
+					<div class="chat_only_message"><span class="chat_text">${message}</span></div>`;
+			}
 		} else {
-			messageDiv.innerHTML = `
-				<div class="chat_only_message"><span class="chat_text">${message}</span></div>
-				<div style="background-image: url('${avatarUrl}');" alt="Avatar de ${username}" class="chat_avatar">`;
+			if(isUser){
+				messageDiv.innerHTML = `
+					<div class="chat_only_message"><span class="chat_text">${message}</span></div>
+					<div style="background-image: url('${avatarUrl}');" alt="Avatar de ${username}" class="chat_avatar"></div>`;
+			} else {
+				messageDiv.innerHTML = `
+					<div style="background-image: url('${avatarUrl}');" alt="Avatar de ${username}" class="chat_avatar"></div>
+					<div class="chat_only_message"><span class="chat_text">${message}</span></div>`;
+			}
 		}
 		messagesContainer.appendChild(messageDiv);
 		messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -193,8 +205,6 @@ function openChat(username, friendId) {
 
 	initWebSocket(WS_URL);
 
-	fetchMessages(friendId)
-
 	let friendsList = document.getElementById("chat_friends_list");
 	let chatBox = document.getElementById("chat_container");
 	let settings = document.getElementById("chat_settings");
@@ -221,8 +231,8 @@ function openChat(username, friendId) {
 	.catch(error => console.error("Error while getting avatar:", error));
 
 	function continuosity(){
+		fetchMessages(friendId)
 		updateChatLanguage()
-		document.getElementById("chat_messages").innerHTML = "<p>Loading messages with " + username + "...</p>";
 	}
 }
 
@@ -322,6 +332,7 @@ function closeChat(){
 		chat_Socket.close();
 	}
 
+	document.getElementById("chat_messages").innerHTML = "Loading chat messages..";
 	let friendsList = document.getElementById("chat_friends_list");
 	let chatBox = document.getElementById("chat_container");
 	let settings = document.getElementById("chat_settings");
