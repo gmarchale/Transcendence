@@ -111,7 +111,7 @@ function showNotification(message, type = "success", duration = 3000) {
 
     notificationTimeout = setTimeout(() => {
         notification.classList.add("hide");
-        setTimeout(() => {
+        notificationTimeout = setTimeout(() => {
             notification.className = "notification";
         }, 300);
     }, duration);

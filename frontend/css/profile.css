@@ -38,8 +38,13 @@
 }
 
 .profile_avatar {
-    width: 15rem;
-    height: 15rem;
+    display: flex;
+    background-size: cover;
+    background-position: center;
+    align-items: center;
+    justify-content: center;
+    width: 240px;
+    height: 240px;
     max-width: 100%;
     border-radius: 10%;
     border: 3px solid #00ff88;

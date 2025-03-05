@@ -114,7 +114,6 @@ async function chat_sendMessage() {
 	let message = inputField.value.trim();
 	if (message === "") return;
 
-	// chat_appendMessage("You", message, true);
 	inputField.value = "";
 
 	chat_Socket.send(JSON.stringify({
@@ -122,12 +121,6 @@ async function chat_sendMessage() {
         "receiver_id": userId,
         "message": message
     }));
-
-	// await fetch('/api/chat/send_message/', {
-	// 	method: 'POST',
-	// 	headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
-	// 	body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: userId, message: message })
-	// });
 }
 
 function chat_appendMessage(sender, message, isUser) {
@@ -276,6 +269,8 @@ function initChat(){
 				body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: chat_currentlyWith })
             });
 			document.getElementById("chat_block").textContent = getTranslation("profile_block_manage_block")
+			showNotification(getTranslation("profile_block_success"), "error");
+			loadChat();
         } catch (error) {
             console.error('Error logging out:', error);
         }

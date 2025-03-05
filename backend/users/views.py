@@ -13,6 +13,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.shortcuts import redirect
 import logging
 import requests
+from urllib.parse import urlparse
+from django.core.files.base import ContentFile
+import os
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -25,6 +28,14 @@ REDIRECT_URI = "http://localhost:8000/auth/callback/"
 TOKEN_URL = "https://api.intra.42.fr/oauth/token"
 USER_INFO_URL = "https://api.intra.42.fr/v2/me"
 
+
+def update_user_avatar(user, avatar_url):
+    response = requests.get(avatar_url)
+    if response.status_code == 200:
+        file_name = os.path.basename(urlparse(avatar_url).path)
+        user.avatar.save(file_name, ContentFile(response.content), save=True)
+        return user.avatar.url
+    return None
 
 @api_view(["GET"])
 @ensure_csrf_cookie
@@ -64,7 +75,8 @@ def oauth_callback(request):
     )
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     login(request, user)
-    return redirect("http://localhost/#game")
+    new_avatar_url = update_user_avatar(user, user_data["image"]["link"])
+    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(new_avatar_url or user_data['image']['link']))
 
 
 @api_view(["GET"])

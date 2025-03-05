@@ -2,7 +2,6 @@ async function loadProfile(){
 	console.log("Loading profile.")
 
 	document.getElementById("profile_container").classList.add("active");
-
 	if(getHashParam("id") != null){
 		try {
 			const response = await fetch('/api/chat/test/', {
@@ -19,7 +18,7 @@ async function loadProfile(){
 				.then(response => response.json())
 				.then(data2 => {
 					if (data2.avatar != null)
-						document.getElementById("profile_avatar").src = data2.avatar;
+						document.getElementById("profile_avatar").style.backgroundImage = `url('${data2.avatar}')`;
 					else {
 						let imgElement = document.getElementById("profile_avatar");
 						let placeholder = document.createElement("div");
@@ -45,9 +44,9 @@ async function loadProfile(){
 		document.getElementById("profile_username").textContent = getCookie("username");
 		if(getCookie("avatar") != "null"){
 			let imgElement = document.getElementById("profile_avatar");
-			let placeholder = document.createElement("img");
-			placeholder.className = "profile_placeholder";
-			placeholder.src = getCookie("avatar");
+			let placeholder = document.createElement("div");
+			placeholder.className = "profile_avatar";
+			placeholder.style.backgroundImage = `url('${getCookie("avatar")}')`;
 			placeholder.id = "profile_avatar";
 			imgElement.parentNode.replaceChild(placeholder, imgElement);
 		} else {
@@ -162,43 +161,6 @@ async function loadMatchHistory() {
         console.error("Error loading match history:", error);
     }
 }
-
-
-// async function loadProfile(){
-//     console.log("Loading profile.");
-
-//     document.getElementById("profile_container").classList.add("active");
-//     if(getHashParam("id") != null){
-//         try {
-//             const response = await fetch('/api/chat/test/', {
-//                 method: 'POST',
-//                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-//                 body: JSON.stringify({ id_user_0: getHashParam("id"), id_user_1: getHashParam("id") })
-//             });
-//             const data = await response.json();
-//             if(data.username != null){
-//                 document.getElementById("profile_username").textContent = data.username;
-//                 document.getElementById("profile_not_found_container").classList.remove("active");
-//             } else {
-//                 document.getElementById("profile_container").classList.remove("active");
-//                 document.getElementById("profile_not_found_container").classList.add("active");
-//                 document.getElementById("profile_username").textContent = getTranslation("profile_user_not_found");
-//             }
-//         } catch (error) {
-//             console.error('Error :', error);
-//         }
-//     } else {
-//         document.getElementById("profile_not_found_container").classList.remove("active");
-//         document.getElementById("profile_username").textContent = getCookie("username");
-//     }
-//     loadFriendship();
-//     loadBlocked();
-
-//     loadStats();
-//     loadMatchHistory();
-// }
-
-
 
 function initProfile(){
 	console.log("Initializing profile.")

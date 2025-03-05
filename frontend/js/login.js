@@ -3,6 +3,17 @@ function loadLogin(){
     checkAuth().then(isAuthenticated => {
         console.log("Is user auth? " + isAuthenticated)
 		if(isAuthenticated == true){
+            if(getHashParam("oauth") == "true"){
+                console.log("Checking Oauth log.")
+                console.log(getHashParam("username"));
+                console.log(getHashParam("avatar"));
+                console.log(getHashParam("id"));
+                setCookie("username", getHashParam("username"));
+                setCookie("avatar", getHashParam("avatar"));
+                setCookie("id", getHashParam("id"));
+                window.location.href = "#game";
+                console.log("Already logged-in using 42 -> redirecting to game page.")
+            }
             if(location.hash.slice(1) == "login" || location.hash.slice(1) == "register"){
                 window.location.href = "#game";
                 console.log("Already logged-in -> redirecting to game page.")
