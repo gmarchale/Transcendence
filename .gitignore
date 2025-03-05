@@ -48,3 +48,4 @@ yarn-error.log*
 # Docker
 .docker/
 *.env
+/.history
