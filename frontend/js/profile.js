@@ -61,6 +61,9 @@ async function loadProfile(){
 	}
 	loadFriendship(0);
 	loadBlocked(0);
+
+	loadStats();
+    loadMatchHistory();
 }
 
 async function loadStats() {
@@ -161,39 +164,39 @@ async function loadMatchHistory() {
 }
 
 
-async function loadProfile(){
-    console.log("Loading profile.");
+// async function loadProfile(){
+//     console.log("Loading profile.");
 
-    document.getElementById("profile_container").classList.add("active");
-    if(getHashParam("id") != null){
-        try {
-            const response = await fetch('/api/chat/test/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                body: JSON.stringify({ id_user_0: getHashParam("id"), id_user_1: getHashParam("id") })
-            });
-            const data = await response.json();
-            if(data.username != null){
-                document.getElementById("profile_username").textContent = data.username;
-                document.getElementById("profile_not_found_container").classList.remove("active");
-            } else {
-                document.getElementById("profile_container").classList.remove("active");
-                document.getElementById("profile_not_found_container").classList.add("active");
-                document.getElementById("profile_username").textContent = getTranslation("profile_user_not_found");
-            }
-        } catch (error) {
-            console.error('Error :', error);
-        }
-    } else {
-        document.getElementById("profile_not_found_container").classList.remove("active");
-        document.getElementById("profile_username").textContent = getCookie("username");
-    }
-    loadFriendship();
-    loadBlocked();
+//     document.getElementById("profile_container").classList.add("active");
+//     if(getHashParam("id") != null){
+//         try {
+//             const response = await fetch('/api/chat/test/', {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+//                 body: JSON.stringify({ id_user_0: getHashParam("id"), id_user_1: getHashParam("id") })
+//             });
+//             const data = await response.json();
+//             if(data.username != null){
+//                 document.getElementById("profile_username").textContent = data.username;
+//                 document.getElementById("profile_not_found_container").classList.remove("active");
+//             } else {
+//                 document.getElementById("profile_container").classList.remove("active");
+//                 document.getElementById("profile_not_found_container").classList.add("active");
+//                 document.getElementById("profile_username").textContent = getTranslation("profile_user_not_found");
+//             }
+//         } catch (error) {
+//             console.error('Error :', error);
+//         }
+//     } else {
+//         document.getElementById("profile_not_found_container").classList.remove("active");
+//         document.getElementById("profile_username").textContent = getCookie("username");
+//     }
+//     loadFriendship();
+//     loadBlocked();
 
-    loadStats();
-    loadMatchHistory();
-}
+//     loadStats();
+//     loadMatchHistory();
+// }
 
 
 

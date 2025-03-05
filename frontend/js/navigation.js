@@ -1,5 +1,6 @@
 let isPreloaded = 0
 async function loadContentFromHash() {
+
     const fullHash = location.hash.split('?')[0].slice(1) || 'game';
     const hashParts = fullHash.split('/');
     const mainPath = hashParts[0];
@@ -10,7 +11,7 @@ async function loadContentFromHash() {
     });
     
     let loadPage = 1;
-    if(mainPath != "login" && mainPath != "register"){
+    if(fullHash != "login" && fullHash != "register"){
         let result = await loadHeader();
         if (result === false)
             loadPage = 0;
@@ -21,14 +22,14 @@ async function loadContentFromHash() {
 		document.getElementById("header").classList.remove("active");
 		document.getElementById("chat_main_container").classList.remove("active");
 	}
-    document.title = mainPath.charAt(0).toUpperCase() + mainPath.slice(1) + " - PONG";
+    document.title = fullHash.charAt(0).toUpperCase() + fullHash.slice(1) + " - PONG";
 	if(isPreloaded == 0 || loadPage == 0)
 		return;
 
-    let pageDiv = document.getElementById(mainPath);
+    let pageDiv = document.getElementById(fullHash);
     if (pageDiv) {
         pageDiv.classList.add("active");
-        switch (mainPath){
+        switch (fullHash){
             case "profile": loadProfile();break;
             case "settings": loadSettings();break;
             case "game": loadGame();break;
@@ -61,9 +62,11 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
+
 		initFriends();
 		initTournamentButtons();
 		initTournament();
+
 		loadContentFromHash();
     });
 }
@@ -76,7 +79,6 @@ window.addEventListener("hashchange", loadContentFromHash);
 
 document.addEventListener("DOMContentLoaded", () => {
     preloadPages();
-    loadContentFromHash();
 });
 
 function updateHashParam(param, value) {
