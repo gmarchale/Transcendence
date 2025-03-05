@@ -101,7 +101,7 @@ async function fetchFriends() {
 }
 
 async function fetchBlockedUsers() {
-    console.log("Loading blocked list.");
+    console.log("Loading blocked users list.");
     fetch("/api/chat/get_blocked/", {
         method: "GET",
         credentials: "include"
@@ -109,27 +109,28 @@ async function fetchBlockedUsers() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
-        if (data.mutual_friends && data.mutual_friends.length > 0) {
-            let friendsUl = document.getElementById("blockedList");
-            friendsUl.innerHTML = "";
+        if (data.blocked && data.blocked.length > 0) {
+            let blockedUsersUl = document.getElementById("blockedList");
+            blockedUsersUl.innerHTML = "";
 
-            data.mutual_friends.forEach(friend => {
+            data.blocked.forEach(blockedUser => {
                 let li = document.createElement("li");
-                li.textContent = friend.username;
-                li.classList.add("friend-item");
-                li.dataset.friendId = friend.id;
-                friendsUl.appendChild(li);
+                li.textContent = blockedUser.username;
+                li.classList.add("blocked-user-item");
+                li.dataset.blockedUserId = blockedUser.id;
+                blockedUsersUl.appendChild(li);
 
                 li.addEventListener("click", function () {
-                    window.location.href = `#profile?id=${friend.id}`;
+                    window.location.href = `#profile?id=${blockedUser.id}`;
                 });
             });
         } else {
-            console.warn("Aucun ami trouvé.");
+            console.warn("No blocked users found.");
         }
     })
-    .catch(error => console.error("Error while getting friend list :", error));
+    .catch(error => console.error("Error while getting blocked users list:", error));
 }
+
 
 async function searchUsers(){
 	const searchInput = document.getElementById('friends_search').value.trim();
