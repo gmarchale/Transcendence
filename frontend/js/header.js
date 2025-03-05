@@ -14,7 +14,7 @@ async function loadHeader() {
     }
 
     document.getElementById('header_username').textContent = getCookie("username") + "▾";
-    
+
     if(getCookie("avatar") != "null"){
         let imgElement = document.getElementById("header_userAvatar");
         let placeholder = document.createElement("div");
