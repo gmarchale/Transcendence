@@ -61,11 +61,13 @@ def test_view(request):
         return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@ensure_csrf_cookie
-@permission_classes([IsAuthenticated])
+#@ensure_csrf_cookie
+@permission_classes([AllowAny]) #TODO
 def block_user(request):
-    id_user_0 = request.user.id
+    #id_user_0 = request.user.id
+    id_user_0 = request.data.get('id_user_0')
     id_user_1 = request.data.get('id_user_1')
+
 
     if not id_user_0 or not id_user_1:
         return Response({'error': 'id_user_0 and id_user_1 are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -98,10 +100,10 @@ def block_user(request):
 
 
 @api_view(['POST'])
-#@ensure_csrf_cookie
+#@ensure_csrf_cookie #TODO
 @permission_classes([AllowAny])
 def add_friend_user(request):
-    #id_user_0 = request.user.id
+    #id_user_0 = request.user.id #TODO
     id_user_0 = request.data.get('id_user_0')
     id_user_1 = request.data.get('id_user_1')
 
@@ -128,6 +130,35 @@ def add_friend_user(request):
     FriendUser.objects.create(id_user_0=user_adding, id_user_1=user_to_add)
     return Response({'message': f'{user_to_add.username} has been added friend by {user_adding.username}'}, status=status.HTTP_201_CREATED)
 
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def add_friend_username(request):
+    id_user_0 = request.user.id
+    id_user_1 = request.data.get('id_user_1')
+
+    if not id_user_0 or not id_user_1:
+        return Response({'error': 'id_user_0 and id_user_1 is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if id_user_0 == id_user_1:
+        return Response({'error': 'id_user_0 and id_user_1 must be different'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user_to_add = User.objects.get(username=id_user_1)
+    except User.DoesNotExist:
+        return Response({'error': 'User to add friend not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        user_adding = User.objects.get(id=id_user_0)
+    except User.DoesNotExist:
+        return Response({'error': 'User adding not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if FriendUser.objects.filter(id_user_0=user_adding, id_user_1=user_to_add).exists():
+        return Response({'message': 'User is already friend'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if BlockedUser.objects.filter(id_user_0=user_adding, id_user_1=user_to_add).exists():
+        return Response({'message': 'You cannot add friend someone you blocked'}, status=status.HTTP_400_BAD_REQUEST)
+
+    FriendUser.objects.create(id_user_0=user_adding, id_user_1=user_to_add)
+    return Response({'message': f'{user_to_add.username} has been added friend by {user_adding.username}'}, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
 @ensure_csrf_cookie
@@ -301,10 +332,11 @@ def get_blocked(request):
 
 
 @api_view(['POST'])
-@ensure_csrf_cookie
-@permission_classes([IsAuthenticated])
+#@ensure_csrf_cookie
+@permission_classes([AllowAny]) #TODO
 def delete_friend_user(request):
-    id_user_0 = request.user.id
+    #id_user_0 = request.user.id
+    id_user_0 = request.data.get('id_user_0')
     id_user_1 = request.data.get('id_user_1')
 
     if not id_user_0 or not id_user_1:

@@ -10,9 +10,6 @@
             <div class="profile_username-container">
                 <span class="profile_username" id="profile_username" data-username="{{ user.username }}">Username</span>
                 <div class="profile_username-subinfo-container">
-                    <p class="profile_ranking">Ranking: Diamond</p>
-                    <p class="profile_ranking">Email: todo@todo.be</p>
-                    <p class="profile_ranking">42 profile: not linked</p>
                 </div>
             </div>
         </div>
@@ -34,15 +31,22 @@
     <div class="profile_stats-container">
         <div class="profile_stat-box">
             <h3>Matches Played</h3>
-            <p>250</p>
+            <p id="matches_played">0</p>
         </div>
         <div class="profile_stat-box">
             <h3>Victories</h3>
-            <p>180</p>
+            <p id="victories">0</p>
         </div>
         <div class="profile_stat-box">
             <h3>Defeats</h3>
-            <p>70</p>
+            <p id="defeats">0</p>
+        </div>
+    </div>
+
+    <div class="profile_match-history">
+        <h3>Historique des matchs</h3>
+        <div id="match_history_list">
+            <!-- Les cartes de match seront injectées ici -->
         </div>
     </div>
 </div>
