@@ -1,0 +1,49 @@
+/* Friends page styles */
+#friends-page {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#friends-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.friend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.friend-item:hover {
+    background-color: #f9f9f9;
+}
+
+.friend-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.chat-button {
+    background-color: #4a76a8;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.chat-button:hover {
+    background-color: #3d6293;
+}
+
+#loading-friends, #no-friends {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
