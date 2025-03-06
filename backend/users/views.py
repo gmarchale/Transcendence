@@ -23,7 +23,7 @@ User = get_user_model()
 
 
 CLIENT_ID = "u-s4t2ud-7720a84449f888d7ea7b95c0f35efe215017c9ddf0900283de4a4b61105ce772"
-CLIENT_SECRET = "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"
+CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8000/auth/callback/"
 TOKEN_URL = "https://api.intra.42.fr/oauth/token"
 USER_INFO_URL = "https://api.intra.42.fr/v2/me"
@@ -299,7 +299,7 @@ def get_avatar(request, user_id):
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
 def change_avatar(request):
-    new_avatar = request.FILES.get('avatar') 
+    new_avatar = request.FILES.get('avatar')
     if new_avatar:
         request.user.avatar = new_avatar
         request.user.save()

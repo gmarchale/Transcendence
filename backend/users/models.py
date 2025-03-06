@@ -22,7 +22,7 @@ class User(AbstractUser):
         help_text='Specific permissions for this user.',
         verbose_name='user permissions',
     )
-    
+
     def save(self, *args, **kwargs):
         if not self.display_name:
             self.display_name = self.username
