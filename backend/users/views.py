@@ -16,10 +16,30 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
+from django.utils import timezone
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
+@api_view(['GET'])
+def get_online_users(request):
+    recent_time = timezone.now() - timedelta(minutes=5)
+    online_users = User.objects.filter(
+        is_online=True, 
+        last_activity__gte=recent_time
+    ).values('id', 'display_name')
+    return Response(online_users)
+
+@api_view(['GET'])
+def check_user_online(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        recent_time = timezone.now() - timedelta(minutes=5)
+        is_online = user.is_online and user.last_activity >= recent_time
+        return Response({"is_online": is_online})
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
 
 
 CLIENT_ID = "u-s4t2ud-7720a84449f888d7ea7b95c0f35efe215017c9ddf0900283de4a4b61105ce772"
@@ -344,3 +364,36 @@ def change_password(request):
         request.user.save()
         return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def get_online_users(request):
+    recent_time = timezone.now() - timedelta(minutes=5)
+    online_users = User.objects.filter(
+        is_online=True, 
+        last_activity__gte=recent_time
+    ).values('id', 'display_name')
+    return Response(online_users)
+
+@api_view(['GET'])
+def check_user_online(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        recent_time = timezone.now() - timedelta(minutes=5)
+        is_online = user.is_online and user.last_activity >= recent_time
+        return Response({"is_online": is_online})
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
+
+#@api_view(['POST'])
+#def user_heartbeat(request):
+#    if request.user.is_authenticated:
+#        request.user.is_online = True
+#        request.user.save()
+#        return Response({"status": "success"})
+#    return Response({"status": "unauthorized"}, status=401)
+
+@api_view(['POST'])
+def user_heartbeat(request):
+    return Response({"status": "success"})  # simplified version for testing

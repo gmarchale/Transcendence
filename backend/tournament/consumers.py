@@ -215,3 +215,16 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'type': 'tournament_matches',
             'matches': event['matches']
         }))
+
+async def connect(self):
+    user = self.scope["user"]
+    if user.is_authenticated:
+        user.is_online = True
+        await database_sync_to_async(user.save)()
+    await self.accept()
+
+async def disconnect(self, close_code):
+    user = self.scope["user"]
+    if user.is_authenticated:
+        user.is_online = False
+        await database_sync_to_async(user.save)()

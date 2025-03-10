@@ -56,3 +56,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender = User.objects.get(id=sender_id)
         receiver = User.objects.get(id=receiver_id)
         return ChatMessage.objects.create(id_user_0=sender, id_user_1=receiver, message=message)
+
+async def connect(self):
+    user = self.scope["user"]
+    if user.is_authenticated:
+        user.is_online = True
+        await database_sync_to_async(user.save)()
+    await self.accept()
+
+async def disconnect(self, close_code):
+    user = self.scope["user"]
+    if user.is_authenticated:
+        user.is_online = False
+        await database_sync_to_async(user.save)()
