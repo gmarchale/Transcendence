@@ -365,35 +365,19 @@ def change_password(request):
         return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-@ensure_csrf_cookie
-@permission_classes([IsAuthenticated])
-def get_online_users(request):
-    recent_time = timezone.now() - timedelta(minutes=5)
-    online_users = User.objects.filter(
-        is_online=True, 
-        last_activity__gte=recent_time
-    ).values('id', 'display_name')
-    return Response(online_users)
-
-@api_view(['GET'])
-def check_user_online(request, user_id):
+def get_user_status(request):
+    user_id = request.GET.get('id_user')
+    if not user_id:
+        return JsonResponse({'error': 'User ID is required'}, status=400)
+    
     try:
         user = User.objects.get(id=user_id)
-        recent_time = timezone.now() - timedelta(minutes=5)
-        is_online = user.is_online and user.last_activity >= recent_time
-        return Response({"is_online": is_online})
+        # online if active in the last 5 minutes
+        is_online = user.last_active is not None and user.last_active > timezone.now() - timedelta(minutes=5)
+        
+        return JsonResponse({
+            'is_online': is_online,
+            'last_active': user.last_active.isoformat() if user.last_active else None
+        })
     except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=404)
-
-#@api_view(['POST'])
-#def user_heartbeat(request):
-#    if request.user.is_authenticated:
-#        request.user.is_online = True
-#        request.user.save()
-#        return Response({"status": "success"})
-#    return Response({"status": "unauthorized"}, status=401)
-
-@api_view(['POST'])
-def user_heartbeat(request):
-    return Response({"status": "success"})  # simplified version for testing
+        return JsonResponse({'error': 'User not found'}, status=404)
