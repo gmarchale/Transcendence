@@ -16,6 +16,8 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
+from django.utils import timezone
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -79,13 +81,46 @@ def oauth_callback(request):
     return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(new_avatar_url or user_data['image']['link']))
 
 
-@api_view(["GET"])
+@api_view(['GET'])
 @ensure_csrf_cookie
 @permission_classes([AllowAny])
 def user_info(request):
     if request.user.is_authenticated:
-        return Response({"id": request.user.id, "username": request.user.username}, status=200)
+        # Update the user's last activity time
+        request.user.last_activity = timezone.now()
+        request.user.save()
+        
+        return Response({
+            "id": request.user.id, 
+            "username": request.user.username,
+            "is_online": True
+        }, status=200)
+    
     return Response({"error": "Not authenticated"}, status=401)
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+@permission_classes([AllowAny])
+def get_user_status(request, user_id):
+    """Endpoint to check if a specific user is online"""
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        user = User.objects.get(id=user_id)
+        
+        # Define what "online" means - e.g., active in the last 5 minutes
+        online_threshold = timezone.now() - timedelta(minutes=5)
+        is_online = hasattr(user, 'last_activity') and user.last_activity > online_threshold
+        
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "is_online": is_online
+        }, status=200)
+        
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
 
 @api_view(["GET"])
 @ensure_csrf_cookie
