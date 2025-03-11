@@ -16,31 +16,10 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
-from django.utils import timezone
-from datetime import timedelta
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
-
-@api_view(['GET'])
-def get_online_users(request):
-    recent_time = timezone.now() - timedelta(minutes=5)
-    online_users = User.objects.filter(
-        is_online=True, 
-        last_activity__gte=recent_time
-    ).values('id', 'display_name')
-    return Response(online_users)
-
-@api_view(['GET'])
-def check_user_online(request, user_id):
-    try:
-        user = User.objects.get(id=user_id)
-        recent_time = timezone.now() - timedelta(minutes=5)
-        is_online = user.is_online and user.last_activity >= recent_time
-        return Response({"is_online": is_online})
-    except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=404)
-
 
 CLIENT_ID = "u-s4t2ud-7720a84449f888d7ea7b95c0f35efe215017c9ddf0900283de4a4b61105ce772"
 CLIENT_SECRET = "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"

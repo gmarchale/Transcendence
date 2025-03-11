@@ -17,7 +17,4 @@ urlpatterns = [
 	path('delete_avatar/', views.delete_avatar, name='delete_avatar'),
     path('change_username/', views.change_username, name='change_username'),
     path('change_password/', views.change_password, name='change_password'),
-    path('online/', views.get_online_users, name='online_users'),
-    path('online/<int:user_id>/', views.check_user_online, name='check_user_online'),
-    path('heartbeat/', views.user_heartbeat, name='user_heartbeat'),
 ]

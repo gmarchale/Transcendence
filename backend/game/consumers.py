@@ -554,16 +554,3 @@ class GameConsumer(AsyncWebsocketConsumer):
             logger.error(f"Game {event['game_id']} not found")
         except Exception as e:
             logger.error(f"Error in game_start: {str(e)}", exc_info=True)
-
-async def connect(self):
-    user = self.scope["user"]
-    if user.is_authenticated:
-        user.is_online = True
-        await database_sync_to_async(user.save)()
-    await self.accept()
-
-async def disconnect(self, close_code):
-    user = self.scope["user"]
-    if user.is_authenticated:
-        user.is_online = False
-        await database_sync_to_async(user.save)()
