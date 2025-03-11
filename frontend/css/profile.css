@@ -184,3 +184,26 @@
     text-align: center;
     margin: 0;
 }
+
+.profile_online-status {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+
+.profile_status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.profile_status-dot.online {
+    background-color: #4CAF50;
+}
+
+.profile_status-dot.offline {
+    background-color: #9e9e9e;
+}

@@ -16,6 +16,8 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
+from django.utils import timezone
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -344,3 +346,20 @@ def change_password(request):
         request.user.save()
         return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+def get_user_status(request):
+    user_id = request.GET.get('id_user')
+    if not user_id:
+        return JsonResponse({'error': 'User ID is required'}, status=400)
+    
+    try:
+        user = User.objects.get(id=user_id)
+        # online if active in the last 5 minutes
+        is_online = user.last_active is not None and user.last_active > timezone.now() - timedelta(minutes=5)
+        
+        return JsonResponse({
+            'is_online': is_online,
+            'last_active': user.last_active.isoformat() if user.last_active else None
+        })
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
