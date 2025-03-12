@@ -51,6 +51,8 @@ function initTournamentButtons() {
 
     //focus sur nickname
     nameInput.addEventListener('keypress', function(e) {
+        if(getPage() != "tournament")
+            return;
         if (e.key === 'Enter') {
             document.getElementById('displayName').focus();
         }
@@ -65,6 +67,8 @@ function initTournamentButtons() {
 
     // Enter clique sur ok
     document.getElementById('displayName').addEventListener('keypress', function(e) {
+        if(getPage() != "tournament")
+            return;
         if (e.key === 'Enter') {
             document.getElementById('confirmTournament').click();
         }
@@ -111,12 +115,16 @@ function initTournamentButtons() {
     });
 
     idInput.addEventListener('keypress', function(e) {
+        if(getPage() != "tournament")
+            return;
         if (e.key === 'Enter') {
             document.getElementById('joinDisplayName').focus();
         }
     });
     
     document.getElementById('joinDisplayName').addEventListener('keypress', function(e) {
+        if(getPage() != "tournament")
+            return;
         if (e.key === 'Enter') {
             document.getElementById('confirmJoinTournament').click();
         }

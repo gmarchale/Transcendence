@@ -45,8 +45,6 @@ class PongGame {
         try {            
             const valid = await this.checkSession();
             if (!valid) {
-                console.error('Invalid session, redirecting to login...');
-                window.location.href = '#login';
                 return;
             }
             
@@ -69,15 +67,15 @@ class PongGame {
                 credentials: 'include',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': this.getCookie('csrftoken')
+                    'X-CSRFToken': getCookie('csrftoken')
                 }
             });
             
             console.log('Session check response:', response.status);
             if (!response.ok) {
-                console.error('Session check failed:', response.status);
+                console.warn('Session check failed:', response.status);
                 const text = await response.text();
-                console.error('Response text:', text);
+                console.warn('Response text:', text);
                 return false;
             }
             
@@ -116,20 +114,20 @@ class PongGame {
         }
     }
     
-    getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
+    // getCookie(name) {
+    //     let cookieValue = null;
+    //     if (document.cookie && document.cookie !== '') {
+    //         const cookies = document.cookie.split(';');
+    //         for (let i = 0; i < cookies.length; i++) {
+    //             const cookie = cookies[i].trim();
+    //             if (cookie.substring(0, name.length + 1) === (name + '=')) {
+    //                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     return cookieValue;
+    // }
     
     initializeElements() {
         console.log('Initializing game elements...');
@@ -272,6 +270,8 @@ class PongGame {
     }
 
     handleKeyUp(event) {
+        if(getPage() != "game")
+            return;
         // Handle key release events if needed
         // This can be used to stop paddle movement when keys are released
         if (this.gameStarted && this.connected) {
@@ -667,7 +667,7 @@ class PongGame {
                 this.gameSocket.close();
                 this.gameSocket = null;
             }
-            window.location.href = '/game.html';  
+            window.location.href = '#game';  
         };
         
         // Add buttons to container
@@ -735,6 +735,8 @@ class PongGame {
 
     handleKeyPress(event) {
         console.log('handleKeyPress called');
+        if(getPage() != "game")
+            return;
         if (!this.gameSocket || this.gameSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot handle key press:', {
                 hasSocket: !!this.gameSocket,
@@ -1056,7 +1058,7 @@ class PongGame {
                 this.gameSocket.close();
                 this.gameSocket = null;
             }
-            window.location.href = '/game/';  
+            window.location.href = '#game';  
         };
         
         // Create "Join Game" button
@@ -1076,7 +1078,7 @@ class PongGame {
                 this.gameSocket.close();
                 this.gameSocket = null;
             }
-            window.location.href = '/game/join/';  
+            window.location.href = '#game/join/';  
         };
         
         // Add buttons to container
