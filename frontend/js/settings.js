@@ -112,8 +112,9 @@ async function initSettings(){
         document.getElementById("settings_lang_fr").classList.toggle("active", lang === "fr");
         document.getElementById("settings_lang_en").classList.toggle("active", lang === "en");
         updateChatLanguage();
-        loadSettings();
-        loadChat();
+        if((location.hash.split('?')[0].slice(1) || 'game') != 'register'
+           && (location.hash.split('?')[0].slice(1) || 'game') != 'login')
+            loadChat();
     }
     await loadTranslations();
 

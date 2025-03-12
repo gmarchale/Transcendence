@@ -1,6 +1,6 @@
 function loadLogin(){
     console.log("Loading login.")
-    checkAuth().then(isAuthenticated => {
+    checkAuth(1).then(isAuthenticated => {
         console.log("Is user auth? " + isAuthenticated)
 		if(isAuthenticated == true){
             if(getHashParam("oauth") == "true"){
@@ -14,7 +14,7 @@ function loadLogin(){
                 window.location.href = "#game";
                 console.log("Already logged-in using 42 -> redirecting to game page.")
             }
-            if(location.hash.slice(1) == "login" || location.hash.slice(1) == "register"){
+            if(location.hash.slice(1) == "login"){
                 window.location.href = "#game";
                 console.log("Already logged-in -> redirecting to game page.")
             }
@@ -38,14 +38,14 @@ function initLogin(){
     });
     document.getElementById('login_submit').addEventListener('click', async function(event) {
         async function checkUserAuth() {
-            const isAuthenticated = await checkAuth();
-            console.log("Is user auth? " + isAuthenticated);
+            // const isAuthenticated = await checkAuth();
+            // console.log("Is user auth? " + isAuthenticated);
         
-            if (isAuthenticated) {
-                window.location.href = "#game";
-                console.log("Already logged-in -> redirecting to game page.")
-                return;
-            }
+            // if (isAuthenticated) {
+            //     window.location.href = "#game";
+            //     console.log("Already logged-in -> redirecting to game page.")
+            //     return;
+            // }
             var username = document.getElementById("login_username");
             if(username != null)
                 username = username.value;

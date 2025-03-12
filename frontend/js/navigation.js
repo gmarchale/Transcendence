@@ -1,11 +1,11 @@
 let isPreloaded = 0
 async function loadContentFromHash() {
 
-    const fullHash = location.hash.split('?')[0].slice(1) || 'game';
+    const fullHash = location.hash.split('?')[0].slice(1) || 'null';
     const hashParts = fullHash.split('/');
     const mainPath = hashParts[0];
     const pathParam = hashParts[1];
-    
+    console.error("hash "+fullHash)
     document.querySelectorAll(".page").forEach(div => {
         div.classList.remove("active");
     });
@@ -15,7 +15,7 @@ async function loadContentFromHash() {
         let result = await loadHeader();
         if (result === false)
             loadPage = 0;
-		 loadChat();
+		loadChat();
 		document.getElementById("header").classList.add("active");
 		document.getElementById("chat_main_container").classList.add("active");
 	} else {
@@ -35,7 +35,6 @@ async function loadContentFromHash() {
             case "game": loadGame();break;
             case "login": loadLogin();break;
             case "register": loadRegister();break;
-            case "chat": loadChat();break;
 			case "friends": loadFriends();break;
             case "tournament": loadTournament(pathParam);break;
         }
@@ -56,6 +55,7 @@ function preloadPages() {
         console.log("✅ Toutes les pages ont été chargées !");
 		isPreloaded = 1;
 		initHeader();
+        initAuth();
 		initLogin();
 		initProfile();
 		initGame();
