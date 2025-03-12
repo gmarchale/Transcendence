@@ -1,6 +1,21 @@
+
+
+
+
+
+
+
+//const response = await fetch('/api/users/check_status/', {
+//	method: 'POST',
+//	headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }
+//
+//});
+
+
+
 async function loadProfile(){
 	console.log("Loading profile.")
-
+	// /api/users/check_status -> la requete
 	document.getElementById("profile_container").classList.add("active");
 	if(getHashParam("id") != null){
 		try {

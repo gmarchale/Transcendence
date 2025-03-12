@@ -32,6 +32,8 @@ async function loadHeader() {
     }    
 }
 
+
+
 function closeMenu_header(menu){
     menu.style.display = 'none';
     document.getElementById('header_username').textContent = getCookie("username") + "▾";
@@ -42,8 +44,21 @@ function openMenu_header(menu){
     document.getElementById('header_username').textContent = getCookie("username") + "▴";
 }
 
+
+
+
+
+
 function initHeader(){
     console.log("Initializing header.")
+
+    setInterval(() => {
+        console.log("last activity...");
+        fetch('/api/users/heart_beat/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        });
+    }, 60000);
 
     document.getElementById('header_userButton').addEventListener('click', function() {
         const menu = document.getElementById('header_dropdownMenu');

@@ -16,6 +16,7 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -232,6 +233,8 @@ def logout_view(request):
         username = request.user.username
         logger.info(f"Logout request for user: {username}")
 
+        request.user.last_logout = timezone.now()
+        request.user.save()
         # Clear the session
         request.session.flush()
         logout(request)
@@ -343,3 +346,30 @@ def change_password(request):
         request.user.save()
         return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def heart_beat(request):
+    if request.user:
+        request.user.last_active = timezone.now()
+        request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def check_status(request):
+    last_active = request.user.last_active
+    # last_active il y'a moins de 2 minute -> login
+    # last_login > last_logout ? si oui -> logout
+    # sinon -> absent
+    if request.user:
+        request.user.last_active = timezone.now()
+        request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+        return Response(status=status.HTTP_204_NO_CONTENT)
