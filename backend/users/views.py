@@ -235,7 +235,6 @@ def logout_view(request):
         # Clear the session
         request.session.flush()
         logout(request)
-
         logger.info(f"User {username} logged out successfully")
         return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
     except Exception as e:
