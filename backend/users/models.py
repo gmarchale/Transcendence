@@ -6,7 +6,8 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     display_name = models.CharField(max_length=30, unique=True, null=True, blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
-
+    last_logout = models.DateTimeField(blank=True, null=True, verbose_name='last logout')
+    last_active = models.DateTimeField(blank=True, null=True, verbose_name='last active')
     # Fix group and permission clashes
     groups = models.ManyToManyField(
         'auth.Group',
