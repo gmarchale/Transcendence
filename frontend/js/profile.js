@@ -18,7 +18,15 @@ async function loadProfile(){
 				.then(response => response.json())
 				.then(data2 => {
 					if (data2.avatar != null)
-						document.getElementById("profile_avatar").style.backgroundImage = `url('${data2.avatar}')`;
+					{
+						let imgElement = document.getElementById("profile_avatar");
+						let placeholder = document.createElement("div");
+						placeholder.className = "profile_avatar";
+						placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+						placeholder.id = "profile_avatar";
+						imgElement.parentNode.replaceChild(placeholder, imgElement);
+						//document.getElementById("profile_avatar").style.backgroundImage = `url('${data2.avatar}')`; // é_è
+					}
 					else {
 						let imgElement = document.getElementById("profile_avatar");
 						let placeholder = document.createElement("div");
