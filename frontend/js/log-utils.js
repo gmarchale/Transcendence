@@ -61,13 +61,3 @@ function isAuthenticated(){
 	});
     return 0;
 }
-
-async function checkAuth() {
-    try {
-        const response = await fetch('/api/users/profile/');
-        return response.ok;
-    } catch (error) {
-        console.error('Error checking auth:', error);
-        return false;
-    }
-}
