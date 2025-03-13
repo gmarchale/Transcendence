@@ -4,10 +4,11 @@ from django.contrib.auth.models import AbstractUser
 # Create your models here.
 
 class User(AbstractUser):
-    display_name = models.CharField(max_length=30, unique=True, null=True, blank=True)
+    display_name = models.CharField(max_length=30, unique=False, null=True, blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     last_logout = models.DateTimeField(blank=True, null=True, verbose_name='last logout')
     last_active = models.DateTimeField(blank=True, null=True, verbose_name='last active')
+    from42 = models.BooleanField(default=False)
     # Fix group and permission clashes
     groups = models.ManyToManyField(
         'auth.Group',
