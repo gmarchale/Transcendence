@@ -5,7 +5,7 @@ async function loadContentFromHash() {
     const hashParts = fullHash.split('/');
     const mainPath = hashParts[0];
     const pathParam = hashParts[1];
-    console.error("hash "+fullHash)
+    //console.error("hash "+fullHash)
     document.querySelectorAll(".page").forEach(div => {
         div.classList.remove("active");
     });
@@ -32,6 +32,7 @@ async function loadContentFromHash() {
         switch (mainPath){
             case "profile": loadProfile();break;
             case "settings": loadSettings();break;
+            //case "play": loadPlay();break;
             case "game": loadGame();break;
             case "login": loadLogin();break;
             case "register": loadRegister();break;
@@ -42,7 +43,7 @@ async function loadContentFromHash() {
 }
 
 function preloadPages() {
-    const pages = ["game", "profile", "settings", "login", "register", "friends", "tournament"];
+    const pages = ["game", "play", "profile", "settings", "login", "register", "friends", "tournament"];
     const promises = pages.map(page =>
         fetch(page + ".html")
             .then(response => response.text())

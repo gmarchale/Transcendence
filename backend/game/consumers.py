@@ -263,6 +263,24 @@ class GameConsumer(AsyncWebsocketConsumer):
                 
                 logger.info(f"User connected: {username} (ID: {user_id})")
 
+            elif message_type == 'player_ready':
+                if self.game:
+                    # Update player ready state
+                    new_state = GameStateManager.set_player_ready(str(self.game.id), str(self.user.id))
+                    if new_state:
+                        # If both players are ready and game starts, start the game loop
+                        if new_state['status'] == 'playing':
+                            self.game_loop_task = asyncio.create_task(self.game_loop())
+                        
+                        # Broadcast the updated state to all players
+                        await self.channel_layer.group_send(
+                            self.channel_group_name,
+                            {
+                                'type': 'game_state_update',
+                                'game_state': new_state
+                            }
+                        )
+
             else:
                 await self.send_json({
                     'type': 'error',

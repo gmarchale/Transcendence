@@ -9,13 +9,15 @@ class PlayerState:
     username: str
     score: int = 0
     paddle_y: float = 250
+    is_ready: bool = False
 
     def to_dict(self):
         return {
             'id': self.id,
             'username': self.username,
             'score': self.score,
-            'paddle_y': self.paddle_y
+            'paddle_y': self.paddle_y,
+            'is_ready': self.is_ready
         }
 
 class GameStateManager:
@@ -37,7 +39,7 @@ class GameStateManager:
     def create_game(cls, game_id: str, player1_id: str, player1_username: str):
         """Initialize a new game state"""
         cls._instances[game_id] = {
-            'ball': {'x': 400, 'y': 300, 'dx': 5, 'dy': 5, 'radius': 10},
+            'ball': {'x': 400, 'y': 300, 'dx': 3, 'dy': 3, 'radius': 10},
             'paddles': {
                 'player1': {'x': 50, 'y': 250, 'width': 20, 'height': 100},
                 'player2': {'x': 730, 'y': 250, 'width': 20, 'height': 100}
@@ -65,10 +67,34 @@ class GameStateManager:
                     id=player2_id, 
                     username=player2_username
                 )
-                game_state['status'] = 'playing'
-                game_state['start_time'] = time.time()  # Set start time when game begins
+                # Don't start the game immediately, wait for both players to be ready
                 return True
         return False
+
+    @classmethod
+    def set_player_ready(cls, game_id: str, player_id: str) -> Optional[Dict]:
+        """Set a player's ready status"""
+        if game_id not in cls._instances:
+            return None
+
+        game_state = cls._instances[game_id]
+        player1 = game_state['players']['player1']
+        player2 = game_state['players']['player2']
+
+        # Update ready status for the correct player
+        if player1 and player1.id == player_id:
+            player1.is_ready = True
+        elif player2 and player2.id == player_id:
+            player2.is_ready = True
+
+        # Check if both players are ready
+        if (player1 and player2 and 
+            player1.is_ready and player2.is_ready and 
+            game_state['status'] == 'waiting'):
+            game_state['status'] = 'playing'
+            game_state['start_time'] = time.time()
+
+        return cls._serialize_game_state(game_state)
 
     @classmethod
     def move_paddle(cls, game_id: str, player_id: str, direction: str) -> Optional[Dict]:
@@ -131,7 +157,7 @@ class GameStateManager:
                 ball['x'] + ball['radius'] >= paddle['x'] and
                 ball['y'] >= paddle['y'] and
                 ball['y'] <= paddle['y'] + paddle['height']):
-                ball['dx'] *= -1.1  # Increase speed slightly on paddle hits
+                ball['dx'] *= -1.05  # Reduced speed increase on paddle hits from 1.1 to 1.05
                 break
 
         # Score points
@@ -197,8 +223,8 @@ class GameStateManager:
         game_state['ball'].update({
             'x': game_state['canvas']['width'] / 2,
             'y': game_state['canvas']['height'] / 2,
-            'dx': 5 * (1 if random.random() > 0.5 else -1),
-            'dy': 5 * (1 if random.random() > 0.5 else -1)
+            'dx': 3 * (1 if random.random() > 0.5 else -1),
+            'dy': 3 * (1 if random.random() > 0.5 else -1)
         })
 
     @classmethod
