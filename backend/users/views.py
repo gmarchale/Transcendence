@@ -69,10 +69,22 @@ def oauth_callback(request):
         return Response({"error": "Failed to fetch user info"}, status=status.HTTP_400_BAD_REQUEST)
     user_data = user_info.json()
 
-    user, created = User.objects.get_or_create(
-        username=user_data["login"],
-        defaults={"email": user_data["email"], "display_name": user_data["displayname"], "avatar": user_data["image"]["link"]}
-    )
+    try:
+        user, created = User.objects.get_or_create(
+            email=user_data["email"],
+            from42=True,
+            defaults={
+                "username": user_data["login"],
+                "display_name": user_data["displayname"],
+                "avatar": user_data["image"]["link"]
+            }
+        )
+    except Exception as e:
+        logger.error(f"Registration failed for user : {str(e)}")
+        return Response({
+            'detail': 'Registration failed'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     login(request, user)
     new_avatar_url = update_user_avatar(user, user_data["image"]["link"])
