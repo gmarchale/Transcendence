@@ -51,6 +51,11 @@ function openMenu_header(menu){
 
 function initHeader(){
     console.log("Initializing header.")
+    console.log("last activity...");
+        fetch('/api/users/heart_beat/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        });
 
     setInterval(() => {
         console.log("last activity...");

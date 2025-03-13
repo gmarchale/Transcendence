@@ -12,81 +12,130 @@
 //});
 
 
-
 async function loadProfile(){
-	console.log("Loading profile.")
-	// /api/users/check_status -> la requete
-	document.getElementById("profile_container").classList.add("active");
-	if(getHashParam("id") != null){
-		try {
-			const response = await fetch('/api/chat/test/', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-				body: JSON.stringify({ id_user_0: getHashParam("id"), id_user_1: getHashParam("id") })
-			});
-			const data = await response.json();
-			if(data.username != null){
-				document.getElementById("profile_username").textContent = data.username;
-				fetch("/api/users/get_avatar/"+getHashParam("id")+"/", {
-					method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-				})
-				.then(response => response.json())
-				.then(data2 => {
-					if (data2.avatar != null)
-					{
-						let imgElement = document.getElementById("profile_avatar");
-						let placeholder = document.createElement("div");
-						placeholder.className = "profile_avatar";
-						placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-						placeholder.id = "profile_avatar";
-						imgElement.parentNode.replaceChild(placeholder, imgElement);
-						//document.getElementById("profile_avatar").style.backgroundImage = `url('${data2.avatar}')`; // é_è
-					}
-					else {
-						let imgElement = document.getElementById("profile_avatar");
-						let placeholder = document.createElement("div");
-						placeholder.className = "profile_placeholder";
-						placeholder.textContent = data.username[0];
-						placeholder.id = "profile_avatar";
-						imgElement.parentNode.replaceChild(placeholder, imgElement);
-					}
-				})
-				.catch(error => console.error("Error while getting avatar:", error));
+    console.log("Loading profile.")
+    
+   
+    document.getElementById("profile_container").classList.add("active");
+    if(getHashParam("id") != null){
+        try {
+            const response = await fetch('/api/chat/test/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ id_user_0: getHashParam("id"), id_user_1: getHashParam("id") })
+            });
+            const data = await response.json();
+            if(data.username != null){
+                document.getElementById("profile_username").textContent = data.username;
+                fetch("/api/users/get_avatar/"+getHashParam("id")+"/", {
+                    method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                })
+                .then(response => response.json())
+                .then(data2 => {
+                    if (data2.avatar != null)
+                    {
+                        let imgElement = document.getElementById("profile_avatar");
+                        let placeholder = document.createElement("div");
+                        placeholder.className = "profile_avatar";
+                        placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+                        placeholder.id = "profile_avatar";
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    }
+                    else {
+                        let imgElement = document.getElementById("profile_avatar");
+                        let placeholder = document.createElement("div");
+                        placeholder.className = "profile_placeholder";
+                        placeholder.textContent = data.username[0];
+                        placeholder.id = "profile_avatar";
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    }
+                    
+                    // Check status after avatar is loaded
+                    checkUserStatus(getHashParam("id"));
+                })
+                .catch(error => console.error("Error while getting avatar:", error));
 
-				document.getElementById("profile_not_found_container").classList.remove("active");
-			} else {
-				document.getElementById("profile_container").classList.remove("active");
-				document.getElementById("profile_not_found_container").classList.add("active");
-				document.getElementById("profile_username").textContent = getTranslation("profile_user_not_found");
-			}
-		} catch (error) {
-			console.error('Error :', error);
-		}
-	} else {
-		document.getElementById("profile_not_found_container").classList.remove("active");
-		document.getElementById("profile_username").textContent = getCookie("username");
-		if(getCookie("avatar") != "null"){
-			let imgElement = document.getElementById("profile_avatar");
-			let placeholder = document.createElement("div");
-			placeholder.className = "profile_avatar";
-			placeholder.style.backgroundImage = `url('${getCookie("avatar")}')`;
-			placeholder.id = "profile_avatar";
-			imgElement.parentNode.replaceChild(placeholder, imgElement);
-		} else {
-			let imgElement = document.getElementById("profile_avatar");
-			let placeholder = document.createElement("div");
-			placeholder.className = "profile_placeholder";
-			placeholder.textContent = getCookie("username")[0];
-			placeholder.id = "profile_avatar";
-			imgElement.parentNode.replaceChild(placeholder, imgElement);
-		}
-	}
-	loadFriendship(0);
-	loadBlocked(0);
+                document.getElementById("profile_not_found_container").classList.remove("active");
+            } else {
+                document.getElementById("profile_container").classList.remove("active");
+                document.getElementById("profile_not_found_container").classList.add("active");
+                document.getElementById("profile_username").textContent = getTranslation("profile_user_not_found");
+            }
+        } catch (error) {
+            console.error('Error :', error);
+        }
+    } else {
+        document.getElementById("profile_not_found_container").classList.remove("active");
+        document.getElementById("profile_username").textContent = getCookie("username");
+        if(getCookie("avatar") != "null"){
+            let imgElement = document.getElementById("profile_avatar");
+            let placeholder = document.createElement("div");
+            placeholder.className = "profile_avatar";
+            placeholder.style.backgroundImage = `url('${getCookie("avatar")}')`;
+            placeholder.id = "profile_avatar";
+            imgElement.parentNode.replaceChild(placeholder, imgElement);
+        } else {
+            let imgElement = document.getElementById("profile_avatar");
+            let placeholder = document.createElement("div");
+            placeholder.className = "profile_placeholder";
+            placeholder.textContent = getCookie("username")[0];
+            placeholder.id = "profile_avatar";
+            imgElement.parentNode.replaceChild(placeholder, imgElement);
+        }
+        
+		updateUserStatusDisplay(0);
+    }
+    loadFriendship(0);
+    loadBlocked(0);
 
-	loadStats();
+    loadStats();
     loadMatchHistory();
 }
+
+async function checkUserStatus(userId = null) {
+    try {
+        const statusResponse = await fetch(`/api/users/check_status/?id_user_0=${userId || ''}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        
+        if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            updateUserStatusDisplay(statusData.status);
+        } else {
+            console.error('Failed to fetch user status:', statusResponse.status);
+        }
+    } catch (error) {
+        console.error('Error checking user status:', error);
+    }
+}
+
+// Function to update the status display
+function updateUserStatusDisplay(status) {
+    // Get the username-subinfo-container where we'll add the status
+    const subinfoContainer = document.querySelector('.profile_username-subinfo-container');
+    
+    // Create or get the status element
+    let statusElement = document.getElementById("user_status");
+    if (!statusElement) {
+        statusElement = document.createElement("span");
+        statusElement.id = "user_status";
+        subinfoContainer.appendChild(statusElement);
+    }
+    
+    // Update status text and appearance based on status code
+    if (status === 0) {
+        statusElement.textContent = "Online";
+        statusElement.className = "status-online";
+    } else if (status === 1) {
+        statusElement.textContent = "Offline";
+        statusElement.className = "status-offline";
+    } else if (status === 2) {
+        statusElement.textContent = "Away";
+        statusElement.className = "status-away";
+    }
+}
+
 
 async function loadStats() {
     let userId = getHashParam("id");
