@@ -361,8 +361,8 @@ def heart_beat(request):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
-#@ensure_csrf_cookie
-@permission_classes([AllowAny])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
 def check_status(request):
     
     id_user_0 = request.query_params.get('id_user_0')
@@ -389,7 +389,7 @@ def check_status(request):
         print("STATUS: OFFLINE - User is logged out")
         return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
 
-    elif timezone.now() - last_active < timedelta(minutes=2) or timezone.now() - last_login < timedelta(minutes=2):
+    elif timezone.now() - last_active < timedelta(minutes=1) or timezone.now() - last_login < timedelta(minutes=2):
         print("STATUS: ONLINE - User is logged in and active")
         return Response({'status': 0}, status=status.HTTP_200_OK) # User is logged in and active (online)
     
