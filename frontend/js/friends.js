@@ -1,6 +1,7 @@
 async function loadFriends(){
 	console.log("Loading friends.")
-
+	fetchFriends();
+	fetchBlockedUsers();
 	document.getElementById("friends_container").classList.add("active");
 	try {
 		const response = await fetch('/api/chat/get_friends/', {
@@ -53,11 +54,11 @@ function initFriends(){
 	// 	}
 	// });
 	
-	fetchFriends();
+	// fetchFriends();
 }
 
-fetchFriends();
-fetchBlockedUsers(); //TO DO
+// fetchFriends();
+// fetchBlockedUsers(); //TO DO
 
 async function addFriend() {
 	const friendInput = document.getElementById('friendInput').value;

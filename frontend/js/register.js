@@ -1,9 +1,9 @@
 function loadRegister(){
 	console.log("Loading register.")
 
-	checkAuth().then(isAuthenticated => {
+	checkAuth(1).then(isAuthenticated => {
         console.log("Is user auth? " + isAuthenticated)
-		if(isAuthenticated == true){
+		if(isAuthenticated == true && location.hash.slice(1) == "register"){
             window.location.href = "#game";
             console.log("Already logged-in -> redirecting to game page.")
         	return;
@@ -16,24 +16,17 @@ function initRegister(){
 	console.log("Initializing register.")
 	
 	document.getElementById('register_42log').addEventListener('click', async function(event) {
-		checkAuth().then(isAuthenticated => {
-            console.log("Is user auth? " + isAuthenticated)
-            if(isAuthenticated == true){
-                console.log("Already logged-in")
-                return;
-            }
-            window.location.href = "/api/users/oauth_login/";
-        });
+		window.location.href = "/api/users/oauth_login/";
     });
     document.getElementById('register_submit').addEventListener('click', async function(event) {
 		async function checkUserAuth() {
-			const isAuthenticated = await checkAuth();
-			console.log("Is user auth? " + isAuthenticated);
+			// const isAuthenticated = await checkAuth();
+			// console.log("Is user auth? " + isAuthenticated);
 		
-			if (isAuthenticated) {
-				console.log("Already logged-in");
-				return;
-			}
+			// if (isAuthenticated) {
+			// 	console.log("Already logged-in");
+			// 	return;
+			// }
 			const username = document.getElementById('register_username').value.trim();
 			const email = document.getElementById('register_email').value;
 			const password = document.getElementById('register_password').value;
@@ -87,8 +80,10 @@ function initRegister(){
 				console.log('Registration successful');
 	
 				const loginResponse = await attemptLogin(username, password, csrfToken);
-				if (loginResponse)
-					handleRedirect('#game');
+				if (loginResponse){
+                    handleRedirect('#game');
+                    loadChat();
+                }
 			} catch (error) {
 				showError(error.message);
 			}

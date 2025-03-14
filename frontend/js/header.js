@@ -4,14 +4,7 @@ async function loadHeader() {
     const blur = document.getElementById("blur-overlay")
     blur.classList.remove("active");
 
-    let isAuthenticated = await checkAuth();
-    console.log("Is user auth? " + isAuthenticated);
-
-    if (!isAuthenticated) {
-        window.location.href = "#login";
-        console.log("Not logged-in -> redirecting to login page.");
-        return false;
-    }
+    await checkAuth();
 
     document.getElementById('header_username').textContent = getCookie("username") + "▾";
     
@@ -94,17 +87,7 @@ function initHeader(){
     });
 
     document.getElementById('header_logout').addEventListener('click', async () => {
-        try {
-            const response = await fetch('/api/users/logout/', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-        } catch (error) {
-            console.error('Error logging out:', error);
-        }
-        deleteAllCookies();
+        logout(1);
     });
 
     document.addEventListener("mouseover", function(event) {

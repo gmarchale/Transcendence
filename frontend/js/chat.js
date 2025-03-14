@@ -249,7 +249,9 @@ function initChat(){
 		let clickedElement = event.target;
 		if (!clickedElement.closest("#chat_settings") && !clickedElement.closest("#chat_dropdownMenu")) {
 			let isClosed = !chatContainer.classList.contains("expanded");
-			if (isClosed){
+			if (isClosed 
+				&& (location.hash.split('?')[0].slice(1) || 'game') != 'register'
+				&& (location.hash.split('?')[0].slice(1) || 'game') != 'login'){
 				loadChat()
 				document.getElementById("chat_title").textContent = "Chat - " + getTranslation("chat_friendlist_title");
 			} else {

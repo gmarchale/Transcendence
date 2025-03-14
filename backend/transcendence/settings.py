@@ -170,9 +170,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Authentication settings
-LOGIN_URL = '/login'
-LOGIN_REDIRECT_URL = '/game'
-LOGOUT_REDIRECT_URL = '/login'
+# LOGIN_URL = None
+# LOGIN_REDIRECT_URL = None
+# LOGOUT_REDIRECT_URL = None
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

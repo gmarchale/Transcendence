@@ -18,6 +18,8 @@ from django.core.files.base import ContentFile
 import os
 from django.utils import timezone
 from datetime import timedelta
+import urllib.parse
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -52,7 +54,8 @@ def oauth_login(request):
 def oauth_callback(request):
     code = request.GET.get("code")
     if not code:
-        return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://localhost/#login?oauth=failed&error=No authorization code provided")
+        # return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
     data = {
         "grant_type": "authorization_code",
         "client_id": CLIENT_ID,
@@ -62,23 +65,45 @@ def oauth_callback(request):
     }
     response = requests.post(TOKEN_URL, data=data)
     if response.status_code != 200:
-        return Response({"error": "Failed to get access token"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://localhost/#login?oauth=failed&error=Failed to get access token")
+        # return Response({"error": "Failed to get access token"}, status=status.HTTP_400_BAD_REQUEST)
     token_data = response.json()
     access_token = token_data.get("access_token")
     headers = {"Authorization": f"Bearer {access_token}"}
     user_info = requests.get(USER_INFO_URL, headers=headers)
     if user_info.status_code != 200:
-        return Response({"error": "Failed to fetch user info"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://localhost/#login?oauth=failed&error=Failed to fetch user info")
+        # return Response({"error": "Failed to fetch user info"}, status=status.HTTP_400_BAD_REQUEST)
     user_data = user_info.json()
 
-    user, created = User.objects.get_or_create(
-        username=user_data["login"],
-        defaults={"email": user_data["email"], "display_name": user_data["displayname"], "avatar": user_data["image"]["link"]}
-    )
+    try:
+        user, created = User.objects.get_or_create(
+            email=user_data["email"],
+            from42=True,
+            defaults={
+                "username": user_data["login"],
+                "display_name": user_data["displayname"],
+                "avatar": user_data["image"]["link"]
+            }
+        )
+    except Exception as e:
+        logger.error(f"Registration failed for user : {str(e)}")
+        return redirect(f"https://localhost/#login?oauth=failed&error=Registration failed")
+        # return Response({'detail': 'Registration failed'}, status=status.HTTP_400_BAD_REQUEST)
+
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     login(request, user)
-    new_avatar_url = update_user_avatar(user, user_data["image"]["link"])
-    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(new_avatar_url or user_data['image']['link']))
+
+    avatar_url = None
+    if created:
+        avatar_url = update_user_avatar(user, user_data["image"]["link"])
+    else:
+        if user.avatar:
+            avatar_url = user.avatar.url
+            if not avatar_url.startswith('http'):
+                avatar_url = request.build_absolute_uri(avatar_url)
+
+    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(avatar_url or "null"))
 
 
 @api_view(["GET"])
