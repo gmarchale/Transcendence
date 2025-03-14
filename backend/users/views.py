@@ -16,7 +16,10 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
+from django.utils import timezone
+from datetime import timedelta
 import urllib.parse
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -256,6 +259,8 @@ def logout_view(request):
         username = request.user.username
         logger.info(f"Logout request for user: {username}")
 
+        request.user.last_logout = timezone.now()
+        request.user.save()
         # Clear the session
         request.session.flush()
         logout(request)
@@ -367,3 +372,52 @@ def change_password(request):
         request.user.save()
         return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def heart_beat(request):
+    if request.user:
+        request.user.last_active = timezone.now()
+        request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def check_status(request):
+    
+    id_user_0 = request.query_params.get('id_user_0')
+
+    if not id_user_0:
+        return Response({'error': 'id_user_0 is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user_0 = get_object_or_404(User, id=id_user_0)
+
+    except Exception as e:
+        return Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    last_active = user_0.last_active
+    last_login = user_0.last_login
+    last_logout = user_0.last_logout
+
+
+    if not last_active:
+        print("STATUS: OFFLINE - User is logged out")
+        return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
+
+    elif last_logout and last_logout > last_login: 
+        print("STATUS: OFFLINE - User is logged out")
+        return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
+
+    elif timezone.now() - last_active < timedelta(minutes=1) or timezone.now() - last_login < timedelta(minutes=2):
+        print("STATUS: ONLINE - User is logged in and active")
+        return Response({'status': 0}, status=status.HTTP_200_OK) # User is logged in and active (online)
+    
+    else:
+        print("STATUS: AWAY - User is logged in but away")
+        return Response({'status': 2}, status=status.HTTP_200_OK) # User is logged in but away (inactive for more than 2 minutes)
