@@ -17,6 +17,7 @@ class PongGame {
         this.reconnectDelay = 5000;
         this.heartbeatInterval = null;
         this.gameSocket = null;
+        this.uiSocket = null;
         this.currentUser = null;
         this.gameId = null;
         this.gameState = null;
@@ -66,7 +67,6 @@ class PongGame {
             this.initializeGameState();
             this.initializeEventListeners();
             this.setupWebSocket();
-            this.initializeFromUrl();
             
             console.log('Game initialization complete');
         } catch (error) {
@@ -128,20 +128,6 @@ class PongGame {
         }
     }
     
-    // getCookie(name) {
-    //     let cookieValue = null;
-    //     if (document.cookie && document.cookie !== '') {
-    //         const cookies = document.cookie.split(';');
-    //         for (let i = 0; i < cookies.length; i++) {
-    //             const cookie = cookies[i].trim();
-    //             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-    //                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     return cookieValue;
-    // }
     
     initializeElements() {
         console.log('Initializing game elements...');
@@ -185,51 +171,6 @@ class PongGame {
                 }
             } else {
                 console.error('Canvas element not found');
-            }
-            
-            // Add event listeners to buttons if they exist
-            if (this.createGameBtn) {
-                this.createGameBtn.addEventListener('click', () => {
-                    console.log('Create game button clicked');
-                    this.startGame();
-                });
-                console.log('Create game button event listener added');
-            } else {
-                console.error('Create game button not found');
-            }
-            
-            if (this.joinGameBtn) {
-                this.joinGameBtn.addEventListener('click', () => {
-                    console.log('Join game button clicked');
-                    
-                    // Create form if it doesn't exist
-                    let form = document.getElementById('join_game_form');
-                    if (!form) {
-                        form = document.createElement('form');
-                        form.id = 'join_game_form';
-                        form.innerHTML = `
-                            <input type="text" id="game_id_input" placeholder="Enter Game ID">
-                            <button type="submit">Join</button>
-                        `;
-                        form.addEventListener('submit', (e) => {
-                            e.preventDefault();
-                            const gameId = document.getElementById('game_id_input').value;
-                            if (gameId) {
-                                this.joinGame(gameId);
-                            }
-                            form.remove(); // Remove form after submission
-                        });
-                        
-                        // Insert form after join button
-                        this.joinGameBtn.parentNode.insertBefore(form, this.joinGameBtn.nextSibling);
-                        document.getElementById('game_id_input').focus();
-                    } else {
-                        form.remove(); // Toggle form visibility if it already exists
-                    }
-                });
-                console.log('Join game button event listener added');
-            } else {
-                console.error('Join game button not found');
             }
 
             // Add window resize handler
@@ -292,17 +233,11 @@ class PongGame {
     }
     
     initializeEventListeners() {
-        // Disable buttons initially
-        //this.createGameBtn.disabled = true;
-        //this.joinGameBtn.disabled = true;
-        
         // Bind event listeners
         this.createGameBtn.addEventListener('click', () => this.startGame());
-        this.joinGameBtn.addEventListener('click', () => this.joinGame());
+        this.joinGameBtn.addEventListener('click', () => this.showJoinGameForm());
         window.addEventListener('keydown', this.handleKeyPress);
         window.addEventListener('keyup', this.handleKeyUp);
-
-        console.log('Event listeners initialized');
     }
 
     handleKeyUp(event) {
@@ -362,130 +297,125 @@ class PongGame {
     }
     
     setupWebSocket() {
-        console.log('Setting up WebSocket...');
-        
-        if (this.gameSocket) {
-            console.log('WebSocket already exists, state:', this.gameSocket.readyState);
-            if (this.gameSocket.readyState === WebSocket.OPEN) {
-                console.log('WebSocket is already open and connected');
-                this.connected = true;
-                return;
-            }
-            console.log('Closing previous connection...');
-            this.gameSocket.close();
-        }
-
-        // Clear any existing intervals
-        if (this.heartbeatInterval) {
-            console.log('Clearing existing heartbeat interval');
-            clearInterval(this.heartbeatInterval);
-        }
-
-        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        // Use localhost:8000 for development
-        const wsUrl = `${wsScheme}://${window.location.host}/ws/game/`;
-        console.log('Attempting to connect to:', wsUrl);
-        
-        try {
-            this.gameSocket = new WebSocket(wsUrl);
-            console.log('WebSocket instance created');
-        } catch (error) {
-            console.error('Error creating WebSocket:', error);
+        if (this.connectionAttempt) {
+            console.log('Connection attempt already in progress');
             return;
         }
+
+        this.connectionAttempt = true;
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsBase = wsScheme + window.location.host;
         
-        this.gameSocket.onopen = () => {
-            console.log('WebSocket connection established successfully');
-            console.log('Current user:', this.currentUser);
-            
+        // Setup UI WebSocket for general interactions
+        this.uiSocket = new WebSocket(`${wsBase}/ws/game/`);
+        this.uiSocket.onopen = () => {
+            console.log('UI WebSocket connection established');
             this.connected = true;
             this.connectionAttempt = false;
-            this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-            
-            // Enable game buttons when connection is established
-            console.log('Enabling game buttons...');
-            if (this.createGameBtn) {
-                console.log('Create game button found, enabling...');
-                this.createGameBtn.disabled = false;
-            } else {
-                console.error('Create game button not found!');
-            }
-            
-            if (this.joinGameBtn) {
-                console.log('Join game button found, enabling...');
-                this.joinGameBtn.disabled = false;
-            } else {
-                console.error('Join game button not found!');
-            }
-            
-            // Start heartbeat
-            console.log('Setting up heartbeat interval...');
-            this.heartbeatInterval = setInterval(() => {
-                if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
-                    console.log('Sending heartbeat...');
-                    this.gameSocket.send(JSON.stringify({ type: 'heartbeat' }));
-                }
-            }, 30000); // Send heartbeat every 30 seconds
-            
-            // Send user info after connection
-            if (this.currentUser) {
-                console.log('Sending user info:', this.currentUser);
-                this.gameSocket.send(JSON.stringify({
-                    type: 'user_connected',
-                    user_id: this.currentUser.id,
-                    username: this.currentUser.username
-                }));
-            } else {
-                console.error('No current user information available!');
+            this.reconnectAttempts = 0;
+        };
+
+        this.uiSocket.onclose = () => {
+            console.log('UI WebSocket connection closed');
+            this.handleWebSocketClose();
+        };
+
+        this.uiSocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'profile_updated' || data.type === 'ui_action_response') {
+                // Handle UI-specific messages
+                console.log('Received UI message:', data);
+                // Update UI elements based on message type
             }
         };
-        
-        this.gameSocket.onmessage = this.handleWebSocketMessage.bind(this);
-        this.gameSocket.onclose = this.handleWebSocketClose.bind(this);
-        this.gameSocket.onerror = this.handleWebSocketError.bind(this);
     }
-    
-    handleWebSocketOpen() {
-        console.log('WebSocket connection established successfully');
-        // Enable game buttons when connection is established
-        if (this.createGameBtn) this.createGameBtn.disabled = false;
-        if (this.joinGameBtn) this.joinGameBtn.disabled = false;
-    }
-    
-    handleWebSocketClose(event) {
-        console.log('WebSocket connection closed:', event);
-        this.connected = false;
-        
-        // Clear heartbeat interval
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-        }
-        
-        if (!this.connectionAttempt && this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-            
-            // Use exponential backoff for reconnection attempts
-            const backoffTime = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
-            console.log(`Waiting ${backoffTime}ms before next reconnection attempt`);
-            
-            this.reconnectTimeout = setTimeout(() => {
-                this.setupWebSocket();
-            }, backoffTime);
-        } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.log('Maximum reconnection attempts reached. Please refresh the page.');
-        }
-    }
-    
-    handleWebSocketError(error) {
-        console.error('WebSocket error:', error);
-    }
-    
-    handleWebSocketMessage(event) {
-        const message = JSON.parse(event.data);
-        console.log('Received message:', message);
+
+    async startGame() {
+        if (this.isCreatingGame) return;
+        this.isCreatingGame = true;
 
         try {
+            const response = await fetch('/api/game/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to create game');
+            
+            const data = await response.json();
+            console.log('Create game response:', data);  // Debug log to see full response
+            if (!data.id) {
+                throw new Error('No game ID received from server');
+            }
+            this.gameId = data.id;
+            
+            // Setup game-specific WebSocket connection after a small delay
+            // to ensure database transaction is complete
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const wsBase = wsScheme + window.location.host;
+            const wsUrl = `${wsBase}/ws/play/${this.gameId}/`;
+            console.log('Connecting to game socket:', {
+                gameId: this.gameId,
+                url: wsUrl
+            });  // Debug log with more context
+            this.gameSocket = new WebSocket(wsUrl);
+            
+            this.gameSocket.onopen = () => {
+                console.log('Game WebSocket connection established');
+                // Send create_game message after connection
+                this.gameSocket.send(JSON.stringify({
+                    'type': 'create_game'
+                }));
+            };
+
+            this.gameSocket.onerror = (error) => {
+                console.error('Game WebSocket error:', error);
+                // Try to reconnect if the connection fails
+                setTimeout(() => {
+                    if (!this.gameSocket || this.gameSocket.readyState === WebSocket.CLOSED) {
+                        console.log('Attempting to reconnect game socket...');
+                        this.gameSocket = new WebSocket(wsUrl);
+                    }
+                }, 1000);
+            };
+
+            this.gameSocket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.handleWebSocketMessage(data);
+            };
+
+            this.gameSocket.onclose = () => {
+                console.log('Game WebSocket connection closed');
+                this.gameSocket = null;
+            };
+            
+        } catch (error) {
+            console.error('Error creating game:', error);
+        } finally {
+            this.isCreatingGame = false;
+        }
+    }
+
+    handleWebSocketClose() {
+        this.connected = false;
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            setTimeout(() => {
+                this.reconnectAttempts++;
+                this.setupWebSocket();
+            }, this.reconnectDelay);
+        }
+    }
+    
+    handleWebSocketMessage(message) {
+        try {
+            console.log('here i am');
+            console.log('Received message:', message);
+
             switch (message.type) {
                 case 'connection_established':
                     console.log('Connection established:', {
@@ -498,13 +428,13 @@ class PongGame {
 
                 case 'game_created':
                     console.log('Game created, initializing game state:', message);
-                    this.gameId = message.game_id;
+                    this.gameId = message.id;  // Changed from message.game_id to message.id
                     this.playerId = message.player_id;
                     this.gameState = message.game_state;
                     this.isCreatingGame = false;
                     
                     // Update URL with the game ID from server
-                    window.location.hash = `play/${message.game_id}`;
+                    window.location.hash = `play/${message.id}`;  // Changed from message.game_id to message.id
                     
                     // Enable ready button for game creator
                     if (this.player1Ready) {
@@ -592,55 +522,57 @@ class PongGame {
         }
     }
     
-    startGame() {
-        if (!this.connected || this.isCreatingGame || this.gameId) {
-            console.log('Cannot create game:', {
-                connected: this.connected,
-                isCreatingGame: this.isCreatingGame,
-                hasGameId: !!this.gameId
-            });
-            return;
-        }
-        
-        this.isCreatingGame = true;
-        
-        try {
-            this.gameSocket.send(JSON.stringify({
-                type: 'create_game'
-            }));
-            // The game ID will be set when we receive the response from the server
-            // in handleWebSocketMessage
-        } catch (error) {
-            console.error('Error creating game:', error);
-            this.isCreatingGame = false;
-            if (this.createGameBtn) this.createGameBtn.disabled = false;
-            if (this.joinGameBtn) this.joinGameBtn.disabled = false;
-        }
-    }
-    
     joinGame(gameId) {
-        if (!this.connected) {
-            console.error('Not connected to game server');
-            return;
-        }
-        
-        if (!gameId) {
-            console.error('No game ID provided');
-            return;
-        }
-        
-        //if (this.createGameBtn) this.createGameBtn.disabled = true;
-        //if (this.joinGameBtn) this.joinGameBtn.disabled = true;
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsBase = wsScheme + window.location.host;
+        const wsUrl = `${wsBase}/ws/play/${gameId}/`;
+        console.log('Connecting to game socket:', {
+            gameId: gameId,
+            url: wsUrl
+        });
         
         try {
+            this.gameSocket = new WebSocket(wsUrl);
             this.gameId = gameId;
-            this.gameSocket.send(JSON.stringify({
-                type: 'join_game',
-                game_id: gameId
-            }));
-            window.location.hash = `play/${gameId}`;
+            
+            this.gameSocket.onopen = () => {
+                console.log('Game WebSocket connection established');
+                this.gameSocket.send(JSON.stringify({
+                    'type': 'join_game',
+                    'game_id': gameId
+                }));
+                window.location.hash = `play/${gameId}`;
+            };
+
+            this.gameSocket.onerror = (error) => {
+                console.error('Game WebSocket error:', error);
+                // Try to reconnect if the connection fails
+                setTimeout(() => {
+                    if (!this.gameSocket || this.gameSocket.readyState === WebSocket.CLOSED) {
+                        console.log('Attempting to reconnect game socket...');
+                        this.gameSocket = new WebSocket(wsUrl);
+                    }
+                }, 1000);
+                // Re-enable buttons on error
+                if (this.createGameBtn) this.createGameBtn.disabled = false;
+                if (this.joinGameBtn) this.joinGameBtn.disabled = false;
+            };
+
+            this.gameSocket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.handleWebSocketMessage(data);
+            };
+
+            this.gameSocket.onclose = () => {
+                console.log('Game WebSocket connection closed');
+                this.gameSocket = null;
+                // Re-enable buttons when connection closes
+                if (this.createGameBtn) this.createGameBtn.disabled = false;
+                if (this.joinGameBtn) this.joinGameBtn.disabled = false;
+            };
         } catch (error) {
             console.error('Error joining game:', error);
+            // Re-enable buttons on error
             if (this.createGameBtn) this.createGameBtn.disabled = false;
             if (this.joinGameBtn) this.joinGameBtn.disabled = false;
         }
@@ -1138,13 +1070,31 @@ class PongGame {
         }
     }
 
-    initializeFromUrl() {
-        const hash = window.location.hash;
-        const match = hash.match(/#play\/([^/]+)/);
-        if (match) {
-            const gameId = match[1];
-            console.log('Found game ID in URL:', gameId);
-            this.joinGame(gameId);
+    showJoinGameForm() {
+        let form = document.getElementById('join_game_form');
+        if (form) {
+            form.remove();
+            return;
         }
+
+        form = document.createElement('form');
+        form.id = 'join_game_form';
+        form.innerHTML = `
+            <input type="text" id="game_id_input" placeholder="Enter Game ID">
+            <button type="submit">Join</button>
+        `;
+        
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const gameId = document.getElementById('game_id_input').value;
+            if (gameId) {
+                console.log('Joining game:', gameId);
+                this.joinGame(gameId);
+            }
+            form.remove();
+        });
+        
+        this.joinGameBtn.parentNode.insertBefore(form, this.joinGameBtn.nextSibling);
+        document.getElementById('game_id_input').focus();
     }
 };  
