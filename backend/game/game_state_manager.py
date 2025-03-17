@@ -58,7 +58,7 @@ class GameStateManager:
         return cls._serialize_game_state(cls._instances[game_id])
 
     @classmethod
-    def join_game(cls, game_id: str, player2_id: str, player2_username: str) -> bool:
+    def join_game(cls, game_id: str, player2_id: str, player2_username: str) -> Optional[Dict]:
         """Add second player to the game"""
         if game_id in cls._instances:
             game_state = cls._instances[game_id]
@@ -67,14 +67,16 @@ class GameStateManager:
                     id=player2_id, 
                     username=player2_username
                 )
-                # Don't start the game immediately, wait for both players to be ready
-                return True
-        return False
+                # Return the serialized game state
+                return cls._serialize_game_state(game_state)
+        return None
 
     @classmethod
     def set_player_ready(cls, game_id: str, player_id: str) -> Optional[Dict]:
         """Set a player's ready status"""
+        print(f"Setting ready status for player {player_id} in game {game_id}")
         if game_id not in cls._instances:
+            print(f"Game {game_id} not found")
             return None
 
         game_state = cls._instances[game_id]
@@ -83,14 +85,17 @@ class GameStateManager:
 
         # Update ready status for the correct player
         if player1 and player1.id == player_id:
+            print(f"Player 1 {player1.username} is now ready")
             player1.is_ready = True
         elif player2 and player2.id == player_id:
+            print(f"Player 2 {player2.username} is now ready")
             player2.is_ready = True
 
         # Check if both players are ready
         if (player1 and player2 and 
             player1.is_ready and player2.is_ready and 
             game_state['status'] == 'waiting'):
+            print(f"Both players ready in game {game_id}, starting game")
             game_state['status'] = 'playing'
             game_state['start_time'] = time.time()
 

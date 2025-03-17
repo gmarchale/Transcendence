@@ -1,5 +1,7 @@
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
+import logging
+import asyncio
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 from .models import Game
@@ -18,7 +20,7 @@ from .game_state_manager import GameStateManager
 logger = logging.getLogger('game')
 User = get_user_model()
 
-class GameUIConsumer(AsyncWebsocketConsumer):
+class GameUIConsumer(AsyncJsonWebsocketConsumer):
     """Consumer for handling UI interactions and profile updates"""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,12 +36,22 @@ class GameUIConsumer(AsyncWebsocketConsumer):
         self.user_group = f"user_{self.user.id}"
         await self.channel_layer.group_add(self.user_group, self.channel_name)
         await self.accept()
+        
+        # Send connection established message
+        await self.send_json({
+            'type': 'connection_established',
+            'user': {
+                'id': self.user.id,
+                'username': self.user.username
+            }
+        })
 
     async def disconnect(self, close_code):
         if self.user_group:
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
 
     async def receive_json(self, content):
+        print('Received WebSocket message:', content)  
         message_type = content.get('type')
         if message_type == 'profile_update':
             # Handle profile updates
@@ -47,6 +59,13 @@ class GameUIConsumer(AsyncWebsocketConsumer):
         elif message_type == 'ui_action':
             # Handle UI actions
             await self.handle_ui_action(content)
+        elif message_type == 'create_game':
+            await self.handle_create_game()
+        elif message_type == 'join_game':
+            await self.handle_join_game(content.get('game_id'))
+        elif message_type == 'player_ready':
+            print('Handling player_ready message')  
+            await self.handle_player_ready(content.get('game_id'))
 
     async def handle_profile_update(self, content):
         try:
@@ -69,7 +88,187 @@ class GameUIConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error handling UI action: {str(e)}", exc_info=True)
 
-class GamePlayConsumer(AsyncWebsocketConsumer):
+    async def handle_create_game(self):
+        try:
+            print("Creating game...")  
+            # Create game in database
+            game = await database_sync_to_async(Game.objects.create)(
+                player1=self.user,
+                status='waiting'
+            )
+            print(f"Game created with ID: {game.id}")  
+            
+            # Initialize game state in GameStateManager
+            initial_state = GameStateManager.create_game(str(game.id), str(self.user.id), self.user.username)
+            
+            # Add user to game channel group
+            game_group = f"game_{game.id}"
+            await self.channel_layer.group_add(game_group, self.channel_name)
+            
+            # Send game_created through the channel layer to ensure consistent state
+            await self.channel_layer.group_send(
+                game_group,
+                {
+                    'type': 'game_created',
+                    'game_id': str(game.id),
+                    'player_id': str(self.user.id),
+                    'game_state': initial_state
+                }
+            )
+            print(f"Sent game_created message for game {game.id}")  
+            
+        except Exception as e:
+            print(f"Error creating game: {str(e)}")  
+            await self.send_json({
+                'type': 'error',
+                'message': str(e)
+            })
+
+    async def handle_join_game(self, game_id):
+        try:
+            @database_sync_to_async
+            def get_game():
+                game = Game.objects.get(id=game_id)
+                return game
+                
+            game = await get_game()
+            
+            # Check game status and get player1 info
+            @database_sync_to_async
+            def check_game():
+                if game.status != 'waiting' or game.player1 == self.user:
+                    raise ValueError('Game not available')
+                return {
+                    'game': game,
+                    'player1': {
+                        'id': game.player1.id,
+                        'username': game.player1.username
+                    }
+                }
+                
+            game_info = await check_game()
+            game = game_info['game']
+            player1 = game_info['player1']
+            
+            # Update game with database_sync_to_async
+            @database_sync_to_async
+            def update_game():
+                game.player2 = self.user
+                game.status = 'waiting'
+                game.save()
+                return game
+            
+            game = await update_game()
+
+            # Initialize game state in GameStateManager
+            new_state = GameStateManager.join_game(str(game.id), str(self.user.id), self.user.username)
+            if not new_state:
+                await self.send_json({
+                    'type': 'error',
+                    'message': 'Failed to join game'
+                })
+                return
+            
+            # Add user to game channel group
+            game_group = f"game_{game.id}"
+            await self.channel_layer.group_add(game_group, self.channel_name)
+            
+            # Notify all players with the new state
+            await self.channel_layer.group_send(
+                game_group,
+                {
+                    'type': 'game_state_update',
+                    'game_state': new_state
+                }
+            )
+
+            # Send game_joined event specifically to the joining player
+            await self.send_json({
+                'type': 'game_joined',
+                'game_id': game.id,
+                'player1': player1,
+                'player2': {
+                    'id': self.user.id,
+                    'username': self.user.username
+                }
+            })
+        except Game.DoesNotExist:
+            await self.send_json({
+                'type': 'error',
+                'message': 'Game not found'
+            })
+        except Exception as e:
+            await self.send_json({
+                'type': 'error',
+                'message': str(e)
+            })
+
+    async def handle_player_ready(self, game_id):
+        """Handle player ready message"""
+        print(f"Starting handle_player_ready for game {game_id}")  
+        try:
+            if not game_id:
+                await self.send_json({
+                    'type': 'error',
+                    'message': 'No game ID provided'
+                })
+                return
+
+            # Get game from database
+            game = await database_sync_to_async(Game.objects.get)(id=game_id)
+            if not game:
+                await self.send_json({
+                    'type': 'error',
+                    'message': 'Game not found'
+                })
+                return
+
+            # Update player ready state
+            print(f"Setting player {self.user.id} ready in game {game.id}")  
+            new_state = GameStateManager.set_player_ready(str(game.id), str(self.user.id))
+            if new_state:
+                print(f"Broadcasting new game state: {new_state}")  
+                # Broadcast the updated state to all players in the game
+                game_group = f"game_{game.id}"
+                await self.channel_layer.group_send(
+                    game_group,
+                    {
+                        'type': 'game_state_update',
+                        'game_state': new_state
+                    }
+                )
+
+        except Game.DoesNotExist:
+            await self.send_json({
+                'type': 'error',
+                'message': 'Game not found'
+            })
+        except Exception as e:
+            logger.error(f"Error handling player ready: {str(e)}", exc_info=True)
+            await self.send_json({
+                'type': 'error',
+                'message': 'Internal server error'
+            })
+
+    async def game_state_update(self, event):
+        """Handle game state update"""
+        try:
+            await self.send_json({
+                'type': 'game_state_update',
+                'game_state': event.get('game_state', {})
+            })
+        except Exception as e:
+            logger.error(f"Error in game_state_update: {str(e)}", exc_info=True)
+
+    async def game_joined(self, event):
+        """Handle game joined message"""
+        await self.send_json(event)
+
+    async def game_created(self, event):
+        """Handle game created message"""
+        await self.send_json(event)
+
+class GamePlayConsumer(AsyncJsonWebsocketConsumer):
     """Consumer for handling specific game sessions"""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -147,95 +346,6 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error creating game: {str(e)}", exc_info=True)
             return None
 
-    async def create_game(self):
-        """Create a new game"""
-        try:
-            game = await self.create_game_sync()
-            if game:
-                # Initialize game state
-                initial_state = GameStateManager.create_game(
-                    str(game.id),
-                    str(game.player1.id),
-                    game.player1.username
-                )
-                
-                # Join the game's channel group
-                self.game = game
-                self.channel_group_name = f"game_{game.id}"
-                await self.channel_layer.group_add(
-                    self.channel_group_name,
-                    self.channel_name
-                )
-
-                # Send game_created message with proper JSON structure
-                await self.send_json({
-                    'type': 'game_created',
-                    'id': str(game.id),
-                    'player_id': str(self.user.id),
-                    'game_state': initial_state
-                })
-                
-        except Exception as e:
-            logger.error(f"Error creating game: {str(e)}")
-            await self.send_json({
-                'type': 'error',
-                'message': 'Failed to create game'
-            })
-
-    async def join_game(self):
-        """Join an existing game"""
-        try:
-            game = await self.find_available_game()
-            if not game:
-                logger.info("No available games found")
-                return None
-
-            if game.status == 'waiting' and game.player1 != self.user:
-                # Join as player 2
-                game.player2 = self.user
-                game.status = 'playing'
-                await sync_to_async(game.save)()
-
-                # Join the game in memory
-                GameStateManager.join_game(str(game.id), str(self.user.id), self.user.username)
-
-                self.game = game
-                self.channel_group_name = f"game_{game.id}"
-                await self.channel_layer.group_add(
-                    self.channel_group_name,
-                    self.channel_name
-                )
-
-                # Start the game loop when second player joins
-                self.game_loop_task = asyncio.create_task(self.game_loop())
-
-                # Get current game state
-                game_state = GameStateManager.get_game_state(str(game.id))
-
-                # Broadcast join message
-                await self.channel_layer.group_send(
-                    self.channel_group_name,
-                    {
-                        'type': 'game_joined',
-                        'game_id': str(game.id),
-                        'player1_id': game.player1.id,
-                        'player2_id': self.user.id,
-                        'game_state': game_state
-                    }
-                )
-                return game
-
-            else:
-                await self.send_json({
-                    'type': 'error',
-                    'message': 'Game is not available for joining'
-                })
-                return None
-
-        except Exception as e:
-            logger.error(f"Error joining game: {str(e)}", exc_info=True)
-            return None
-
     async def paddle_move(self, direction, game_id):
         """Handle paddle movement"""
         try:
@@ -279,6 +389,26 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
                 # End the game and clean up
                 final_state = GameStateManager.end_game(str(self.game.id), reason='disconnected')
                 if final_state:
+                    logger.info(f"[GAME] Final Score: {final_state['score']}")
+                    
+                    # Get winner ID based on who won
+                    winner_id = None
+                    if final_state['winner'] == 'player1':
+                        winner_id = self.game.player1.id
+                    elif final_state['winner'] == 'player2':
+                        winner_id = self.game.player2.id
+                    
+                    # Update game status and stats in database
+                    await self.update_game_status(
+                        status='finished',
+                        winner=winner_id,
+                        duration=final_state.get('duration'),
+                        duration_formatted=final_state.get('duration_formatted'),
+                        score_player1=final_state['score']['player1'],
+                        score_player2=final_state['score']['player2']
+                    )
+
+                    # Broadcast final state to all players
                     await self.channel_layer.group_send(
                         self.channel_group_name,
                         {
@@ -286,7 +416,7 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
                             'game_state': final_state
                         }
                     )
-                
+
                 # Save final state to database
                 await self.update_game_state_sync(self.game.id, final_state)
                 
@@ -295,7 +425,7 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
                 
                 if self.game_loop_task:
                     self.game_loop_task.cancel()
-                    
+
             await self.channel_layer.group_discard(
                 self.channel_group_name,
                 self.channel_name
@@ -310,6 +440,7 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
                 return
                 
             data = json.loads(text_data)
+            print('Received WebSocket message:', data)  
             message_type = data.get('type')
             
             # Handle heartbeat messages
@@ -327,13 +458,6 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
                 })
                 await self.close()
                 return
-
-            if message_type == 'create_game':
-                await self.create_game()
-            
-            elif message_type == 'join_game':
-                game_id = data.get('game_id')
-                await self.join_game()
             
             elif message_type == 'paddle_move':
                 game_id = data.get('game_id')
@@ -346,30 +470,6 @@ class GamePlayConsumer(AsyncWebsocketConsumer):
                     return
                 await self.paddle_move(direction, game_id)
             
-            elif message_type == 'player_ready':
-                if not self.game:
-                    await self.send_json({
-                        'type': 'error',
-                        'message': 'No active game'
-                    })
-                    return
-
-                # Update player ready state
-                new_state = GameStateManager.set_player_ready(str(self.game.id), str(self.user.id))
-                if new_state:
-                    # If both players are ready and game starts, start the game loop
-                    if new_state['status'] == 'playing':
-                        self.game_loop_task = asyncio.create_task(self.game_loop())
-                    
-                    # Broadcast the updated state
-                    await self.channel_layer.group_send(
-                        self.channel_group_name,
-                        {
-                            'type': 'game_state_update',
-                            'game_state': new_state
-                        }
-                    )
-
             else:
                 await self.send_json({
                     'type': 'error',

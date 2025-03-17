@@ -81,7 +81,7 @@ class PongGame {
                 credentials: 'include',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': this.getCookie('csrftoken')
                 }
             });
             
@@ -128,6 +128,10 @@ class PongGame {
         }
     }
     
+    getCookie(name) {
+        let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
     
     initializeElements() {
         console.log('Initializing game elements...');
@@ -141,10 +145,8 @@ class PongGame {
             console.log('Canvas container:', this.canvasContainer);
             
             this.createGameBtn = document.getElementById('createGameBtn');
-            console.log('Create game button:', this.createGameBtn);
-            
             this.joinGameBtn = document.getElementById('joinGameBtn');
-            console.log('Join game button:', this.joinGameBtn);
+            console.log('Game buttons:', { create: this.createGameBtn, join: this.joinGameBtn });
             
             this.gameStatus = document.getElementById('game_Status');
             console.log('Game status:', this.gameStatus);
@@ -307,7 +309,11 @@ class PongGame {
         const wsBase = wsScheme + window.location.host;
         
         // Setup UI WebSocket for general interactions
-        this.uiSocket = new WebSocket(`${wsBase}/ws/game/`);
+        const wsUrl = `${wsBase}/ws/game/`;
+        console.log('Connecting to UI WebSocket:', wsUrl);
+        
+        this.uiSocket = new WebSocket(wsUrl);
+        
         this.uiSocket.onopen = () => {
             console.log('UI WebSocket connection established');
             this.connected = true;
@@ -320,13 +326,15 @@ class PongGame {
             this.handleWebSocketClose();
         };
 
+        this.uiSocket.onerror = (error) => {
+            console.error('UI WebSocket error:', error);
+            this.connectionAttempt = false;
+        };
+
         this.uiSocket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (data.type === 'profile_updated' || data.type === 'ui_action_response') {
-                // Handle UI-specific messages
-                console.log('Received UI message:', data);
-                // Update UI elements based on message type
-            }
+            console.log('Received UI WebSocket message:', data);
+            this.handleWebSocketMessage(data);
         };
     }
 
@@ -335,128 +343,81 @@ class PongGame {
         this.isCreatingGame = true;
 
         try {
+            if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN) {
+                throw new Error('WebSocket connection not ready');
+            }
+
+            console.log('Creating game via HTTP POST...');
             const response = await fetch('/api/game/create/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
+                    'X-CSRFToken': this.getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'include'
             });
-
-            if (!response.ok) throw new Error('Failed to create game');
             
-            const data = await response.json();
-            console.log('Create game response:', data);  // Debug log to see full response
-            if (!data.id) {
-                throw new Error('No game ID received from server');
+            const text = await response.text();
+            console.log('Server response:', text);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to create game: ${response.status} - ${text}`);
             }
+
+            const data = JSON.parse(text);
+            console.log('Game created successfully:', data);
             this.gameId = data.id;
             
-            // Setup game-specific WebSocket connection after a small delay
-            // to ensure database transaction is complete
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const wsBase = wsScheme + window.location.host;
-            const wsUrl = `${wsBase}/ws/play/${this.gameId}/`;
-            console.log('Connecting to game socket:', {
-                gameId: this.gameId,
-                url: wsUrl
-            });  // Debug log with more context
-            this.gameSocket = new WebSocket(wsUrl);
-            
-            this.gameSocket.onopen = () => {
-                console.log('Game WebSocket connection established');
-                // Send create_game message after connection
-                this.gameSocket.send(JSON.stringify({
-                    'type': 'create_game'
-                }));
-            };
-
-            this.gameSocket.onerror = (error) => {
-                console.error('Game WebSocket error:', error);
-                // Try to reconnect if the connection fails
-                setTimeout(() => {
-                    if (!this.gameSocket || this.gameSocket.readyState === WebSocket.CLOSED) {
-                        console.log('Attempting to reconnect game socket...');
-                        this.gameSocket = new WebSocket(wsUrl);
-                    }
-                }, 1000);
-            };
-
-            this.gameSocket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                this.handleWebSocketMessage(data);
-            };
-
-            this.gameSocket.onclose = () => {
-                console.log('Game WebSocket connection closed');
-                this.gameSocket = null;
-            };
+            // No need to send any WebSocket message
+            // Backend will automatically:
+            // 1. Add us to the game channel
+            // 2. Send game_created message through existing WebSocket
+            // 3. handleWebSocketMessage will then update URL hash
             
         } catch (error) {
             console.error('Error creating game:', error);
+            if (this.gameStatus) {
+                this.gameStatus.textContent = `Error: ${error.message}`;
+            }
         } finally {
             this.isCreatingGame = false;
-        }
-    }
-
-    handleWebSocketClose() {
-        this.connected = false;
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            setTimeout(() => {
-                this.reconnectAttempts++;
-                this.setupWebSocket();
-            }, this.reconnectDelay);
         }
     }
     
     handleWebSocketMessage(message) {
         try {
-            console.log('here i am');
-            console.log('Received message:', message);
-
+            console.log('Received WebSocket message:', message);
+            
             switch (message.type) {
+                case 'game_created':
+                    console.log('Game created:', message);
+                    // Parse game_id as integer
+                    this.gameId = parseInt(message.game_id || message.id, 10);
+                    this.playerId = parseInt(message.player_id, 10);
+                    this.gameState = message.game_state;
+                    this.isCreatingGame = false;
+
+                    console.log('Setting URL hash to:', `play/${this.gameId}`);
+                    window.location.hash = `play/${this.gameId}`;
+                    break;
+                    
+                case 'game_joined':
+                    console.log('Game joined:', message);
+                    // Parse game_id as integer
+                    this.gameId = parseInt(message.game_id, 10);
+                    this.playerId = parseInt(message.player2.id, 10);  // Set player ID from player2 info
+                    window.location.hash = `play/${this.gameId}`;
+                    break;
+
                 case 'connection_established':
                     console.log('Connection established:', {
                         playerId: message.user.id,
                         username: message.user.username
                     });
                     this.connected = true;
-                    this.playerId = message.user.id;
+                    this.playerId = parseInt(message.user.id, 10);  // Ensure player ID is integer
                     break;
-
-                case 'game_created':
-                    console.log('Game created, initializing game state:', message);
-                    this.gameId = message.id;  // Changed from message.game_id to message.id
-                    this.playerId = message.player_id;
-                    this.gameState = message.game_state;
-                    this.isCreatingGame = false;
-                    
-                    // Update URL with the game ID from server
-                    window.location.hash = `play/${message.id}`;  // Changed from message.game_id to message.id
-                    
-                    // Enable ready button for game creator
-                    if (this.player1Ready) {
-                        this.player1Ready.disabled = false;
-                    }
-                    this.updateReadyState(message.game_state);
-                    break;
-
-                case 'game_joined':
-                    console.log('Game joined:', message);
-                    this.gameState = message.game_state;
-                    if (!this.playerId) {
-                        this.playerId = message.player2_id;
-                    }
-                    
-                    // Enable ready button for joined player
-                    if (this.player2Ready) {
-                        this.player2Ready.disabled = false;
-                    }
-                    this.updateReadyState(message.game_state);
-                    break;
-
                 case 'game_state_update':
                     this.gameState = message.game_state;
                     this.updateReadyState(message.game_state);
@@ -511,7 +472,7 @@ class PongGame {
                         this.gameStatus.textContent = `Error: ${message.message}`;
                     }
                     break;
-
+                    
                 case 'player_ready':
                     console.log('Player ready:', message);
                     this.updateReadyState(message.game_state);
@@ -523,58 +484,28 @@ class PongGame {
     }
     
     joinGame(gameId) {
-        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const wsBase = wsScheme + window.location.host;
-        const wsUrl = `${wsBase}/ws/play/${gameId}/`;
-        console.log('Connecting to game socket:', {
-            gameId: gameId,
-            url: wsUrl
-        });
-        
         try {
-            this.gameSocket = new WebSocket(wsUrl);
-            this.gameId = gameId;
+            // Parse gameId as integer
+            this.gameId = parseInt(gameId, 10);
+            // Send join_game message through UI socket
+            this.uiSocket.send(JSON.stringify({
+                'type': 'join_game',
+                'game_id': this.gameId
+            }));
+            console.log('Sent join_game message');
             
-            this.gameSocket.onopen = () => {
-                console.log('Game WebSocket connection established');
-                this.gameSocket.send(JSON.stringify({
-                    'type': 'join_game',
-                    'game_id': gameId
-                }));
-                window.location.hash = `play/${gameId}`;
-            };
-
-            this.gameSocket.onerror = (error) => {
-                console.error('Game WebSocket error:', error);
-                // Try to reconnect if the connection fails
-                setTimeout(() => {
-                    if (!this.gameSocket || this.gameSocket.readyState === WebSocket.CLOSED) {
-                        console.log('Attempting to reconnect game socket...');
-                        this.gameSocket = new WebSocket(wsUrl);
-                    }
-                }, 1000);
-                // Re-enable buttons on error
-                if (this.createGameBtn) this.createGameBtn.disabled = false;
-                if (this.joinGameBtn) this.joinGameBtn.disabled = false;
-            };
-
-            this.gameSocket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                this.handleWebSocketMessage(data);
-            };
-
-            this.gameSocket.onclose = () => {
-                console.log('Game WebSocket connection closed');
-                this.gameSocket = null;
-                // Re-enable buttons when connection closes
-                if (this.createGameBtn) this.createGameBtn.disabled = false;
-                if (this.joinGameBtn) this.joinGameBtn.disabled = false;
-            };
         } catch (error) {
             console.error('Error joining game:', error);
-            // Re-enable buttons on error
-            if (this.createGameBtn) this.createGameBtn.disabled = false;
-            if (this.joinGameBtn) this.joinGameBtn.disabled = false;
+        }
+    }
+    
+    handleWebSocketClose() {
+        this.connected = false;
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            setTimeout(() => {
+                this.reconnectAttempts++;
+                this.setupWebSocket();
+            }, this.reconnectDelay);
         }
     }
     
@@ -587,10 +518,10 @@ class PongGame {
             return;
         }
         
-        if (!this.gameSocket || this.gameSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
+        if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot handle key press:', {
-                hasSocket: !!this.gameSocket,
-                socketState: this.gameSocket?.readyState,
+                hasSocket: !!this.uiSocket,
+                socketState: this.uiSocket?.readyState,
                 gameId: this.gameId,
                 gameStarted: this.gameStarted
             });
@@ -616,7 +547,7 @@ class PongGame {
             
             if (direction) {
                 console.log('Sending paddle_move:', { direction, gameId: this.gameId });
-                this.gameSocket.send(JSON.stringify({
+                this.uiSocket.send(JSON.stringify({
                     type: 'paddle_move',
                     direction: direction,
                     game_id: this.gameId
@@ -627,8 +558,8 @@ class PongGame {
     
     updatePaddlePosition() {
         // console.log('updatePaddlePosition called');
-        if (!this.gameSocket || this.gameSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
-            console.log('Cannot update paddle: socket:', !!this.gameSocket, 'state:', this.gameSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
+        if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
+            console.log('Cannot update paddle: socket:', !!this.uiSocket, 'state:', this.uiSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
             return;
         }
         
@@ -650,9 +581,10 @@ class PongGame {
         }
         
         if (direction) {
-            this.gameSocket.send(JSON.stringify({
+            this.uiSocket.send(JSON.stringify({
                 type: 'paddle_move',
-                direction: direction
+                direction: direction,
+                game_id: this.gameId
             }));
             this.lastPaddleUpdate = now;
         }
@@ -903,10 +835,10 @@ class PongGame {
         homeButton.style.borderRadius = '5px';
         homeButton.onclick = () => {
             // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
+            if (this.uiSocket) {
+                this.uiSocket.onclose = null; // Remove onclose handler
+                this.uiSocket.close();
+                this.uiSocket = null;
             }
             window.location.href = '#game';  
         };
@@ -924,10 +856,10 @@ class PongGame {
         document.body.appendChild(overlay);
         
         // Clean up WebSocket connection
-        if (this.gameSocket) {
-            this.gameSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.gameSocket.close();
-            this.gameSocket = null;
+        if (this.uiSocket) {
+            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+            this.uiSocket.close();
+            this.uiSocket = null;
         }
     }
     
@@ -990,10 +922,10 @@ class PongGame {
         createButton.style.borderRadius = '5px';
         createButton.onclick = () => {
             // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
+            if (this.uiSocket) {
+                this.uiSocket.onclose = null; // Remove onclose handler
+                this.uiSocket.close();
+                this.uiSocket = null;
             }
             window.location.href = '#game';  
         };
@@ -1010,10 +942,10 @@ class PongGame {
         joinButton.style.borderRadius = '5px';
         joinButton.onclick = () => {
             // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
+            if (this.uiSocket) {
+                this.uiSocket.onclose = null; // Remove onclose handler
+                this.uiSocket.close();
+                this.uiSocket = null;
             }
             window.location.href = '#game/join/';  
         };
@@ -1032,41 +964,54 @@ class PongGame {
         document.body.appendChild(overlay);
         
         // Clean up WebSocket connection
-        if (this.gameSocket) {
-            this.gameSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.gameSocket.close();
-            this.gameSocket = null;
+        if (this.uiSocket) {
+            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+            this.uiSocket.close();
+            this.uiSocket = null;
         }
     }
     
     handleReadyClick() {
-        if (!this.gameSocket || !this.gameId) return;
+        console.log('Player clicked ready button');
+        if (!this.gameId) {
+            console.error('No game ID available');
+            return;
+        }
         
-        this.gameSocket.send(JSON.stringify({
-            type: 'player_ready'
+        if (!this.playerId) {
+            console.error('No player ID available');
+            return;
+        }
+        
+        console.log('Sending player_ready message for game:', this.gameId, 'player:', this.playerId);
+        this.uiSocket.send(JSON.stringify({
+            'type': 'player_ready',
+            'game_id': parseInt(this.gameId, 10)
         }));
     }
 
     updateReadyState(gameState) {
+        console.log('updateReadyState called with playerId:', this.playerId);
         if (!gameState || !gameState.players) return;
         
         const players = gameState.players;
-        const isPlayer1 = this.playerId === players.player1?.id;
+        const isPlayer1 = this.playerId === parseInt(players.player1?.id, 10);
+        const isPlayer2 = this.playerId === parseInt(players.player2?.id, 10);
         
         // Update player 1 ready button
         if (players.player1 && this.player1Ready) {
             this.player1Ready.textContent = players.player1.is_ready ? 'Ready!' : 'Not Ready';
             this.player1Ready.classList.toggle('ready', players.player1.is_ready);
-            if (isPlayer1) {
-                this.player1Ready.disabled = players.player1.is_ready;
-            }
+            // Only enable player 1's button if they are player 1 and not ready
+            this.player1Ready.disabled = !isPlayer1 || players.player1.is_ready;
         }
 
         // Update player 2 ready button
         if (players.player2 && this.player2Ready) {
             this.player2Ready.textContent = players.player2.is_ready ? 'Ready!' : 'Not Ready';
             this.player2Ready.classList.toggle('ready', players.player2.is_ready);
-            this.player2Ready.disabled = isPlayer1 || players.player2.is_ready;
+            // Only enable player 2's button if they are player 2 and not ready
+            this.player2Ready.disabled = !isPlayer2 || players.player2.is_ready;
         }
     }
 
