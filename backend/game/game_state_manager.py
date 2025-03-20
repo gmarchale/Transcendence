@@ -103,6 +103,14 @@ class GameStateManager:
             print(f"[DEBUG] Both players ready in game {game_id}, starting game")
             game_state['status'] = 'playing'
             game_state['start_time'] = time.time()
+            
+            # Initialize ball with random direction
+            game_state['ball'].update({
+                'x': game_state['canvas']['width'] / 2,
+                'y': game_state['canvas']['height'] / 2,
+                'dx': 3 * (1 if random.random() > 0.5 else -1),
+                'dy': 3 * (1 if random.random() > 0.5 else -1)
+            })
 
         print(f"[DEBUG] Game state after update:")
         print(f"[DEBUG] - Player 1: {player1.username} (ID: {player1.id}) Ready: {player1.is_ready}")
@@ -155,8 +163,14 @@ class GameStateManager:
             return None
 
         ball = game_state['ball']
+        current_time = time.time()
         
-        # Update position
+        # Only log ball position every 5 seconds
+        if not hasattr(cls, '_last_ball_log') or current_time - cls._last_ball_log >= 5:
+            print(f"[DEBUG] Ball position - x: {ball['x']:.1f}, y: {ball['y']:.1f}, dx: {ball['dx']}, dy: {ball['dy']}")
+            cls._last_ball_log = current_time
+
+        # Update ball position
         ball['x'] += ball['dx']
         ball['y'] += ball['dy']
 

@@ -431,12 +431,17 @@ class PongGame {
                     console.log('Game joined:', message);
                     // Parse game_id as integer
                     this.gameId = parseInt(message.game_id, 10);
-                    this.playerId = parseInt(message.player2.id, 10);  // Set player ID from player2 info
+                    this.playerId = parseInt(message.player2_id, 10);  // Use player2_id from message
                     
                     // Initialize ready button states with the new game state
                     if (message.game_state) {
                         this.gameState = message.game_state;
                         this.updateReadyState(message.game_state);
+                    }
+                    
+                    // Hide canvas until game starts
+                    if (this.canvasContainer) {
+                        this.canvasContainer.style.display = 'none';
                     }
                     
                     // Join the game's WebSocket group
@@ -471,14 +476,21 @@ class PongGame {
                     // Update ready button states
                     this.updateReadyState(message.game_state);
                     
-                    // Start game if both players are ready
-                    if (message.game_state.status === 'playing' && !this.gameStarted) {
-                        this.gameStarted = true;
-                        if (this.canvasContainer) {
-                            this.canvasContainer.style.display = 'block';
+                    // Start game and show canvas only when both players are ready and game is playing
+                    if (message.game_state.status === 'playing') {
+                        if (!this.gameStarted) {
+                            this.gameStarted = true;
+                            if (this.canvasContainer) {
+                                this.canvasContainer.style.display = 'block';
+                            }
+                            if (!this.animationFrameId) {
+                                this.animationFrameId = requestAnimationFrame(() => this.animate());
+                            }
                         }
-                        if (!this.animationFrameId) {
-                            this.animationFrameId = requestAnimationFrame(() => this.animate());
+                    } else {
+                        // Hide canvas if game is not playing
+                        if (this.canvasContainer) {
+                            this.canvasContainer.style.display = 'none';
                         }
                     }
                     break;
@@ -606,7 +618,7 @@ class PongGame {
     }
     
     updatePaddlePosition() {
-        // console.log('updatePaddlePosition called');
+        //console.log('updatePaddlePosition called');
         if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot update paddle: socket:', !!this.uiSocket, 'state:', this.uiSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
             return;
@@ -640,6 +652,7 @@ class PongGame {
     }
     
     animate() {
+        //console.log('animate called');
         if (!this.gameStarted || !this.gameState) {
             if (this.animationFrameId) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -787,10 +800,12 @@ class PongGame {
                 this.player2Id = state.player2_id;
             }
             
+            
             // Update ball position
             if (state.ball) {
                 this.ball = state.ball;
             }
+            
             
             // Update paddle positions
             if (state.paddles) {
