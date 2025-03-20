@@ -70,10 +70,18 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
             game_id = content.get('game_id')
             game_group = f"game_{game_id}"
             await self.channel_layer.group_add(game_group, self.channel_name)
+            print(f"[DEBUG] Player {self.user.username} (ID: {self.user.id}) rejoined game group {game_group}")
             
-            # Send current game state
+            # Send current game state to all players in the group
             current_state = GameStateManager.get_game_state(game_id)
             if current_state:
+                print(f"[DEBUG] Game state for game {game_id}:")
+                if current_state.get('players'):
+                    player1 = current_state['players'].get('player1', {})
+                    player2 = current_state['players'].get('player2', {})
+                    print(f"[DEBUG] - Player 1: {player1.get('username')} (ID: {player1.get('id')})")
+                    print(f"[DEBUG] - Player 2: {player2.get('username')} (ID: {player2.get('id')}) if player2 else 'Not joined yet'")
+                
                 await self.channel_layer.group_send(
                     game_group,
                     {
@@ -260,7 +268,6 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                         'game_state': new_state
                     }
                 )
-
         except Game.DoesNotExist:
             await self.send_json({
                 'type': 'error',

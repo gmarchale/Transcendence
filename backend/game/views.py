@@ -44,8 +44,8 @@ def create_game(request):
         user_group,
         {
             "type": "game_created",
-            "id": str(game.id),
-            "player_id": request.user.id,
+            "game_id": str(game.id),  
+            "player1_id": request.user.id,  
             "game_state": initial_state
         }
     )

@@ -392,10 +392,9 @@ class PongGame {
             switch (message.type) {
                 case 'game_created':
                     console.log('Game created:', message);
-                    // Parse game_id as integer
-                    this.gameId = parseInt(message.game_id || message.id, 10);
-                    this.playerId = parseInt(message.player_id, 10);
-                    this.gameState = message.game_state;
+                    this.gameId = parseInt(message.game_id, 10);
+                    this.playerId = parseInt(message.player1_id, 10);  // Set player ID from player1 info
+                    this.gameState = message.game_state;  // Make sure we store the game state
                     this.isCreatingGame = false;
                     
                     // Reset both ready buttons to Not Ready
@@ -412,9 +411,20 @@ class PongGame {
                     
                     // Initialize ready button states with the new game state
                     this.updateReadyState(message.game_state);
+                    
+                    // Only join game group and set URL if we have a valid game ID
+                    if (!isNaN(this.gameId)) {
+                        // Join the game's WebSocket group
+                        this.uiSocket.send(JSON.stringify({
+                            type: 'rejoin_game_group',
+                            game_id: this.gameId
+                        }));
 
-                    console.log('Setting URL hash to:', `play/${this.gameId}`);
-                    window.location.hash = `play/${this.gameId}`;
+                        console.log('Setting URL hash to:', `play/${this.gameId}`);
+                        window.location.hash = `play/${this.gameId}`;
+                    } else {
+                        console.error('Invalid game ID received:', message.game_id);
+                    }
                     break;
                     
                 case 'game_joined':
@@ -428,6 +438,12 @@ class PongGame {
                         this.gameState = message.game_state;
                         this.updateReadyState(message.game_state);
                     }
+                    
+                    // Join the game's WebSocket group
+                    this.uiSocket.send(JSON.stringify({
+                        type: 'rejoin_game_group',
+                        game_id: this.gameId
+                    }));
                     
                     window.location.hash = `play/${this.gameId}`;
                     break;

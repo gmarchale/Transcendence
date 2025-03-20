@@ -75,30 +75,38 @@ class GameStateManager:
     @classmethod
     def set_player_ready(cls, game_id: str, player_id: str) -> Optional[Dict]:
         """Set a player's ready status"""
-        print(f"Setting ready status for player {player_id} in game {game_id}")
+        print(f"[DEBUG] Setting ready status for player {player_id} in game {game_id}")
         if game_id not in cls._instances:
-            print(f"Game {game_id} not found")
+            print(f"[DEBUG] Game {game_id} not found in instances")
             return None
 
         game_state = cls._instances[game_id]
         player1 = game_state['players']['player1']
         player2 = game_state['players']['player2']
 
+        print(f"[DEBUG] Current game state before update:")
+        print(f"[DEBUG] - Player 1: {player1.username} (ID: {player1.id}) Ready: {player1.is_ready}")
+        print(f"[DEBUG] - Player 2: {player2.username} (ID: {player2.id}) Ready: {player2.is_ready}" if player2 else "[DEBUG] - Player 2: Not joined yet")
+
         # Update ready status for the correct player
         if player1 and player1.id == player_id:
-            print(f"Player 1 {player1.username} is now ready")
+            print(f"[DEBUG] Setting Player 1 {player1.username} ready state to True")
             player1.is_ready = True
         elif player2 and player2.id == player_id:
-            print(f"Player 2 {player2.username} is now ready")
+            print(f"[DEBUG] Setting Player 2 {player2.username} ready state to True")
             player2.is_ready = True
 
         # Check if both players are ready
         if (player1 and player2 and 
             player1.is_ready and player2.is_ready and 
             game_state['status'] == 'waiting'):
-            print(f"Both players ready in game {game_id}, starting game")
+            print(f"[DEBUG] Both players ready in game {game_id}, starting game")
             game_state['status'] = 'playing'
             game_state['start_time'] = time.time()
+
+        print(f"[DEBUG] Game state after update:")
+        print(f"[DEBUG] - Player 1: {player1.username} (ID: {player1.id}) Ready: {player1.is_ready}")
+        print(f"[DEBUG] - Player 2: {player2.username} (ID: {player2.id}) Ready: {player2.is_ready}" if player2 else "[DEBUG] - Player 2: Not joined yet")
 
         return cls._serialize_game_state(game_state)
 
