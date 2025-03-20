@@ -66,6 +66,21 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
         elif message_type == 'player_ready':
             print('Handling player_ready message')  
             await self.handle_player_ready(content.get('game_id'))
+        elif message_type == 'rejoin_game_group':
+            game_id = content.get('game_id')
+            game_group = f"game_{game_id}"
+            await self.channel_layer.group_add(game_group, self.channel_name)
+            
+            # Send current game state
+            current_state = GameStateManager.get_game_state(game_id)
+            if current_state:
+                await self.channel_layer.group_send(
+                    game_group,
+                    {
+                        'type': 'game_state_update',
+                        'game_state': current_state
+                    }
+                )
 
     async def handle_profile_update(self, content):
         try:
@@ -227,6 +242,14 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
             print(f"Setting player {self.user.id} ready in game {game.id}")  
             new_state = GameStateManager.set_player_ready(str(game.id), str(self.user.id))
             if new_state:
+                # Send specific player_ready message
+                await self.send_json({
+                    'type': 'player_ready',
+                    'player_id': str(self.user.id),
+                    'game_id': str(game.id),
+                    'game_state': new_state
+                })
+                
                 print(f"Broadcasting new game state: {new_state}")  
                 # Broadcast the updated state to all players in the game
                 game_group = f"game_{game.id}"

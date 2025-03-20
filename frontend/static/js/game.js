@@ -397,6 +397,21 @@ class PongGame {
                     this.playerId = parseInt(message.player_id, 10);
                     this.gameState = message.game_state;
                     this.isCreatingGame = false;
+                    
+                    // Reset both ready buttons to Not Ready
+                    if (this.player1Ready) {
+                        this.player1Ready.textContent = 'Not Ready';
+                        this.player1Ready.classList.remove('ready');
+                        this.player1Ready.disabled = !this.playerId === parseInt(message.player1_id, 10);
+                    }
+                    if (this.player2Ready) {
+                        this.player2Ready.textContent = 'Not Ready';
+                        this.player2Ready.classList.remove('ready');
+                        this.player2Ready.disabled = true;  // Player 2 hasn't joined yet
+                    }
+                    
+                    // Initialize ready button states with the new game state
+                    this.updateReadyState(message.game_state);
 
                     console.log('Setting URL hash to:', `play/${this.gameId}`);
                     window.location.hash = `play/${this.gameId}`;
@@ -407,6 +422,13 @@ class PongGame {
                     // Parse game_id as integer
                     this.gameId = parseInt(message.game_id, 10);
                     this.playerId = parseInt(message.player2.id, 10);  // Set player ID from player2 info
+                    
+                    // Initialize ready button states with the new game state
+                    if (message.game_state) {
+                        this.gameState = message.game_state;
+                        this.updateReadyState(message.game_state);
+                    }
+                    
                     window.location.hash = `play/${this.gameId}`;
                     break;
 
@@ -417,9 +439,20 @@ class PongGame {
                     });
                     this.connected = true;
                     this.playerId = parseInt(message.user.id, 10);  // Ensure player ID is integer
+                    
+                    // If loading from URL hash, rejoin game group
+                    if (window.location.hash.startsWith('#play/')) {
+                        const gameId = window.location.hash.split('/')[1];
+                        this.uiSocket.send(JSON.stringify({
+                            type: 'rejoin_game_group',
+                            game_id: gameId
+                        }));
+                    }
                     break;
                 case 'game_state_update':
                     this.gameState = message.game_state;
+                    
+                    // Update ready button states
                     this.updateReadyState(message.game_state);
                     
                     // Start game if both players are ready
@@ -992,25 +1025,44 @@ class PongGame {
 
     updateReadyState(gameState) {
         console.log('updateReadyState called with playerId:', this.playerId);
-        if (!gameState || !gameState.players) return;
+        if (!gameState || !gameState.players) return;  
+        console.log('Game state:', gameState);
         
         const players = gameState.players;
         const isPlayer1 = this.playerId === parseInt(players.player1?.id, 10);
         const isPlayer2 = this.playerId === parseInt(players.player2?.id, 10);
         
-        // Update player 1 ready button
+        // Update player 1 ready button and name
         if (players.player1 && this.player1Ready) {
-            this.player1Ready.textContent = players.player1.is_ready ? 'Ready!' : 'Not Ready';
-            this.player1Ready.classList.toggle('ready', players.player1.is_ready);
-            // Only enable player 1's button if they are player 1 and not ready
+            // Update name
+            if (this.player1Name) {
+                this.player1Name.textContent = players.player1.username;
+            }
+            
+            console.log('Updating player 1 ready state:', players.player1.is_ready);
+            this.player1Ready.textContent = 'Not Ready';  // Always start as Not Ready
+            this.player1Ready.classList.remove('ready');  // Remove ready class by default
+            if (players.player1.is_ready) {  // Only update if explicitly ready
+                this.player1Ready.textContent = 'Ready!';
+                this.player1Ready.classList.add('ready');
+            }
             this.player1Ready.disabled = !isPlayer1 || players.player1.is_ready;
         }
 
-        // Update player 2 ready button
+        // Update player 2 ready button and name
         if (players.player2 && this.player2Ready) {
-            this.player2Ready.textContent = players.player2.is_ready ? 'Ready!' : 'Not Ready';
-            this.player2Ready.classList.toggle('ready', players.player2.is_ready);
-            // Only enable player 2's button if they are player 2 and not ready
+            // Update name
+            if (this.player2Name) {
+                this.player2Name.textContent = players.player2.username;
+            }
+            
+            console.log('Updating player 2 ready state:', players.player2.is_ready);
+            this.player2Ready.textContent = 'Not Ready';  // Always start as Not Ready
+            this.player2Ready.classList.remove('ready');  // Remove ready class by default
+            if (players.player2.is_ready) {  // Only update if explicitly ready
+                this.player2Ready.textContent = 'Ready!';
+                this.player2Ready.classList.add('ready');
+            }
             this.player2Ready.disabled = !isPlayer2 || players.player2.is_ready;
         }
     }

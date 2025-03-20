@@ -49,7 +49,7 @@ class GameStateManager:
             'paddle_speed': 25,
             'status': 'waiting',
             'players': {
-                'player1': PlayerState(id=player1_id, username=player1_username),
+                'player1': PlayerState(id=player1_id, username=player1_username, is_ready=False),
                 'player2': None
             },
             'start_time': None,
@@ -65,7 +65,8 @@ class GameStateManager:
             if game_state['status'] == 'waiting':
                 game_state['players']['player2'] = PlayerState(
                     id=player2_id, 
-                    username=player2_username
+                    username=player2_username,
+                    is_ready=False
                 )
                 # Return the serialized game state
                 return cls._serialize_game_state(game_state)
