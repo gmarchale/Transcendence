@@ -1,5 +1,11 @@
 function loadLogin(){
     console.log("Loading login.")
+
+    if(getHashParam("oauth") == "failed"){
+        showError("42oauth error -> \""+getHashParam("error")+"\"");
+        return;
+    }
+
     checkAuth(1).then(isAuthenticated => {
         console.log("Is user auth? " + isAuthenticated)
 		if(isAuthenticated == true){

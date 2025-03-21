@@ -16,6 +16,10 @@ import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import os
+from django.utils import timezone
+from datetime import timedelta
+import urllib.parse
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -50,7 +54,8 @@ def oauth_login(request):
 def oauth_callback(request):
     code = request.GET.get("code")
     if not code:
-        return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://localhost/#login?oauth=failed&error=No authorization code provided")
+        # return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
     data = {
         "grant_type": "authorization_code",
         "client_id": CLIENT_ID,
@@ -60,23 +65,45 @@ def oauth_callback(request):
     }
     response = requests.post(TOKEN_URL, data=data)
     if response.status_code != 200:
-        return Response({"error": "Failed to get access token"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://localhost/#login?oauth=failed&error=Failed to get access token")
+        # return Response({"error": "Failed to get access token"}, status=status.HTTP_400_BAD_REQUEST)
     token_data = response.json()
     access_token = token_data.get("access_token")
     headers = {"Authorization": f"Bearer {access_token}"}
     user_info = requests.get(USER_INFO_URL, headers=headers)
     if user_info.status_code != 200:
-        return Response({"error": "Failed to fetch user info"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://localhost/#login?oauth=failed&error=Failed to fetch user info")
+        # return Response({"error": "Failed to fetch user info"}, status=status.HTTP_400_BAD_REQUEST)
     user_data = user_info.json()
 
-    user, created = User.objects.get_or_create(
-        username=user_data["login"],
-        defaults={"email": user_data["email"], "display_name": user_data["displayname"], "avatar": user_data["image"]["link"]}
-    )
+    try:
+        user, created = User.objects.get_or_create(
+            email=user_data["email"],
+            from42=True,
+            defaults={
+                "username": user_data["login"],
+                "display_name": user_data["displayname"],
+                "avatar": user_data["image"]["link"]
+            }
+        )
+    except Exception as e:
+        logger.error(f"Registration failed for user : {str(e)}")
+        return redirect(f"https://localhost/#login?oauth=failed&error=Registration failed")
+        # return Response({'detail': 'Registration failed'}, status=status.HTTP_400_BAD_REQUEST)
+
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     login(request, user)
-    new_avatar_url = update_user_avatar(user, user_data["image"]["link"])
-    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(new_avatar_url or user_data['image']['link']))
+
+    avatar_url = None
+    if created:
+        avatar_url = update_user_avatar(user, user_data["image"]["link"])
+    else:
+        if user.avatar:
+            avatar_url = user.avatar.url
+            if not avatar_url.startswith('http'):
+                avatar_url = request.build_absolute_uri(avatar_url)
+
+    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(avatar_url or "null"))
 
 
 @api_view(["GET"])
@@ -232,6 +259,8 @@ def logout_view(request):
         username = request.user.username
         logger.info(f"Logout request for user: {username}")
 
+        request.user.last_logout = timezone.now()
+        request.user.save()
         # Clear the session
         request.session.flush()
         logout(request)
@@ -343,3 +372,52 @@ def change_password(request):
         request.user.save()
         return Response({'status': 'Password changed'}, status=status.HTTP_200_OK)
     return Response({'error': 'password not changed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def heart_beat(request):
+    if request.user:
+        request.user.last_active = timezone.now()
+        request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def check_status(request):
+    
+    id_user_0 = request.query_params.get('id_user_0')
+
+    if not id_user_0:
+        return Response({'error': 'id_user_0 is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user_0 = get_object_or_404(User, id=id_user_0)
+
+    except Exception as e:
+        return Response({'error': 'user not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    last_active = user_0.last_active
+    last_login = user_0.last_login
+    last_logout = user_0.last_logout
+
+
+    if not last_active:
+        print("STATUS: OFFLINE - User is logged out")
+        return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
+
+    elif last_logout and last_logout > last_login: 
+        print("STATUS: OFFLINE - User is logged out")
+        return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
+
+    elif timezone.now() - last_active < timedelta(minutes=1) or timezone.now() - last_login < timedelta(minutes=2):
+        print("STATUS: ONLINE - User is logged in and active")
+        return Response({'status': 0}, status=status.HTTP_200_OK) # User is logged in and active (online)
+    
+    else:
+        print("STATUS: AWAY - User is logged in but away")
+        return Response({'status': 2}, status=status.HTTP_200_OK) # User is logged in but away (inactive for more than 2 minutes)

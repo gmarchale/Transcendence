@@ -184,3 +184,24 @@
     text-align: center;
     margin: 0;
 }
+
+.status-online {
+    color: #2ecc71;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.status-offline {
+    color: #e74c3c;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.status-away {
+    color: #f39c12;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}

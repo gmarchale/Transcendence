@@ -70,6 +70,7 @@ async function addFriend() {
 	});
 }
 
+
 async function fetchFriends() {
     console.log("Loading friend list.");
     fetch("/api/chat/get_friends/", {

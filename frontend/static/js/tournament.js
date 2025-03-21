@@ -47,9 +47,8 @@ function initSocket(tournamentId) {
     const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/tournament/${tournamentId}/`);
     currentSocket = ws;
     
-    ws.onmessage = function(event) {
+    ws.onmessage = async function(event) {
         const data = JSON.parse(event.data);
-        console.log('WebSocket message received:', data);
         
         if (data.type === 'player_joined' || data.type === 'player_ready' || data.type === 'tournament_started' || data.type === 'remove_player') {
             loadTournament(tournamentId).then(tournament => {
@@ -57,6 +56,19 @@ function initSocket(tournamentId) {
                     displayTournamentName(tournament.name);
                     displayPlayers(tournament);
                     initTournamentActions(tournament);
+                }
+            });
+        } else if (data.type === 'match_ready_notification') {
+            const userId = await getid();
+            const opponent = data.players[0].id === userId ? 
+                data.players[1]?.display_name : // si c'est le joueur 1, on stock son display name
+                data.players[0].display_name;
+            
+            const roundName = getRoundName(data.round_size);
+            loadTournament(tournamentId).then(tournament => {
+                if (tournament) {
+                    const message = `Tournament: ${tournament.name}\n${roundName} vs ${opponent}\n5 minutes to join or 1 minute once opponent is ready`;
+                    showNotification(message, 'success', 5000);
                 }
             });
         }
@@ -393,4 +405,13 @@ async function initTournamentActions(tournament) {
             alert('Failed to forfeit tournament: ' + (errorData.error || 'Unknown error'));
         }
     });
+}
+
+function getRoundName(roundSize) {
+    switch (roundSize) {
+        case 2: return 'Finals';
+        case 4: return 'Semi-finals';
+        case 8: return 'Quarter-finals';
+        default: return `Round of ${roundSize}`;
+    }
 }

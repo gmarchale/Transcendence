@@ -61,8 +61,8 @@ def test_view(request):
         return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-#@ensure_csrf_cookie
-@permission_classes([AllowAny]) #TODO
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
 def block_user(request):
     #id_user_0 = request.user.id
     id_user_0 = request.data.get('id_user_0')
@@ -100,10 +100,10 @@ def block_user(request):
 
 
 @api_view(['POST'])
-#@ensure_csrf_cookie #TODO
-@permission_classes([AllowAny])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
 def add_friend_user(request):
-    #id_user_0 = request.user.id #TODO
+    #id_user_0 = request.user.id
     id_user_0 = request.data.get('id_user_0')
     id_user_1 = request.data.get('id_user_1')
 
@@ -332,8 +332,8 @@ def get_blocked(request):
 
 
 @api_view(['POST'])
-#@ensure_csrf_cookie
-@permission_classes([AllowAny]) #TODO
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
 def delete_friend_user(request):
     #id_user_0 = request.user.id
     id_user_0 = request.data.get('id_user_0')
