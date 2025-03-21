@@ -9,13 +9,15 @@ class PlayerState:
     username: str
     score: int = 0
     paddle_y: float = 250
+    is_ready: bool = False
 
     def to_dict(self):
         return {
             'id': self.id,
             'username': self.username,
             'score': self.score,
-            'paddle_y': self.paddle_y
+            'paddle_y': self.paddle_y,
+            'is_ready': self.is_ready
         }
 
 class GameStateManager:
@@ -37,7 +39,7 @@ class GameStateManager:
     def create_game(cls, game_id: str, player1_id: str, player1_username: str):
         """Initialize a new game state"""
         cls._instances[game_id] = {
-            'ball': {'x': 400, 'y': 300, 'dx': 5, 'dy': 5, 'radius': 10},
+            'ball': {'x': 400, 'y': 300, 'dx': 3, 'dy': 3, 'radius': 10},
             'paddles': {
                 'player1': {'x': 50, 'y': 250, 'width': 20, 'height': 100},
                 'player2': {'x': 730, 'y': 250, 'width': 20, 'height': 100}
@@ -47,7 +49,7 @@ class GameStateManager:
             'paddle_speed': 25,
             'status': 'waiting',
             'players': {
-                'player1': PlayerState(id=player1_id, username=player1_username),
+                'player1': PlayerState(id=player1_id, username=player1_username, is_ready=False),
                 'player2': None
             },
             'start_time': None,
@@ -56,19 +58,65 @@ class GameStateManager:
         return cls._serialize_game_state(cls._instances[game_id])
 
     @classmethod
-    def join_game(cls, game_id: str, player2_id: str, player2_username: str) -> bool:
+    def join_game(cls, game_id: str, player2_id: str, player2_username: str) -> Optional[Dict]:
         """Add second player to the game"""
         if game_id in cls._instances:
             game_state = cls._instances[game_id]
             if game_state['status'] == 'waiting':
                 game_state['players']['player2'] = PlayerState(
                     id=player2_id, 
-                    username=player2_username
+                    username=player2_username,
+                    is_ready=False
                 )
-                game_state['status'] = 'playing'
-                game_state['start_time'] = time.time()  # Set start time when game begins
-                return True
-        return False
+                # Return the serialized game state
+                return cls._serialize_game_state(game_state)
+        return None
+
+    @classmethod
+    def set_player_ready(cls, game_id: str, player_id: str) -> Optional[Dict]:
+        """Set a player's ready status"""
+        print(f"[DEBUG] Setting ready status for player {player_id} in game {game_id}")
+        if game_id not in cls._instances:
+            print(f"[DEBUG] Game {game_id} not found in instances")
+            return None
+
+        game_state = cls._instances[game_id]
+        player1 = game_state['players']['player1']
+        player2 = game_state['players']['player2']
+
+        print(f"[DEBUG] Current game state before update:")
+        print(f"[DEBUG] - Player 1: {player1.username} (ID: {player1.id}) Ready: {player1.is_ready}")
+        print(f"[DEBUG] - Player 2: {player2.username} (ID: {player2.id}) Ready: {player2.is_ready}" if player2 else "[DEBUG] - Player 2: Not joined yet")
+
+        # Update ready status for the correct player
+        if player1 and player1.id == player_id:
+            print(f"[DEBUG] Setting Player 1 {player1.username} ready state to True")
+            player1.is_ready = True
+        elif player2 and player2.id == player_id:
+            print(f"[DEBUG] Setting Player 2 {player2.username} ready state to True")
+            player2.is_ready = True
+
+        # Check if both players are ready
+        if (player1 and player2 and 
+            player1.is_ready and player2.is_ready and 
+            game_state['status'] == 'waiting'):
+            print(f"[DEBUG] Both players ready in game {game_id}, starting game")
+            game_state['status'] = 'playing'
+            game_state['start_time'] = time.time()
+            
+            # Initialize ball with random direction
+            game_state['ball'].update({
+                'x': game_state['canvas']['width'] / 2,
+                'y': game_state['canvas']['height'] / 2,
+                'dx': 3 * (1 if random.random() > 0.5 else -1),
+                'dy': 3 * (1 if random.random() > 0.5 else -1)
+            })
+
+        print(f"[DEBUG] Game state after update:")
+        print(f"[DEBUG] - Player 1: {player1.username} (ID: {player1.id}) Ready: {player1.is_ready}")
+        print(f"[DEBUG] - Player 2: {player2.username} (ID: {player2.id}) Ready: {player2.is_ready}" if player2 else "[DEBUG] - Player 2: Not joined yet")
+
+        return cls._serialize_game_state(game_state)
 
     @classmethod
     def move_paddle(cls, game_id: str, player_id: str, direction: str) -> Optional[Dict]:
@@ -115,8 +163,14 @@ class GameStateManager:
             return None
 
         ball = game_state['ball']
+        current_time = time.time()
         
-        # Update position
+        # Only log ball position every 5 seconds
+        if not hasattr(cls, '_last_ball_log') or current_time - cls._last_ball_log >= 5:
+            print(f"[DEBUG] Ball position - x: {ball['x']:.1f}, y: {ball['y']:.1f}, dx: {ball['dx']}, dy: {ball['dy']}")
+            cls._last_ball_log = current_time
+
+        # Update ball position
         ball['x'] += ball['dx']
         ball['y'] += ball['dy']
 
@@ -131,7 +185,7 @@ class GameStateManager:
                 ball['x'] + ball['radius'] >= paddle['x'] and
                 ball['y'] >= paddle['y'] and
                 ball['y'] <= paddle['y'] + paddle['height']):
-                ball['dx'] *= -1.1  # Increase speed slightly on paddle hits
+                ball['dx'] *= -1.05  # Reduced speed increase on paddle hits from 1.1 to 1.05
                 break
 
         # Score points
@@ -197,8 +251,8 @@ class GameStateManager:
         game_state['ball'].update({
             'x': game_state['canvas']['width'] / 2,
             'y': game_state['canvas']['height'] / 2,
-            'dx': 5 * (1 if random.random() > 0.5 else -1),
-            'dy': 5 * (1 if random.random() > 0.5 else -1)
+            'dx': 3 * (1 if random.random() > 0.5 else -1),
+            'dy': 3 * (1 if random.random() > 0.5 else -1)
         })
 
     @classmethod

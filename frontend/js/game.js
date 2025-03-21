@@ -11,22 +11,6 @@ let game = null;
 let gameInitialized = false;
 
 async function initializeGame() {
-    // if (!gameInitialized) {
-    //     if (document.readyState === 'complete') {
-    //         console.log('DOM is ready, initializing game after auth');
-    //         setTimeout(initializeGame, 0);
-    //     } else {
-    //         console.log('Waiting for DOM to be ready...');
-    //         window.addEventListener('load', () => {
-    //             console.log('Window loaded, initializing game...');
-    //             setTimeout(initializeGame, 0);
-    //         });
-    //     }
-    // } else if (gameInitialized) {
-    //     console.log('Game already initialized, skipping...');
-    //     return;
-    // }
-    
     console.log('Loading game script...');
     try {
         // await loadGameScript();

@@ -28,6 +28,28 @@ class GameViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def create_game(request):
     game = Game.objects.create(player1=request.user)
+    
+    # Initialize game state in GameStateManager
+    from .game_state_manager import GameStateManager
+    initial_state = GameStateManager.create_game(str(game.id), str(request.user.id), request.user.username)
+    
+    # Get the channel layer and send game_created message
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+    
+    channel_layer = get_channel_layer()
+    user_group = f"user_{request.user.id}"
+    
+    async_to_sync(channel_layer.group_send)(
+        user_group,
+        {
+            "type": "game_created",
+            "game_id": str(game.id),  
+            "player1_id": request.user.id,  
+            "game_state": initial_state
+        }
+    )
+    
     return Response(GameSerializer(game).data)
 
 @api_view(['POST'])

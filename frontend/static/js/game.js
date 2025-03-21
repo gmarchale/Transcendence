@@ -17,6 +17,7 @@ class PongGame {
         this.reconnectDelay = 5000;
         this.heartbeatInterval = null;
         this.gameSocket = null;
+        this.uiSocket = null;
         this.currentUser = null;
         this.gameId = null;
         this.gameState = null;
@@ -34,6 +35,19 @@ class PongGame {
         this.lastPaddleUpdate = 0;
         this.paddleUpdateInterval = 16; // Update paddle every 16ms (approximately 60fps)
         
+        // Initialize ready button handlers
+        this.player1Ready = document.getElementById('player1_ready');
+        this.player2Ready = document.getElementById('player2_ready');
+        this.player1Name = document.getElementById('player1_name');
+        this.player2Name = document.getElementById('player2_name');
+        
+        if (this.player1Ready) {
+            this.player1Ready.addEventListener('click', () => this.handleReadyClick());
+        }
+        if (this.player2Ready) {
+            this.player2Ready.addEventListener('click', () => this.handleReadyClick());
+        }
+
         // Start initialization
         this.init().catch(error => {
             console.error('Failed to initialize game:', error);
@@ -67,7 +81,7 @@ class PongGame {
                 credentials: 'include',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': this.getCookie('csrftoken')
                 }
             });
             
@@ -114,20 +128,10 @@ class PongGame {
         }
     }
     
-    // getCookie(name) {
-    //     let cookieValue = null;
-    //     if (document.cookie && document.cookie !== '') {
-    //         const cookies = document.cookie.split(';');
-    //         for (let i = 0; i < cookies.length; i++) {
-    //             const cookie = cookies[i].trim();
-    //             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-    //                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     return cookieValue;
-    // }
+    getCookie(name) {
+        let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
     
     initializeElements() {
         console.log('Initializing game elements...');
@@ -140,11 +144,9 @@ class PongGame {
             this.canvasContainer = document.getElementById('game_CanvasContainer');
             console.log('Canvas container:', this.canvasContainer);
             
-            this.createGameBtn = document.getElementById('game_createGameBtn');
-            console.log('Create game button:', this.createGameBtn);
-            
-            this.joinGameBtn = document.getElementById('game_joinGameBtn');
-            console.log('Join game button:', this.joinGameBtn);
+            this.createGameBtn = document.getElementById('createGameBtn');
+            this.joinGameBtn = document.getElementById('joinGameBtn');
+            console.log('Game buttons:', { create: this.createGameBtn, join: this.joinGameBtn });
             
             this.gameStatus = document.getElementById('game_Status');
             console.log('Game status:', this.gameStatus);
@@ -171,29 +173,6 @@ class PongGame {
                 }
             } else {
                 console.error('Canvas element not found');
-            }
-            
-            // Add event listeners to buttons if they exist
-            if (this.createGameBtn) {
-                this.createGameBtn.disabled = true; // Initially disabled
-                this.createGameBtn.addEventListener('click', () => {
-                    console.log('Create game button clicked');
-                    this.startGame();
-                });
-                console.log('Create game button event listener added');
-            } else {
-                console.error('Create game button not found');
-            }
-            
-            if (this.joinGameBtn) {
-                this.joinGameBtn.disabled = true; // Initially disabled
-                this.joinGameBtn.addEventListener('click', () => {
-                    console.log('Join game button clicked');
-                    this.joinGame();
-                });
-                console.log('Join game button event listener added');
-            } else {
-                console.error('Join game button not found');
             }
 
             // Add window resize handler
@@ -256,17 +235,11 @@ class PongGame {
     }
     
     initializeEventListeners() {
-        // Disable buttons initially
-        this.createGameBtn.disabled = true;
-        this.joinGameBtn.disabled = true;
-        
         // Bind event listeners
         this.createGameBtn.addEventListener('click', () => this.startGame());
-        this.joinGameBtn.addEventListener('click', () => this.joinGame());
+        this.joinGameBtn.addEventListener('click', () => this.showJoinGameForm());
         window.addEventListener('keydown', this.handleKeyPress);
         window.addEventListener('keyup', this.handleKeyUp);
-
-        console.log('Event listeners initialized');
     }
 
     handleKeyUp(event) {
@@ -326,236 +299,199 @@ class PongGame {
     }
     
     setupWebSocket() {
-        console.log('Setting up WebSocket...');
-        
-        if (this.gameSocket) {
-            console.log('WebSocket already exists, state:', this.gameSocket.readyState);
-            if (this.gameSocket.readyState === WebSocket.OPEN) {
-                console.log('WebSocket is already open and connected');
-                this.connected = true;
-                return;
-            }
-            console.log('Closing previous connection...');
-            this.gameSocket.close();
-        }
-
-        // Clear any existing intervals
-        if (this.heartbeatInterval) {
-            console.log('Clearing existing heartbeat interval');
-            clearInterval(this.heartbeatInterval);
-        }
-
-        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        // Use localhost:8000 for development
-        const wsUrl = `${wsScheme}://${window.location.host}/ws/game/`;
-        console.log('Attempting to connect to:', wsUrl);
-        
-        try {
-            this.gameSocket = new WebSocket(wsUrl);
-            console.log('WebSocket instance created');
-        } catch (error) {
-            console.error('Error creating WebSocket:', error);
+        if (this.connectionAttempt) {
+            console.log('Connection attempt already in progress');
             return;
         }
+
+        this.connectionAttempt = true;
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsBase = wsScheme + window.location.host;
         
-        this.gameSocket.onopen = () => {
-            console.log('WebSocket connection established successfully');
-            console.log('Current user:', this.currentUser);
-            
+        // Setup UI WebSocket for general interactions
+        const wsUrl = `${wsBase}/ws/game/`;
+        console.log('Connecting to UI WebSocket:', wsUrl);
+        
+        this.uiSocket = new WebSocket(wsUrl);
+        
+        this.uiSocket.onopen = () => {
+            console.log('UI WebSocket connection established');
             this.connected = true;
             this.connectionAttempt = false;
-            this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-            
-            // Enable game buttons when connection is established
-            console.log('Enabling game buttons...');
-            if (this.createGameBtn) {
-                console.log('Create game button found, enabling...');
-                this.createGameBtn.disabled = false;
-            } else {
-                console.error('Create game button not found!');
-            }
-            
-            if (this.joinGameBtn) {
-                console.log('Join game button found, enabling...');
-                this.joinGameBtn.disabled = false;
-            } else {
-                console.error('Join game button not found!');
-            }
-            
-            // Start heartbeat
-            console.log('Setting up heartbeat interval...');
-            this.heartbeatInterval = setInterval(() => {
-                if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
-                    console.log('Sending heartbeat...');
-                    this.gameSocket.send(JSON.stringify({ type: 'heartbeat' }));
-                }
-            }, 30000); // Send heartbeat every 30 seconds
-            
-            // Send user info after connection
-            if (this.currentUser) {
-                console.log('Sending user info:', this.currentUser);
-                this.gameSocket.send(JSON.stringify({
-                    type: 'user_connected',
-                    user_id: this.currentUser.id,
-                    username: this.currentUser.username
-                }));
-            } else {
-                console.error('No current user information available!');
-            }
+            this.reconnectAttempts = 0;
         };
-        
-        this.gameSocket.onmessage = this.handleWebSocketMessage.bind(this);
-        this.gameSocket.onclose = this.handleWebSocketClose.bind(this);
-        this.gameSocket.onerror = this.handleWebSocketError.bind(this);
+
+        this.uiSocket.onclose = () => {
+            console.log('UI WebSocket connection closed');
+            this.handleWebSocketClose();
+        };
+
+        this.uiSocket.onerror = (error) => {
+            console.error('UI WebSocket error:', error);
+            this.connectionAttempt = false;
+        };
+
+        this.uiSocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Received UI WebSocket message:', data);
+            this.handleWebSocketMessage(data);
+        };
     }
-    
-    handleWebSocketOpen() {
-        console.log('WebSocket connection established successfully');
-        // Enable game buttons when connection is established
-        if (this.createGameBtn) this.createGameBtn.disabled = false;
-        if (this.joinGameBtn) this.joinGameBtn.disabled = false;
-    }
-    
-    handleWebSocketClose(event) {
-        console.log('WebSocket connection closed:', event);
-        this.connected = false;
-        
-        // Clear heartbeat interval
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-        }
-        
-        if (!this.connectionAttempt && this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-            
-            // Use exponential backoff for reconnection attempts
-            const backoffTime = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
-            console.log(`Waiting ${backoffTime}ms before next reconnection attempt`);
-            
-            this.reconnectTimeout = setTimeout(() => {
-                this.setupWebSocket();
-            }, backoffTime);
-        } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.log('Maximum reconnection attempts reached. Please refresh the page.');
-        }
-    }
-    
-    handleWebSocketError(error) {
-        console.error('WebSocket error:', error);
-    }
-    
-    handleWebSocketMessage(event) {
-        //console.log('handleWebSocketMessage called');
-        const message = JSON.parse(event.data);
-        //console.log('WebSocket message received:', message);
-        
+
+    async startGame() {
+        if (this.isCreatingGame) return;
+        this.isCreatingGame = true;
+
         try {
-            // Only log non-game-state messages
-            if (message.type !== 'game_state_update') {
-                console.log('Received WebSocket message:', event.data);
+            if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN) {
+                throw new Error('WebSocket connection not ready');
             }
+
+            console.log('Creating game via HTTP POST...');
+            const response = await fetch('/api/game/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'include'
+            });
+            
+            const text = await response.text();
+            console.log('Server response:', text);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to create game: ${response.status} - ${text}`);
+            }
+
+            const data = JSON.parse(text);
+            console.log('Game created successfully:', data);
+            this.gameId = data.id;
+            
+            // No need to send any WebSocket message
+            // Backend will automatically:
+            // 1. Add us to the game channel
+            // 2. Send game_created message through existing WebSocket
+            // 3. handleWebSocketMessage will then update URL hash
+            
+        } catch (error) {
+            console.error('Error creating game:', error);
+            if (this.gameStatus) {
+                this.gameStatus.textContent = `Error: ${error.message}`;
+            }
+        } finally {
+            this.isCreatingGame = false;
+        }
+    }
+    
+    handleWebSocketMessage(message) {
+        try {
+            console.log('Received WebSocket message:', message);
             
             switch (message.type) {
+                case 'game_created':
+                    console.log('Game created:', message);
+                    this.gameId = parseInt(message.game_id, 10);
+                    this.playerId = parseInt(message.player1_id, 10);  // Set player ID from player1 info
+                    this.gameState = message.game_state;  // Make sure we store the game state
+                    this.isCreatingGame = false;
+                    
+                    // Reset both ready buttons to Not Ready
+                    if (this.player1Ready) {
+                        this.player1Ready.textContent = 'Not Ready';
+                        this.player1Ready.classList.remove('ready');
+                        this.player1Ready.disabled = !this.playerId === parseInt(message.player1_id, 10);
+                    }
+                    if (this.player2Ready) {
+                        this.player2Ready.textContent = 'Not Ready';
+                        this.player2Ready.classList.remove('ready');
+                        this.player2Ready.disabled = true;  // Player 2 hasn't joined yet
+                    }
+                    
+                    // Initialize ready button states with the new game state
+                    this.updateReadyState(message.game_state);
+                    
+                    // Only join game group and set URL if we have a valid game ID
+                    if (!isNaN(this.gameId)) {
+                        // Join the game's WebSocket group
+                        this.uiSocket.send(JSON.stringify({
+                            type: 'rejoin_game_group',
+                            game_id: this.gameId
+                        }));
+
+                        console.log('Setting URL hash to:', `play/${this.gameId}`);
+                        window.location.hash = `play/${this.gameId}`;
+                    } else {
+                        console.error('Invalid game ID received:', message.game_id);
+                    }
+                    break;
+                    
+                case 'game_joined':
+                    console.log('Game joined:', message);
+                    // Parse game_id as integer
+                    this.gameId = parseInt(message.game_id, 10);
+                    this.playerId = parseInt(message.player2_id, 10);  // Use player2_id from message
+                    
+                    // Initialize ready button states with the new game state
+                    if (message.game_state) {
+                        this.gameState = message.game_state;
+                        this.updateReadyState(message.game_state);
+                    }
+                    
+                    // Hide canvas until game starts
+                    if (this.canvasContainer) {
+                        this.canvasContainer.style.display = 'none';
+                    }
+                    
+                    // Join the game's WebSocket group
+                    this.uiSocket.send(JSON.stringify({
+                        type: 'rejoin_game_group',
+                        game_id: this.gameId
+                    }));
+                    
+                    window.location.hash = `play/${this.gameId}`;
+                    break;
+
                 case 'connection_established':
                     console.log('Connection established:', {
                         playerId: message.user.id,
                         username: message.user.username
                     });
                     this.connected = true;
-                    this.playerId = message.user.id;
-                    break;
-
-                case 'game_created':
-                    console.log('Game created, initializing game state:', message);
-                    this.gameId = message.game_id;
-                    this.gameState = message.game_state;
-                    this.isCreatingGame = false;
+                    this.playerId = parseInt(message.user.id, 10);  // Ensure player ID is integer
                     
-                    // Wait for game_joined message to set player roles
-                    if (this.canvasContainer) {
-                        this.canvasContainer.style.display = 'block';
-                    }
-                    
-                    // Start animation loop even when waiting
-                    if (!this.animationFrameId) {
-                        console.log('Starting animation loop');
-                        this.gameStarted = true; // Set this to true to allow drawing
-                        this.animationFrameId = requestAnimationFrame(() => this.animate());
-                    }
-                    
-                    if (this.gameStatus) {
-                        this.gameStatus.textContent = 'Waiting for opponent...';
+                    // If loading from URL hash, rejoin game group
+                    if (window.location.hash.startsWith('#play/')) {
+                        const gameId = window.location.hash.split('/')[1];
+                        this.uiSocket.send(JSON.stringify({
+                            type: 'rejoin_game_group',
+                            game_id: gameId
+                        }));
                     }
                     break;
-
-                case 'game_joined':
-                    console.log('Game joined with data:', message);
-                    this.gameId = message.game_id;
-                    this.gameState = message.game_state;
-                    
-                    // Set player roles
-                    if (message.player1_id && message.player2_id) {
-                        if (this.playerId === message.player1_id) {
-                            this.playerRole = 'player1';
-                            console.log('Set as player1 with ID:', this.playerId);
-                        } else if (this.playerId === message.player2_id) {
-                            this.playerRole = 'player2';
-                            console.log('Set as player2 with ID:', this.playerId);
-                        }
-                        
-                        // Store player IDs in game state
-                        this.gameState.player1_id = message.player1_id;
-                        this.gameState.player2_id = message.player2_id;
-                    }
-                    
-                    this.gameStarted = true;
-                    
-                    if (this.canvasContainer) {
-                        this.canvasContainer.style.display = 'block';
-                    }
-                    if (this.gameStatus) {
-                        this.gameStatus.textContent = 'Game in progress';
-                    }
-                    
-                    // Start animation loop
-                    if (!this.animationFrameId) {
-                        this.animationFrameId = requestAnimationFrame(() => this.animate());
-                    }
-                    break;
-
                 case 'game_state_update':
-                    if (message.game_state) {
-                        // console.log('Received game state update:', {
-                        //     currentState: this.gameState ? {
-                        //         player1Y: this.gameState.paddles.player1.y,
-                        //         player2Y: this.gameState.paddles.player2.y
-                        //     } : null,
-                        //     newState: {
-                        //         player1Y: message.game_state.paddles.player1.y,
-                        //         player2Y: message.game_state.paddles.player2.y
-                        //     }
-                        // });
-
-                        // Preserve player IDs when updating game state
-                        const player1_id = this.gameState?.player1_id;
-                        const player2_id = this.gameState?.player2_id;
-                        this.gameState = message.game_state;
-                        if (player1_id && player2_id) {
-                            this.gameState.player1_id = player1_id;
-                            this.gameState.player2_id = player2_id;
+                    this.gameState = message.game_state;
+                    
+                    // Update ready button states
+                    this.updateReadyState(message.game_state);
+                    
+                    // Start game and show canvas only when both players are ready and game is playing
+                    if (message.game_state.status === 'playing') {
+                        if (!this.gameStarted) {
+                            this.gameStarted = true;
+                            if (this.canvasContainer) {
+                                this.canvasContainer.style.display = 'block';
+                            }
+                            if (!this.animationFrameId) {
+                                this.animationFrameId = requestAnimationFrame(() => this.animate());
+                            }
                         }
-                        
-                        // Update scores if available
-                        if (this.gameState.score) {
-                            if (this.player1Score) this.player1Score.textContent = this.gameState.score.player1;
-                            if (this.player2Score) this.player2Score.textContent = this.gameState.score.player2;
+                    } else {
+                        // Hide canvas if game is not playing
+                        if (this.canvasContainer) {
+                            this.canvasContainer.style.display = 'none';
                         }
-
-                        // console.log('Game state updated:', {
-                        //     player1Y: this.gameState.paddles.player1.y,
-                        //     player2Y: this.gameState.paddles.player2.y
-                        // });
                     }
                     break;
 
@@ -597,150 +533,56 @@ class PongGame {
                         this.gameStatus.textContent = `Error: ${message.message}`;
                     }
                     break;
+                    
+                case 'player_ready':
+                    console.log('Player ready:', message);
+                    this.updateReadyState(message.game_state);
+                    break;
             }
         } catch (error) {
             console.error('Error handling WebSocket message:', error);
         }
     }
     
-    handleGameEnd(data) {
-        const winner = data.winner;
-        const duration = data.duration;
-        
-        // Stop the game loop
-        this.gameStarted = false;
-        
-        // Create game end overlay
-        const overlay = document.createElement('div');
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        overlay.style.display = 'flex';
-        overlay.style.flexDirection = 'column';
-        overlay.style.justifyContent = 'center';
-        overlay.style.alignItems = 'center';
-        overlay.style.zIndex = '1000';
-        
-        // Create result text
-        const resultText = document.createElement('h1');
-        resultText.style.color = '#fff';
-        resultText.style.marginBottom = '20px';
-        resultText.style.fontSize = '2.5em';
-        resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
-        
-        // Create score text
-        const scoreText = document.createElement('h2');
-        scoreText.style.color = '#fff';
-        scoreText.style.marginBottom = '20px';
-        scoreText.style.fontSize = '1.8em';
-        scoreText.innerText = `Final Score: ${data.final_score.player1} - ${data.final_score.player2}`;
-        
-        // Create duration text
-        const durationText = document.createElement('h3');
-        durationText.style.color = '#fff';
-        durationText.style.marginBottom = '30px';
-        durationText.style.fontSize = '1.5em';
-        durationText.innerText = `Game Duration: ${duration}`;
-        
-        // Create buttons container
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.style.display = 'flex';
-        buttonsContainer.style.gap = '20px';
-        
-        // Create "Create New Game" button
-        const homeButton = document.createElement('button');
-        homeButton.innerText = 'Go to Lobby';
-        homeButton.style.padding = '15px 30px';
-        homeButton.style.fontSize = '1.2em';
-        homeButton.style.cursor = 'pointer';
-        homeButton.style.backgroundColor = '#4CAF50';
-        homeButton.style.color = 'white';
-        homeButton.style.border = 'none';
-        homeButton.style.borderRadius = '5px';
-        homeButton.onclick = () => {
-            // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
-            }
-            window.location.href = '#game';  
-        };
-        
-        // Add buttons to container
-        buttonsContainer.appendChild(homeButton);
-        
-        // Add elements to overlay
-        overlay.appendChild(resultText);
-        overlay.appendChild(scoreText);
-        overlay.appendChild(durationText);
-        overlay.appendChild(buttonsContainer);
-        
-        // Add overlay to body
-        document.body.appendChild(overlay);
-        
-        // Clean up WebSocket connection
-        if (this.gameSocket) {
-            this.gameSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.gameSocket.close();
-            this.gameSocket = null;
-        }
-    }
-    
-    startGame() {
-        if (!this.connected || this.isCreatingGame || this.gameId) {
-            console.log('Cannot create game:', {
-                connected: this.connected,
-                isCreatingGame: this.isCreatingGame,
-                hasGameId: !!this.gameId
-            });
-            return;
-        }
-        
-        this.isCreatingGame = true;
-        
-        if (this.createGameBtn) {
-            this.createGameBtn.disabled = true;
-        }
-        
-        if (this.joinGameBtn) {
-            this.joinGameBtn.disabled = true;
-        }
-        
+    joinGame(gameId) {
         try {
-            this.gameSocket.send(JSON.stringify({
-                type: 'create_game'
+            // Parse gameId as integer
+            this.gameId = parseInt(gameId, 10);
+            // Send join_game message through UI socket
+            this.uiSocket.send(JSON.stringify({
+                'type': 'join_game',
+                'game_id': this.gameId
             }));
+            console.log('Sent join_game message');
+            
         } catch (error) {
-            console.error('Error creating game:', error);
+            console.error('Error joining game:', error);
         }
     }
     
-    joinGame() {
-        if (!this.connected) {
-            console.error('Not connected to game server');
-            return;
+    handleWebSocketClose() {
+        this.connected = false;
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            setTimeout(() => {
+                this.reconnectAttempts++;
+                this.setupWebSocket();
+            }, this.reconnectDelay);
         }
-        
-        if (this.createGameBtn) this.createGameBtn.disabled = true;
-        if (this.joinGameBtn) this.joinGameBtn.disabled = true;
-        
-        this.gameSocket.send(JSON.stringify({
-            type: 'join_game'
-        }));
     }
-
+    
     handleKeyPress(event) {
         console.log('handleKeyPress called');
-        if(getPage() != "game")
+        const hash = window.location.hash;
+        const match = hash.match(/#play\/([^/]+)/);
+        if (!match) {
+            console.log("Not on play page with game ID");
             return;
-        if (!this.gameSocket || this.gameSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
+        }
+        
+        if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot handle key press:', {
-                hasSocket: !!this.gameSocket,
-                socketState: this.gameSocket?.readyState,
+                hasSocket: !!this.uiSocket,
+                socketState: this.uiSocket?.readyState,
                 gameId: this.gameId,
                 gameStarted: this.gameStarted
             });
@@ -766,7 +608,7 @@ class PongGame {
             
             if (direction) {
                 console.log('Sending paddle_move:', { direction, gameId: this.gameId });
-                this.gameSocket.send(JSON.stringify({
+                this.uiSocket.send(JSON.stringify({
                     type: 'paddle_move',
                     direction: direction,
                     game_id: this.gameId
@@ -776,9 +618,9 @@ class PongGame {
     }
     
     updatePaddlePosition() {
-        // console.log('updatePaddlePosition called');
-        if (!this.gameSocket || this.gameSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
-            console.log('Cannot update paddle: socket:', !!this.gameSocket, 'state:', this.gameSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
+        //console.log('updatePaddlePosition called');
+        if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
+            console.log('Cannot update paddle: socket:', !!this.uiSocket, 'state:', this.uiSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
             return;
         }
         
@@ -800,15 +642,17 @@ class PongGame {
         }
         
         if (direction) {
-            this.gameSocket.send(JSON.stringify({
+            this.uiSocket.send(JSON.stringify({
                 type: 'paddle_move',
-                direction: direction
+                direction: direction,
+                game_id: this.gameId
             }));
             this.lastPaddleUpdate = now;
         }
     }
     
     animate() {
+        //console.log('animate called');
         if (!this.gameStarted || !this.gameState) {
             if (this.animationFrameId) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -956,10 +800,12 @@ class PongGame {
                 this.player2Id = state.player2_id;
             }
             
+            
             // Update ball position
             if (state.ball) {
                 this.ball = state.ball;
             }
+            
             
             // Update paddle positions
             if (state.paddles) {
@@ -994,6 +840,93 @@ class PongGame {
         }
     }
 
+    handleGameEnd(data) {
+        const winner = data.winner;
+        const duration = data.duration;
+        
+        // Stop the game loop
+        this.gameStarted = false;
+        
+        // Create game end overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.justifyContent = 'center';
+        overlay.style.alignItems = 'center';
+        overlay.style.zIndex = '1000';
+        
+        // Create result text
+        const resultText = document.createElement('h1');
+        resultText.style.color = '#fff';
+        resultText.style.marginBottom = '20px';
+        resultText.style.fontSize = '2.5em';
+        resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
+        
+        // Create score text
+        const scoreText = document.createElement('h2');
+        scoreText.style.color = '#fff';
+        scoreText.style.marginBottom = '20px';
+        scoreText.style.fontSize = '1.8em';
+        scoreText.innerText = `Final Score: ${data.final_score.player1} - ${data.final_score.player2}`;
+        
+        // Create duration text
+        const durationText = document.createElement('h3');
+        durationText.style.color = '#fff';
+        durationText.style.marginBottom = '30px';
+        durationText.style.fontSize = '1.5em';
+        durationText.innerText = `Game Duration: ${duration}`;
+        
+        // Create buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '20px';
+        
+        // Create "Create New Game" button
+        const homeButton = document.createElement('button');
+        homeButton.innerText = 'Go to Lobby';
+        homeButton.style.padding = '15px 30px';
+        homeButton.style.fontSize = '1.2em';
+        homeButton.style.cursor = 'pointer';
+        homeButton.style.backgroundColor = '#4CAF50';
+        homeButton.style.color = 'white';
+        homeButton.style.border = 'none';
+        homeButton.style.borderRadius = '5px';
+        homeButton.onclick = () => {
+            // Clean up WebSocket before navigating
+            if (this.uiSocket) {
+                this.uiSocket.onclose = null; // Remove onclose handler
+                this.uiSocket.close();
+                this.uiSocket = null;
+            }
+            window.location.href = '#game';  
+        };
+        
+        // Add buttons to container
+        buttonsContainer.appendChild(homeButton);
+        
+        // Add elements to overlay
+        overlay.appendChild(resultText);
+        overlay.appendChild(scoreText);
+        overlay.appendChild(durationText);
+        overlay.appendChild(buttonsContainer);
+        
+        // Add overlay to body
+        document.body.appendChild(overlay);
+        
+        // Clean up WebSocket connection
+        if (this.uiSocket) {
+            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+            this.uiSocket.close();
+            this.uiSocket = null;
+        }
+    }
+    
     handleGameOver(data) {
         const winner = data.winner;
         const duration = data.duration;
@@ -1053,10 +986,10 @@ class PongGame {
         createButton.style.borderRadius = '5px';
         createButton.onclick = () => {
             // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
+            if (this.uiSocket) {
+                this.uiSocket.onclose = null; // Remove onclose handler
+                this.uiSocket.close();
+                this.uiSocket = null;
             }
             window.location.href = '#game';  
         };
@@ -1073,10 +1006,10 @@ class PongGame {
         joinButton.style.borderRadius = '5px';
         joinButton.onclick = () => {
             // Clean up WebSocket before navigating
-            if (this.gameSocket) {
-                this.gameSocket.onclose = null; // Remove onclose handler
-                this.gameSocket.close();
-                this.gameSocket = null;
+            if (this.uiSocket) {
+                this.uiSocket.onclose = null; // Remove onclose handler
+                this.uiSocket.close();
+                this.uiSocket = null;
             }
             window.location.href = '#game/join/';  
         };
@@ -1095,10 +1028,101 @@ class PongGame {
         document.body.appendChild(overlay);
         
         // Clean up WebSocket connection
-        if (this.gameSocket) {
-            this.gameSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.gameSocket.close();
-            this.gameSocket = null;
+        if (this.uiSocket) {
+            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+            this.uiSocket.close();
+            this.uiSocket = null;
         }
+    }
+    
+    handleReadyClick() {
+        console.log('Player clicked ready button');
+        if (!this.gameId) {
+            console.error('No game ID available');
+            return;
+        }
+        
+        if (!this.playerId) {
+            console.error('No player ID available');
+            return;
+        }
+        
+        console.log('Sending player_ready message for game:', this.gameId, 'player:', this.playerId);
+        this.uiSocket.send(JSON.stringify({
+            'type': 'player_ready',
+            'game_id': parseInt(this.gameId, 10)
+        }));
+    }
+
+    updateReadyState(gameState) {
+        console.log('updateReadyState called with playerId:', this.playerId);
+        if (!gameState || !gameState.players) return;  
+        console.log('Game state:', gameState);
+        
+        const players = gameState.players;
+        const isPlayer1 = this.playerId === parseInt(players.player1?.id, 10);
+        const isPlayer2 = this.playerId === parseInt(players.player2?.id, 10);
+        
+        // Update player 1 ready button and name
+        if (players.player1 && this.player1Ready) {
+            // Update name
+            if (this.player1Name) {
+                this.player1Name.textContent = players.player1.username;
+            }
+            
+            console.log('Updating player 1 ready state:', players.player1.is_ready);
+            this.player1Ready.textContent = 'Not Ready';  // Always start as Not Ready
+            this.player1Ready.classList.remove('ready');  // Remove ready class by default
+            if (players.player1.is_ready) {  // Only update if explicitly ready
+                this.player1Ready.textContent = 'Ready!';
+                this.player1Ready.classList.add('ready');
+            }
+            this.player1Ready.disabled = !isPlayer1 || players.player1.is_ready;
+        }
+
+        // Update player 2 ready button and name
+        if (players.player2 && this.player2Ready) {
+            // Update name
+            if (this.player2Name) {
+                this.player2Name.textContent = players.player2.username;
+            }
+            
+            console.log('Updating player 2 ready state:', players.player2.is_ready);
+            this.player2Ready.textContent = 'Not Ready';  // Always start as Not Ready
+            this.player2Ready.classList.remove('ready');  // Remove ready class by default
+            if (players.player2.is_ready) {  // Only update if explicitly ready
+                this.player2Ready.textContent = 'Ready!';
+                this.player2Ready.classList.add('ready');
+            }
+            this.player2Ready.disabled = !isPlayer2 || players.player2.is_ready;
+        }
+    }
+
+    showJoinGameForm() {
+        let form = document.getElementById('join_game_form');
+        if (form) {
+            form.remove();
+            return;
+        }
+
+        form = document.createElement('form');
+        form.id = 'join_game_form';
+        form.innerHTML = `
+            <input type="text" id="game_id_input" placeholder="Enter Game ID">
+            <button type="submit">Join</button>
+        `;
+        
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const gameId = document.getElementById('game_id_input').value;
+            if (gameId) {
+                console.log('Joining game:', gameId);
+                this.joinGame(gameId);
+            }
+            form.remove();
+        });
+        
+        this.joinGameBtn.parentNode.insertBefore(form, this.joinGameBtn.nextSibling);
+        document.getElementById('game_id_input').focus();
     }
 };  

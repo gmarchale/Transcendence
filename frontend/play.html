@@ -1,0 +1,31 @@
+<div class="game_lobby">
+    <div class="game_lobby-players">
+        <!-- Player 1 -->
+        <div class="game_lobby-player" id="player1_container">
+            <div class="game_lobby-avatar">
+                <img id="player1_avatar" src="" alt="Player 1">
+            </div>
+            <div class="game_lobby-name" id="player1_name"></div>
+            <button class="game_lobby-ready" id="player1_ready">Not Ready</button>
+        </div>
+
+        <!-- VS Separator -->
+        <div class="game_lobby-vs">VS</div>
+
+        <!-- Player 2 -->
+        <div class="game_lobby-player" id="player2_container">
+            <div class="game_lobby-avatar">
+                <img id="player2_avatar" src="" alt="Player 2">
+            </div>
+            <div class="game_lobby-name" id="player2_name">Waiting for player...</div>
+            <button class="game_lobby-ready" id="player2_ready" disabled>Not Ready</button>
+        </div>
+    </div>
+</div>
+<div id="game_CanvasContainer" class="game_canvas-container">
+    <div class="game_score-container">
+        <div id="game_player1Score" class="player-score">0</div>
+        <div id="game_player2Score" class="player-score">0</div>
+    </div>
+    <canvas id="game_Canvas"></canvas>
+</div>
