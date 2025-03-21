@@ -431,7 +431,16 @@ class PongGame {
                     console.log('Game joined:', message);
                     // Parse game_id as integer
                     this.gameId = parseInt(message.game_id, 10);
-                    this.playerId = parseInt(message.player2_id, 10);  // Use player2_id from message
+                    
+                    // Check if we're player 1 or player 2
+                    if (this.playerId === parseInt(message.player1_id, 10)) {
+                        // We're already player 1, keep our ID
+                        console.log('We are player 1');
+                    } else {
+                        // We're player 2 or we don't have an ID yet
+                        this.playerId = parseInt(message.player2_id, 10);
+                        console.log('We are player 2 with ID:', this.playerId);
+                    }
                     
                     // Initialize ready button states with the new game state
                     if (message.game_state) {
