@@ -1126,30 +1126,55 @@ class PongGame {
     }
 
     showJoinGameForm() {
-        let form = document.getElementById('join_game_form');
-        if (form) {
-            form.remove();
-            return;
-        }
-
-        form = document.createElement('form');
-        form.id = 'join_game_form';
-        form.innerHTML = `
-            <input type="text" id="game_id_input" placeholder="Enter Game ID">
-            <button type="submit">Join</button>
-        `;
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const gameId = document.getElementById('game_id_input').value;
+        const modal = document.getElementById('joinGameModal');
+        const gameIdInput = document.getElementById('gameIdInput');
+        const confirmButton = document.getElementById('confirmJoinGame');
+        const cancelButton = document.getElementById('cancelJoinGame');
+        const resultSection = document.getElementById('joinGameResultSection');
+        const inputSection = document.getElementById('joinGameInputSection');
+        const resultMessage = document.getElementById('joinGameResultMessage');
+        const closeResultButton = document.getElementById('closeJoinGameResult');
+        
+        resultSection.style.display = 'none';
+        inputSection.style.display = 'block';
+        gameIdInput.value = '';
+        
+        modal.style.display = 'flex';
+        
+        setTimeout(() => gameIdInput.focus(), 100);
+        
+        const handleJoin = () => {
+            const gameId = gameIdInput.value.trim();
             if (gameId) {
                 console.log('Joining game:', gameId);
                 this.joinGame(gameId);
+                closeModal();
+            } else {
+                resultSection.style.display = 'block';
+                inputSection.style.display = 'none';
+                resultMessage.textContent = 'Please enter a valid Game ID';
+                resultMessage.className = 'game_error-message';
             }
-            form.remove();
-        });
-
-        this.joinGameBtn.parentNode.insertBefore(form, this.joinGameBtn.nextSibling);
-        document.getElementById('game_id_input').focus();
+        };
+        
+        const closeModal = () => {
+            modal.style.display = 'none';
+            confirmButton.removeEventListener('click', handleJoin);
+            cancelButton.removeEventListener('click', closeModal);
+            closeResultButton.removeEventListener('click', closeModal);
+            gameIdInput.removeEventListener('keypress', handleEnterKey);
+        };
+        
+        const handleEnterKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleJoin();
+            }
+        };
+        
+        confirmButton.addEventListener('click', handleJoin);
+        cancelButton.addEventListener('click', closeModal);
+        closeResultButton.addEventListener('click', closeModal);
+        gameIdInput.addEventListener('keypress', handleEnterKey);
     }
 };
