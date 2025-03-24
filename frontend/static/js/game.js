@@ -8,8 +8,9 @@ class PongGame {
         this.animate = this.animate.bind(this);
         this.draw = this.draw.bind(this);
         this.handleWebSocketMessage = this.handleWebSocketMessage.bind(this);
-        
+
         // Initialize properties
+        this.chatInterface = false;
         this.connected = false;
         this.connectionAttempt = false;
         this.reconnectAttempts = 0;
@@ -27,20 +28,20 @@ class PongGame {
         this.canvas = null;
         this.ctx = null;
         this.keyState = { w: false, s: false };
-        
+
         this.paddleSpeed = 25; // pixels to move per keypress
-        
+
         // Add a timestamp to limit logging frequency
         this.lastLogTime = 0;
         this.lastPaddleUpdate = 0;
         this.paddleUpdateInterval = 16; // Update paddle every 16ms (approximately 60fps)
-        
+
         // Initialize ready button handlers
         this.player1Ready = document.getElementById('player1_ready');
         this.player2Ready = document.getElementById('player2_ready');
         this.player1Name = document.getElementById('player1_name');
         this.player2Name = document.getElementById('player2_name');
-        
+
         if (this.player1Ready) {
             this.player1Ready.addEventListener('click', () => this.handleReadyClick());
         }
@@ -56,18 +57,18 @@ class PongGame {
 
     async init() {
         console.log('Initializing game...');
-        try {            
+        try {
             const valid = await this.checkSession();
             if (!valid) {
                 return;
             }
-            
+
             // Initialize in correct order
             this.initializeElements();
             this.initializeGameState();
             this.initializeEventListeners();
             this.setupWebSocket();
-            
+
             console.log('Game initialization complete');
         } catch (error) {
             console.error('Error during initialization:', error);
@@ -84,7 +85,7 @@ class PongGame {
                     'X-CSRFToken': this.getCookie('csrftoken')
                 }
             });
-            
+
             console.log('Session check response:', response.status);
             if (!response.ok) {
                 console.warn('Session check failed:', response.status);
@@ -92,34 +93,34 @@ class PongGame {
                 console.warn('Response text:', text);
                 return false;
             }
-            
+
             const userData = await response.json();
             console.log('Session valid for user:', userData);
-            
+
             // Store the current user's info
             this.currentUser = userData;
-            
+
             // Update UI with user info
             const usernameElement = document.getElementById('header_username');
             const userAvatarElement = document.getElementById('header_userAvatar');
-            
+
             console.log('Username element:', usernameElement);
             console.log('Avatar element:', userAvatarElement);
-            
+
             if (usernameElement) {
                 // usernameElement.textContent = userData.username;
                 console.log('Username updated to:', userData.username);
             } else {
                 console.error('Username element not found');
             }
-            
+
             if (userAvatarElement) {
                 // userAvatarElement.textContent = userData.username[0].toUpperCase();
                 console.log('Avatar updated to:', userData.username[0].toUpperCase());
             } else {
                 console.error('Avatar element not found');
             }
-            
+
             return true;
         } catch (error) {
             console.error('Error checking session:', error);
@@ -127,36 +128,37 @@ class PongGame {
             return false;
         }
     }
-    
+
     getCookie(name) {
         let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
         return match ? decodeURIComponent(match[2]) : null;
     }
-    
+
     initializeElements() {
         console.log('Initializing game elements...');
-        
+
         try {
             // Get DOM elements
             this.canvas = document.getElementById('game_Canvas');
             console.log('Canvas element:', this.canvas);
-            
+
             this.canvasContainer = document.getElementById('game_CanvasContainer');
             console.log('Canvas container:', this.canvasContainer);
-            
             this.createGameBtn = document.getElementById('createGameBtn');
+
+
             this.joinGameBtn = document.getElementById('joinGameBtn');
             console.log('Game buttons:', { create: this.createGameBtn, join: this.joinGameBtn });
-            
+
             this.gameStatus = document.getElementById('game_Status');
             console.log('Game status:', this.gameStatus);
-            
+
             this.player1Score = document.getElementById('game_player1Score');
             console.log('Player 1 score:', this.player1Score);
-            
+
             this.player2Score = document.getElementById('game_player2Score');
             console.log('Player 2 score:', this.player2Score);
-            
+
             // Initialize canvas if it exists
             if (this.canvas) {
                 this.ctx = this.canvas.getContext('2d');
@@ -196,14 +198,14 @@ class PongGame {
                     this.canvas.style.height = `${height}px`;
                 }
             });
-            
+
             console.log('Game elements initialization completed');
         } catch (error) {
             console.error('Error initializing game elements:', error);
             console.error('Error stack:', error.stack);
         }
     }
-    
+
     initializeGameState() {
         // Game state
         this.gameStarted = false;
@@ -212,31 +214,40 @@ class PongGame {
         this.connected = false;
         this.gameSocket = null;
         this.score = { left: 0, right: 0 };
-        
+
         // Initial game objects
         this.ball = { x: 400, y: 300, dx: 5, dy: 5, radius: 10 };
         this.paddles = {
             left: { x: 50, y: 250, width: 20, height: 100 },
             right: { x: 730, y: 250, width: 20, height: 100 }
         };
-        
+
         // WebSocket connection settings
         this.maxReconnectAttempts = 10; // Increased from default
         this.reconnectAttempts = 0;
         this.reconnectTimeout = null;
         this.heartbeatInterval = null;
-        
+
         // Hide canvas initially
         if (this.canvasContainer) {
             this.canvasContainer.style.display = 'none';
         }
-        
+
         console.log('Game state initialized');
     }
-    
+
     initializeEventListeners() {
         // Bind event listeners
         this.createGameBtn.addEventListener('click', () => this.startGame());
+
+
+        document.getElementById('chat_dropdownMenuButton_PlayPong').addEventListener('click', () => {
+            if (chat_currentlyWith != null) {
+                this.chatInterface = true;
+                this.startGame();
+            }
+        });
+
         this.joinGameBtn.addEventListener('click', () => this.showJoinGameForm());
         window.addEventListener('keydown', this.handleKeyPress);
         window.addEventListener('keyup', this.handleKeyUp);
@@ -252,22 +263,22 @@ class PongGame {
             console.log('Key released:', event.key);
         }
     }
-    
+
     showCanvas() {
         try {
             console.log('Attempting to show canvas container...');
             const container = document.getElementById('game_CanvasContainer');
-            
+
             if (!container) {
                 throw new Error('Canvas container element not found');
             }
-            
+
             // Update the instance variable
             this.canvasContainer = container;
             this.canvasContainer.style.display = 'block';
-            
+
             console.log('Canvas container shown successfully');
-            
+
             // Force a redraw
             if (this.ctx) {
                 this.draw();
@@ -277,27 +288,27 @@ class PongGame {
             throw error; // Re-throw to handle it in the caller
         }
     }
-    
+
     hideCanvas() {
         try {
             console.log('Attempting to hide canvas container...');
             const container = document.getElementById('game_CanvasContainer');
-            
+
             if (!container) {
                 throw new Error('Canvas container element not found');
             }
-            
+
             // Update the instance variable
             this.canvasContainer = container;
             this.canvasContainer.style.display = 'none';
-            
+
             console.log('Canvas container hidden successfully');
         } catch (error) {
             console.error('Error hiding canvas:', error);
             throw error; // Re-throw to handle it in the caller
         }
     }
-    
+
     setupWebSocket() {
         if (this.connectionAttempt) {
             console.log('Connection attempt already in progress');
@@ -307,13 +318,13 @@ class PongGame {
         this.connectionAttempt = true;
         const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const wsBase = wsScheme + window.location.host;
-        
+
         // Setup UI WebSocket for general interactions
         const wsUrl = `${wsBase}/ws/game/`;
         console.log('Connecting to UI WebSocket:', wsUrl);
-        
+
         this.uiSocket = new WebSocket(wsUrl);
-        
+
         this.uiSocket.onopen = () => {
             console.log('UI WebSocket connection established');
             this.connected = true;
@@ -357,10 +368,10 @@ class PongGame {
                 },
                 credentials: 'include'
             });
-            
+
             const text = await response.text();
             console.log('Server response:', text);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to create game: ${response.status} - ${text}`);
             }
@@ -368,13 +379,15 @@ class PongGame {
             const data = JSON.parse(text);
             console.log('Game created successfully:', data);
             this.gameId = data.id;
-            
+            console.log(this.gameId)
+            console.log(this.gameId)
+
             // No need to send any WebSocket message
             // Backend will automatically:
             // 1. Add us to the game channel
             // 2. Send game_created message through existing WebSocket
             // 3. handleWebSocketMessage will then update URL hash
-            
+
         } catch (error) {
             console.error('Error creating game:', error);
             if (this.gameStatus) {
@@ -384,11 +397,11 @@ class PongGame {
             this.isCreatingGame = false;
         }
     }
-    
+
     handleWebSocketMessage(message) {
         try {
             console.log('Received WebSocket message:', message);
-            
+
             switch (message.type) {
                 case 'game_created':
                     console.log('Game created:', message);
@@ -396,7 +409,7 @@ class PongGame {
                     this.playerId = parseInt(message.player1_id, 10);  // Set player ID from player1 info
                     this.gameState = message.game_state;  // Make sure we store the game state
                     this.isCreatingGame = false;
-                    
+
                     // Reset both ready buttons to Not Ready
                     if (this.player1Ready) {
                         this.player1Ready.textContent = 'Not Ready';
@@ -408,10 +421,10 @@ class PongGame {
                         this.player2Ready.classList.remove('ready');
                         this.player2Ready.disabled = true;  // Player 2 hasn't joined yet
                     }
-                    
+
                     // Initialize ready button states with the new game state
                     this.updateReadyState(message.game_state);
-                    
+
                     // Only join game group and set URL if we have a valid game ID
                     if (!isNaN(this.gameId)) {
                         // Join the game's WebSocket group
@@ -421,12 +434,18 @@ class PongGame {
                         }));
 
                         console.log('Setting URL hash to:', `play/${this.gameId}`);
+                        if (this.chatInterface)
+                        {
+                            console.log("CHAAAAAAAT INTERFACE");
+                            chat_sendMessageValue(this.gameId);
+                            this.chatInterface = false;
+                        }
                         window.location.hash = `play/${this.gameId}`;
                     } else {
                         console.error('Invalid game ID received:', message.game_id);
                     }
                     break;
-                    
+
                 case 'game_joined':
                     console.log('Game joined:', message);
                     // Parse game_id as integer
@@ -440,24 +459,24 @@ class PongGame {
                         this.playerId = parseInt(message.player2_id, 10);
                         console.log('We are player 2 with ID:', this.playerId);
                     }
-                    
+
                     // Initialize ready button states with the new game state
                     if (message.game_state) {
                         this.gameState = message.game_state;
                         this.updateReadyState(message.game_state);
                     }
-                    
+
                     // Hide canvas until game starts
                     if (this.canvasContainer) {
                         this.canvasContainer.style.display = 'none';
                     }
-                    
+
                     // Join the game's WebSocket group
                     this.uiSocket.send(JSON.stringify({
                         type: 'rejoin_game_group',
                         game_id: this.gameId
                     }));
-                    
+
                     window.location.hash = `play/${this.gameId}`;
                     break;
 
@@ -468,7 +487,7 @@ class PongGame {
                     });
                     this.connected = true;
                     this.playerId = parseInt(message.user.id, 10);  // Ensure player ID is integer
-                    
+
                     // If loading from URL hash, rejoin game group
                     if (window.location.hash.startsWith('#play/')) {
                         const gameId = window.location.hash.split('/')[1];
@@ -480,10 +499,10 @@ class PongGame {
                     break;
                 case 'game_state_update':
                     this.gameState = message.game_state;
-                    
+
                     // Update ready button states
                     this.updateReadyState(message.game_state);
-                    
+
                     // Start game and show canvas only when both players are ready and game is playing
                     if (message.game_state.status === 'playing') {
                         if (!this.gameStarted) {
@@ -510,7 +529,7 @@ class PongGame {
                         cancelAnimationFrame(this.animationFrameId);
                         this.animationFrameId = null;
                     }
-                    
+
                     // Show game over message with winner and duration
                     if (this.gameStatus) {
                         const winner = message.winner === 'player1' ? 'Player 1' : 'Player 2';
@@ -519,7 +538,7 @@ class PongGame {
                         this.gameStatus.textContent = `Game Over! ${winner} wins! (${score}) Duration: ${duration}`;
                         console.log('Updated game status with:', this.gameStatus.textContent);
                     }
-                    
+
                     // Disable game controls
                     if (this.createGameBtn) {
                         this.createGameBtn.disabled = false;
@@ -541,7 +560,7 @@ class PongGame {
                         this.gameStatus.textContent = `Error: ${message.message}`;
                     }
                     break;
-                    
+
                 case 'player_ready':
                     console.log('Player ready:', message);
                     this.updateReadyState(message.game_state);
@@ -551,7 +570,7 @@ class PongGame {
             console.error('Error handling WebSocket message:', error);
         }
     }
-    
+
     joinGame(gameId) {
         try {
             // Parse gameId as integer
@@ -562,12 +581,12 @@ class PongGame {
                 'game_id': this.gameId
             }));
             console.log('Sent join_game message');
-            
+
         } catch (error) {
             console.error('Error joining game:', error);
         }
     }
-    
+
     handleWebSocketClose() {
         this.connected = false;
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -577,7 +596,7 @@ class PongGame {
             }, this.reconnectDelay);
         }
     }
-    
+
     handleKeyPress(event) {
         console.log('handleKeyPress called');
         const hash = window.location.hash;
@@ -586,7 +605,7 @@ class PongGame {
             console.log("Not on play page with game ID");
             return;
         }
-        
+
         if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot handle key press:', {
                 hasSocket: !!this.uiSocket,
@@ -596,16 +615,16 @@ class PongGame {
             });
             return;
         }
-        
+
         const key = event.key.toLowerCase();
         if (key === 'w' || key === 's') {
             event.preventDefault();
-            
+
             // Get current paddle position
             const paddleKey = this.playerId === this.gameState.player1_id ? 'player1' : 'player2';
             const paddle = this.gameState.paddles[paddleKey];
             const canvasHeight = this.gameState.canvas.height;
-            
+
             // Move paddle based on key
             let direction = null;
             if (key === 'w' && paddle.y > 0) {
@@ -613,7 +632,7 @@ class PongGame {
             } else if (key === 's' && paddle.y < canvasHeight - paddle.height) {
                 direction = 'down';
             }
-            
+
             if (direction) {
                 console.log('Sending paddle_move:', { direction, gameId: this.gameId });
                 this.uiSocket.send(JSON.stringify({
@@ -624,31 +643,31 @@ class PongGame {
             }
         }
     }
-    
+
     updatePaddlePosition() {
         //console.log('updatePaddlePosition called');
         if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN || !this.gameId || !this.gameStarted || !this.gameState) {
             console.log('Cannot update paddle: socket:', !!this.uiSocket, 'state:', this.uiSocket?.readyState, 'gameId:', this.gameId, 'started:', this.gameStarted);
             return;
         }
-        
+
         const now = performance.now();
         if (now - this.lastPaddleUpdate < this.paddleUpdateInterval) {
             return;
         }
-        
+
         // Get current paddle position
         const paddleKey = this.playerId === this.gameState.player1_id ? 'player1' : 'player2';
         const paddle = this.gameState.paddles[paddleKey];
         const canvasHeight = this.gameState.canvas.height;
-        
+
         let direction = null;
         if (this.keyState.w && paddle.y > 0) {
             direction = 'up';
         } else if (this.keyState.s && paddle.y < canvasHeight - paddle.height) {
             direction = 'down';
         }
-        
+
         if (direction) {
             this.uiSocket.send(JSON.stringify({
                 type: 'paddle_move',
@@ -658,7 +677,7 @@ class PongGame {
             this.lastPaddleUpdate = now;
         }
     }
-    
+
     animate() {
         //console.log('animate called');
         if (!this.gameStarted || !this.gameState) {
@@ -678,8 +697,8 @@ class PongGame {
         // Continue the animation loop
         this.animationFrameId = requestAnimationFrame(() => this.animate());
     }
-    
-    
+
+
     draw() {
         //console.log('draw called');
         try {
@@ -690,21 +709,21 @@ class PongGame {
                 });
                 return;
             }
-            
+
             //console.log('Drawing game state:', this.gameState);
-            
+
             const { canvas, ball, paddles } = this.gameState;
-            
+
             // Ensure canvas dimensions are set
             if (!this.canvas.width || !this.canvas.height) {
                 this.canvas.width = canvas.width;
                 this.canvas.height = canvas.height;
             }
-            
+
             // Clear canvas
             this.ctx.fillStyle = '#000000';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             // Draw center line
             this.ctx.setLineDash([5, 15]);
             this.ctx.beginPath();
@@ -713,7 +732,7 @@ class PongGame {
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
             this.ctx.stroke();
             this.ctx.setLineDash([]);
-            
+
             // Draw ball
             if (ball) {
                 this.ctx.beginPath();
@@ -724,12 +743,12 @@ class PongGame {
                 this.ctx.fill();
                 this.ctx.shadowBlur = 0;
             }
-            
+
             // Draw paddles
             this.ctx.fillStyle = '#ffffff';
             this.ctx.shadowColor = '#ffffff';
             this.ctx.shadowBlur = 10;
-            
+
             // Draw player1 paddle
             if (paddles.player1) {
                 this.ctx.fillRect(
@@ -739,7 +758,7 @@ class PongGame {
                     paddles.player1.height
                 );
             }
-            
+
             // Draw player2 paddle
             if (paddles.player2) {
                 this.ctx.fillRect(
@@ -749,23 +768,23 @@ class PongGame {
                     paddles.player2.height
                 );
             }
-            
+
             // Reset shadow blur after drawing paddles
             this.ctx.shadowBlur = 0;
-            
+
             // Draw scores
             if (this.gameState.score) {
                 this.ctx.fillStyle = '#ffffff';
                 this.ctx.font = '48px Arial';
                 this.ctx.textAlign = 'center';
-                
+
                 // Player 1 score on the left
                 this.ctx.fillText(
                     this.gameState.score.player1,
                     this.canvas.width * 0.25,
                     60
                 );
-                
+
                 // Player 2 score on the right
                 this.ctx.fillText(
                     this.gameState.score.player2,
@@ -780,7 +799,7 @@ class PongGame {
                 this.animationFrameId = null;
             }
         }
-        
+
         // Add a timestamp to limit logging frequency
         const logInterval = 2000; // Log every 500ms
         const currentTime = Date.now();
@@ -792,10 +811,10 @@ class PongGame {
         }
     }
 
-    
+
     updateGameState(state) {
         if (!state) return;
-        
+
         try {
             // Update game status and player IDs
             if (state.status) {
@@ -807,14 +826,14 @@ class PongGame {
             if (state.player2_id) {
                 this.player2Id = state.player2_id;
             }
-            
-            
+
+
             // Update ball position
             if (state.ball) {
                 this.ball = state.ball;
             }
-            
-            
+
+
             // Update paddle positions
             if (state.paddles) {
                 // Initialize paddles if they don't exist
@@ -824,20 +843,20 @@ class PongGame {
                         right: { x: 730, y: 250, width: 20, height: 100 }
                     };
                 }
-                
+
                 // Update left paddle
                 if (state.paddles.player1) {
                     this.paddles.left.y = state.paddles.player1.y;
                     console.log('Updated left paddle position:', this.paddles.left.y);
                 }
-                
+
                 // Update right paddle
                 if (state.paddles.player2) {
                     this.paddles.right.y = state.paddles.player2.y;
                     console.log('Updated right paddle position:', this.paddles.right.y);
                 }
             }
-            
+
             // Update score
             if (state.score) {
                 if (this.player1Score) this.player1Score.textContent = state.score.player1;
@@ -851,10 +870,10 @@ class PongGame {
     handleGameEnd(data) {
         const winner = data.winner;
         const duration = data.duration;
-        
+
         // Stop the game loop
         this.gameStarted = false;
-        
+
         // Create game end overlay
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';
@@ -868,33 +887,33 @@ class PongGame {
         overlay.style.justifyContent = 'center';
         overlay.style.alignItems = 'center';
         overlay.style.zIndex = '1000';
-        
+
         // Create result text
         const resultText = document.createElement('h1');
         resultText.style.color = '#fff';
         resultText.style.marginBottom = '20px';
         resultText.style.fontSize = '2.5em';
         resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
-        
+
         // Create score text
         const scoreText = document.createElement('h2');
         scoreText.style.color = '#fff';
         scoreText.style.marginBottom = '20px';
         scoreText.style.fontSize = '1.8em';
         scoreText.innerText = `Final Score: ${data.final_score.player1} - ${data.final_score.player2}`;
-        
+
         // Create duration text
         const durationText = document.createElement('h3');
         durationText.style.color = '#fff';
         durationText.style.marginBottom = '30px';
         durationText.style.fontSize = '1.5em';
         durationText.innerText = `Game Duration: ${duration}`;
-        
+
         // Create buttons container
         const buttonsContainer = document.createElement('div');
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.gap = '20px';
-        
+
         // Create "Create New Game" button
         const homeButton = document.createElement('button');
         homeButton.innerText = 'Go to Lobby';
@@ -912,21 +931,21 @@ class PongGame {
                 this.uiSocket.close();
                 this.uiSocket = null;
             }
-            window.location.href = '#game';  
+            window.location.href = '#game';
         };
-        
+
         // Add buttons to container
         buttonsContainer.appendChild(homeButton);
-        
+
         // Add elements to overlay
         overlay.appendChild(resultText);
         overlay.appendChild(scoreText);
         overlay.appendChild(durationText);
         overlay.appendChild(buttonsContainer);
-        
+
         // Add overlay to body
         document.body.appendChild(overlay);
-        
+
         // Clean up WebSocket connection
         if (this.uiSocket) {
             this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
@@ -934,14 +953,14 @@ class PongGame {
             this.uiSocket = null;
         }
     }
-    
+
     handleGameOver(data) {
         const winner = data.winner;
         const duration = data.duration;
-        
+
         // Stop the game loop
         this.gameStarted = false;
-        
+
         // Create game end overlay
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';
@@ -955,33 +974,33 @@ class PongGame {
         overlay.style.justifyContent = 'center';
         overlay.style.alignItems = 'center';
         overlay.style.zIndex = '1000';
-        
+
         // Create result text
         const resultText = document.createElement('h1');
         resultText.style.color = '#fff';
         resultText.style.marginBottom = '20px';
         resultText.style.fontSize = '2.5em';
         resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
-        
+
         // Create score text
         const scoreText = document.createElement('h2');
         scoreText.style.color = '#fff';
         scoreText.style.marginBottom = '20px';
         scoreText.style.fontSize = '1.8em';
         scoreText.innerText = `Final Score: ${data.final_score.player1} - ${data.final_score.player2}`;
-        
+
         // Create duration text
         const durationText = document.createElement('h3');
         durationText.style.color = '#fff';
         durationText.style.marginBottom = '30px';
         durationText.style.fontSize = '1.5em';
         durationText.innerText = `Game Duration: ${duration}`;
-        
+
         // Create buttons container
         const buttonsContainer = document.createElement('div');
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.gap = '20px';
-        
+
         // Create "Create New Game" button
         const createButton = document.createElement('button');
         createButton.innerText = 'Create New Game';
@@ -999,9 +1018,9 @@ class PongGame {
                 this.uiSocket.close();
                 this.uiSocket = null;
             }
-            window.location.href = '#game';  
+            window.location.href = '#game';
         };
-        
+
         // Create "Join Game" button
         const joinButton = document.createElement('button');
         joinButton.innerText = 'Join Game';
@@ -1019,22 +1038,22 @@ class PongGame {
                 this.uiSocket.close();
                 this.uiSocket = null;
             }
-            window.location.href = '#game/join/';  
+            window.location.href = '#game/join/';
         };
-        
+
         // Add buttons to container
         buttonsContainer.appendChild(createButton);
         buttonsContainer.appendChild(joinButton);
-        
+
         // Add elements to overlay
         overlay.appendChild(resultText);
         overlay.appendChild(scoreText);
         overlay.appendChild(durationText);
         overlay.appendChild(buttonsContainer);
-        
+
         // Add overlay to body
         document.body.appendChild(overlay);
-        
+
         // Clean up WebSocket connection
         if (this.uiSocket) {
             this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
@@ -1042,19 +1061,19 @@ class PongGame {
             this.uiSocket = null;
         }
     }
-    
+
     handleReadyClick() {
         console.log('Player clicked ready button');
         if (!this.gameId) {
             console.error('No game ID available');
             return;
         }
-        
+
         if (!this.playerId) {
             console.error('No player ID available');
             return;
         }
-        
+
         console.log('Sending player_ready message for game:', this.gameId, 'player:', this.playerId);
         this.uiSocket.send(JSON.stringify({
             'type': 'player_ready',
@@ -1064,20 +1083,20 @@ class PongGame {
 
     updateReadyState(gameState) {
         console.log('updateReadyState called with playerId:', this.playerId);
-        if (!gameState || !gameState.players) return;  
+        if (!gameState || !gameState.players) return;
         console.log('Game state:', gameState);
-        
+
         const players = gameState.players;
         const isPlayer1 = this.playerId === parseInt(players.player1?.id, 10);
         const isPlayer2 = this.playerId === parseInt(players.player2?.id, 10);
-        
+
         // Update player 1 ready button and name
         if (players.player1 && this.player1Ready) {
             // Update name
             if (this.player1Name) {
                 this.player1Name.textContent = players.player1.username;
             }
-            
+
             console.log('Updating player 1 ready state:', players.player1.is_ready);
             this.player1Ready.textContent = 'Not Ready';  // Always start as Not Ready
             this.player1Ready.classList.remove('ready');  // Remove ready class by default
@@ -1094,7 +1113,7 @@ class PongGame {
             if (this.player2Name) {
                 this.player2Name.textContent = players.player2.username;
             }
-            
+
             console.log('Updating player 2 ready state:', players.player2.is_ready);
             this.player2Ready.textContent = 'Not Ready';  // Always start as Not Ready
             this.player2Ready.classList.remove('ready');  // Remove ready class by default
@@ -1119,7 +1138,7 @@ class PongGame {
             <input type="text" id="game_id_input" placeholder="Enter Game ID">
             <button type="submit">Join</button>
         `;
-        
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const gameId = document.getElementById('game_id_input').value;
@@ -1129,8 +1148,8 @@ class PongGame {
             }
             form.remove();
         });
-        
+
         this.joinGameBtn.parentNode.insertBefore(form, this.joinGameBtn.nextSibling);
         document.getElementById('game_id_input').focus();
     }
-};  
+};
