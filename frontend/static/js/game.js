@@ -431,8 +431,8 @@ class PongGame {
                     console.log('Game joined:', message);
                     // Parse game_id as integer
                     this.gameId = parseInt(message.game_id, 10);
-                     // Check if we're player 1 or player 2
-                     if (this.playerId === parseInt(message.player1_id, 10)) {
+                    // Check if we're player 1 or player 2
+                    if (this.playerId === parseInt(message.player1_id, 10)) {
                         // We're already player 1, keep our ID
                         console.log('We are player 1');
                     } else {

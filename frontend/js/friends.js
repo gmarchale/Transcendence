@@ -68,6 +68,7 @@ async function addFriend() {
 		headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
 		body: JSON.stringify({id_user_1: friendInput})
 	});
+	loadFriends(); // Refresh the friends list
 }
 
 
