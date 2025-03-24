@@ -293,6 +293,12 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 if hasattr(self, 'game_loop_task') and self.game_loop_task:
                     self.game_loop_task.cancel()
                     self.game_loop_task = None
+                
+                # # Nettoyer les parties inactives à chaque fin de partie
+                # # Cela garantit que les parties abandonnées seront nettoyées régulièrement
+                #     from .utils import cleanup_inactive_games
+                # await database_sync_to_async(cleanup_inactive_games)()  # Exécution en mode synchrone via database_sync_to_async
+                # logger.info("[GAME] Nettoyage des parties inactives effectué")
 
         except Exception as e:
             logger.error(f"[GAME] Error ending game: {str(e)}")

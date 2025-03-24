@@ -202,6 +202,9 @@ class GameStateManager:
         if game_state['score']['player1'] >= 5 or game_state['score']['player2'] >= 5:
             game_state['status'] = 'finished'
             game_state['winner'] = 'player1' if game_state['score']['player1'] > game_state['score']['player2'] else 'player2'
+            
+            # Save the game state to the database at the end of the game
+            cls.save_game_state_to_db(game_id, game_state)
 
         return cls._serialize_game_state(game_state)
 
@@ -241,6 +244,9 @@ class GameStateManager:
                     game_state['winner_id'] = None
                     game_state['score_player1'] = game_state['score']['player1']
                     game_state['score_player2'] = game_state['score']['player2']
+            
+            # Save the complete game state to the database
+            cls.save_game_state_to_db(game_id, game_state)
                     
             return cls._serialize_game_state(game_state)
         return None
@@ -269,7 +275,148 @@ class GameStateManager:
         return game_id in cls._instances
 
     @classmethod
+    def save_game_state_to_db(cls, game_id: str, game_state: Dict):
+        """Save the complete game state to the database"""
+        # Print debug message showing the game_state data
+        print(f"[DEBUG] Game state data received: {game_state}")
+        
+        # Use sync_to_async to handle database operations from async context
+        import asyncio
+        from asgiref.sync import sync_to_async
+        
+        # Check if we're in an async context
+        try:
+            asyncio.get_running_loop()
+            is_async = True
+        except RuntimeError:
+            is_async = False
+            
+        if is_async:
+            # We're in an async context, use the async version
+            asyncio.create_task(cls._save_game_state_to_db_async(game_id, game_state))
+        else:
+            # We're in a sync context, use the sync version directly
+            cls._save_game_state_to_db_sync(game_id, game_state)
+    
+    @classmethod
+    async def _save_game_state_to_db_async(cls, game_id: str, game_state: Dict):
+        """Async version of save_game_state_to_db"""
+        from asgiref.sync import sync_to_async
+        try:
+            await sync_to_async(cls._save_game_state_to_db_sync)(game_id, game_state)
+        except Exception as e:
+            print(f"[ERROR] Failed to save game state to database (async): {str(e)}")
+    
+    @classmethod
+    def _save_game_state_to_db_sync(cls, game_id: str, game_state: Dict):
+        """Synchronous implementation of saving game state to database"""
+        try:
+            from django.apps import apps
+            Game = apps.get_model('game', 'Game')
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            # Get the game from the database
+            game = Game.objects.get(id=game_id)
+            
+            # Update the game state field with the complete state
+            game.game_state = cls._serialize_game_state(game_state)
+            
+            # Update other relevant fields
+            if 'score_player1' in game_state:
+                game.score_player1 = game_state['score_player1']
+                print(f"[DEBUG] Setting score_player1 from direct field: {game.score_player1}")
+            elif 'score' in game_state and 'player1' in game_state['score']:
+                game.score_player1 = game_state['score']['player1']
+                print(f"[DEBUG] Setting score_player1 from score.player1: {game.score_player1}")
+                
+            if 'score_player2' in game_state:
+                game.score_player2 = game_state['score_player2']
+                print(f"[DEBUG] Setting score_player2 from direct field: {game.score_player2}")
+            elif 'score' in game_state and 'player2' in game_state['score']:
+                game.score_player2 = game_state['score']['player2']
+                print(f"[DEBUG] Setting score_player2 from score.player2: {game.score_player2}")
+                
+            # Calculate and set duration if the game is finished
+            if 'status' in game_state and game_state['status'] == 'finished' and 'start_time' in game_state:
+                import time
+                from datetime import timedelta
+                
+                # Calculate duration in seconds
+                end_time = time.time()
+                start_time = game_state['start_time']
+                duration_seconds = end_time - start_time
+                
+                # Set duration in seconds
+                game.duration = duration_seconds
+                print(f"[DEBUG] Setting game duration: {duration_seconds} seconds")
+                
+                # Format duration as mm:ss
+                duration_td = timedelta(seconds=duration_seconds)
+                minutes, seconds = divmod(duration_td.seconds, 60)
+                duration_formatted = f"{minutes:02d}:{seconds:02d}"
+                
+                # Set formatted duration
+                game.duration_formatted = duration_formatted
+                print(f"[DEBUG] Setting formatted duration: {duration_formatted}")
+            elif 'duration' in game_state:
+                game.duration = game_state['duration']
+                print(f"[DEBUG] Setting duration from game_state: {game_state['duration']}")
+                
+            if 'duration_formatted' in game_state and not (game.duration_formatted):
+                game.duration_formatted = game_state['duration_formatted']
+                print(f"[DEBUG] Setting duration_formatted from game_state: {game_state['duration_formatted']}")
+            
+            # Set status to finished
+            if 'status' in game_state and game_state['status'] == 'finished':
+                game.status = 'finished'
+                print(f"[DEBUG] Setting game status to finished")
+            
+            # Set winner if available
+            if 'winner' in game_state:
+                print(f"[DEBUG] Winner found in game_state: {game_state['winner']}")
+                winner_id = None
+                
+                if game_state['winner'] == 'player1' and 'players' in game_state and 'player1' in game_state['players']:
+                    if hasattr(game_state['players']['player1'], 'id'):
+                        winner_id = game_state['players']['player1'].id
+                    elif isinstance(game_state['players']['player1'], dict) and 'id' in game_state['players']['player1']:
+                        winner_id = game_state['players']['player1']['id']
+                        
+                elif game_state['winner'] == 'player2' and 'players' in game_state and 'player2' in game_state['players']:
+                    if hasattr(game_state['players']['player2'], 'id'):
+                        winner_id = game_state['players']['player2'].id
+                    elif isinstance(game_state['players']['player2'], dict) and 'id' in game_state['players']['player2']:
+                        winner_id = game_state['players']['player2']['id']
+                
+                if winner_id:
+                    try:
+                        print(f"[DEBUG] Setting winner with ID: {winner_id}")
+                        game.winner = User.objects.get(id=winner_id)
+                    except Exception as e:
+                        print(f"[ERROR] Failed to set winner: {str(e)}")
+                        
+            # Save the game
+            game.save()
+            print(f"[DEBUG] Game state saved to database for game {game_id} with scores: player1={game.score_player1}, player2={game.score_player2}, status={game.status}, winner={game.winner_id if hasattr(game, 'winner_id') else None}")
+            
+            # Si le jeu est terminé, nettoyer les parties inactives
+            if game.status == 'finished':
+                try:
+                    print("[DEBUG] DÉBUT DU NETTOYAGE DES PARTIES INACTIVES")
+                    from .utils import cleanup_inactive_games
+                    result = cleanup_inactive_games()
+                    print(f"[DEBUG] FIN DU NETTOYAGE DES PARTIES INACTIVES: {result}")
+                except Exception as e:
+                    print(f"[ERROR] Erreur lors du nettoyage des parties inactives: {str(e)}")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to save game state to database (sync): {str(e)}")
+    
+    @classmethod
     def remove_game(cls, game_id: str):
         """Remove a game from memory"""
         if game_id in cls._instances:
+            # Save the final state to the database before removing
+            cls.save_game_state_to_db(game_id, cls._instances[game_id])
             del cls._instances[game_id]
