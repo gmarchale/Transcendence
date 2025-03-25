@@ -10,6 +10,9 @@ class PongGame {
         this.handleWebSocketMessage = this.handleWebSocketMessage.bind(this);
 
         // Initialize properties
+        this.player1ProfileLoaded = false;
+        this.player2ProfileLoaded = false;
+
         this.chatInterface = false;
         this.connected = false;
         this.connectionAttempt = false;
@@ -1094,12 +1097,15 @@ class PongGame {
         const isPlayer1 = this.playerId === parseInt(players.player1?.id, 10);
         const isPlayer2 = this.playerId === parseInt(players.player2?.id, 10);
 
+
         // Update player 1 ready button and name
         console.log(players.player1.id)
         console.log(players.player1.username[0])
 
-        if (players.player1)
+
+        if (players.player1 && this.player1ProfileLoaded == false)
         {
+            this.player1ProfileLoaded = true;
             fetch("/api/users/get_avatar/" + players.player1.id + "/", {
                 method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
             })
@@ -1126,7 +1132,7 @@ class PongGame {
             })
             .catch(error => console.error("Error while getting avatar:", error));
         }
-        else
+        else if (this.player1ProfileLoaded == false)
         {
             let imgElement = document.getElementById("player2_avatar");
             let placeholder = document.createElement("div");
@@ -1136,8 +1142,9 @@ class PongGame {
             imgElement.parentNode.replaceChild(placeholder, imgElement);
         }
 
-        if (players.player2)
+        if (players.player2 && this.player2ProfileLoaded == false)
         {
+            this.player2ProfileLoaded = true;
                 fetch("/api/users/get_avatar/" + players.player2.id + "/", {
                     method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 })
@@ -1164,7 +1171,7 @@ class PongGame {
                 })
                 .catch(error => console.error("Error while getting avatar:", error));
         }
-        else
+        else if (this.player2ProfileLoaded == false)
         {
             let imgElement = document.getElementById("player2_avatar");
             let placeholder = document.createElement("div");
