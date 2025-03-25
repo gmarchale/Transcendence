@@ -20,6 +20,8 @@ function initTournament() {
     notFoundElement.style.display = 'none';
     contentElement.style.display = 'flex';
     resetButtonListeners();
+
+    initSocket(tournamentId);
     
     loadTournament(tournamentId).then(tournament => {
         if (tournament) {
@@ -180,7 +182,6 @@ async function loadTournament(tournamentId) {
         displayPlayers(tournament);
         displayMatches(tournament);
         
-        initSocket(tournamentId);
 
         return tournament;
     } catch (error) {
