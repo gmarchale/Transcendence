@@ -378,6 +378,11 @@ async function initTournamentActions(tournament) {
 
     GoToGameButton.addEventListener('click', async function() {
         
+        // Initialize gameManager if it doesn't exist
+        if (!window.gameManager) {
+            window.gameManager = new PongGame();
+        }
+        
         const match = getCurrentMatch();
     
         if (!match.game_id) {
