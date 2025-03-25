@@ -167,7 +167,8 @@ class GameStateManager:
         
         # Only log ball position every 5 seconds
         if not hasattr(cls, '_last_ball_log') or current_time - cls._last_ball_log >= 5:
-            print(f"[DEBUG] Ball position - x: {ball['x']:.1f}, y: {ball['y']:.1f}, dx: {ball['dx']}, dy: {ball['dy']}")
+            # Debug message disabled
+            # print(f"[DEBUG] Ball position - x: {ball['x']:.1f}, y: {ball['y']:.1f}, dx: {ball['dx']}, dy: {ball['dy']}")
             cls._last_ball_log = current_time
 
         # Update ball position
@@ -278,7 +279,8 @@ class GameStateManager:
     def save_game_state_to_db(cls, game_id: str, game_state: Dict):
         """Save the complete game state to the database"""
         # Print debug message showing the game_state data
-        print(f"[DEBUG] Game state data received: {game_state}")
+        # Debug message disabled
+        # print(f"[DEBUG] Game state data received: {game_state}")
         
         # Use sync_to_async to handle database operations from async context
         import asyncio

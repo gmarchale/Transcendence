@@ -7,17 +7,17 @@ function initTournamentButtons() {
     const resultSection = document.getElementById('resultSection');
     const modalTitle = document.getElementById('modalTitle');
     const chips = document.querySelectorAll('.game_chip');
-    let selectedPlayers = 8;
+    let selectedPlayers = 2;
 
     //montrer la valeur par defaut
-    document.querySelector('[data-players="8"]').classList.add('selected');
+    document.querySelector('[data-players="2"]').classList.add('selected');
     
     // update l'affichage de la chip selection
     chips.forEach(chip => {
         chip.addEventListener('click', function() {
             chips.forEach(c => c.classList.remove('selected'));
             this.classList.add('selected');
-            selectedPlayers = parseInt(this.dataset.players);
+            selectedPlayers = 2; // Fixed at 2 players for testing
         });
     });
     

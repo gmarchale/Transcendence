@@ -459,8 +459,9 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
     async def game_state_update(self, event):
         """Handle game state update"""
         try:
-            print(f"[DEBUG] GameUIConsumer: Received game state update, status: {event.get('game_state', {}).get('status')}")
-            print(f"[DEBUG] Game state update: {event.get('game_state')}")
+            # Debug messages disabled
+            # print(f"[DEBUG] GameUIConsumer: Received game state update, status: {event.get('game_state', {}).get('status')}")
+            # print(f"[DEBUG] Game state update: {event.get('game_state')}")
             await self.send_json({
                 'type': 'game_state_update',
                 'game_state': event.get('game_state', {}),
