@@ -21,6 +21,7 @@ function initTournament() {
     contentElement.style.display = 'flex';
     resetButtonListeners();
 
+    // Initialize WebSocket connection once when tournament page loads
     initSocket(tournamentId);
     
     loadTournament(tournamentId).then(tournament => {
@@ -115,6 +116,14 @@ function displayMatches(tournament) {
         matchesByRound[roundNumber].forEach(match => {
             const matchDiv = document.createElement('div');
             matchDiv.className = `tournament_match`;
+            matchDiv.dataset.matchId = match.id;
+            matchDiv.dataset.gameId = match.game ? match.game.id : '';
+            
+            // Marquer le match comme actif si le joueur actuel est impliqué et que le match est en cours
+            if (match.status === 'in_progress' && 
+                (match.player1_id === tournament.current_user_id || match.player2_id === tournament.current_user_id)) {
+                matchDiv.classList.add('tournament_match-active');
+            }
             
             const playersDiv = document.createElement('div');
             playersDiv.className = 'tournament_match-players';
@@ -182,7 +191,7 @@ async function loadTournament(tournamentId) {
         displayPlayers(tournament);
         displayMatches(tournament);
         
-
+        // WebSocket is now initialized only once in initTournament()
         return tournament;
     } catch (error) {
         console.error('Error:', error);
@@ -245,13 +254,13 @@ function displayTournamentsPage(tournaments) {
             
             // reset les boutons pour pas afficher immediatement des mauvais boutons
             const startButton = document.getElementById('tournamentStart');
-            const readyButton = document.getElementById('tournamentReady');
+            const GoToGameButton = document.getElementById('GoToGame');
             startButton.style.display = 'none';
             startButton.disabled = false;
             startButton.classList.remove('tournament_btn-disabled');
             startButton.title = '';
-            readyButton.classList.remove('tournament_btn-active');
-            readyButton.textContent = 'Ready';
+            GoToGameButton.classList.remove('tournament_btn-active');
+            GoToGameButton.textContent = 'Ready';
         });
         tournamentList.appendChild(button);
     });
@@ -300,7 +309,7 @@ function displayPlayers(tournament) {
 function resetButtonListeners() {
     const elements = [
         'tournamentStart', 
-        'tournamentReady', 
+        'GoToGame', 
         'tournamentforfeit',
         'tournamentTitle',
         'closeTournamentPageList'
@@ -323,7 +332,7 @@ function resetButtonListeners() {
 
 async function initTournamentActions(tournament) {
     const startButton = document.getElementById('tournamentStart');
-    const readyButton = document.getElementById('tournamentReady');
+    const GoToGameButton = document.getElementById('GoToGame');
     const forfeitButton = document.getElementById('tournamentforfeit');
     const userId = await getid();
     
@@ -367,24 +376,28 @@ async function initTournamentActions(tournament) {
         startButton.style.display = 'none';
     }
 
-    readyButton.addEventListener('click', async function() {
-        const tournamentId = getTournamentId();
+    GoToGameButton.addEventListener('click', async function() {
         
-        const response = await fetch(`api/tournaments/${tournamentId}/player-ready/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        });
-
-        if (response.ok) {
-            readyButton.classList.add('tournament_btn-active');
-            readyButton.textContent = 'Ready ✓';
-            loadTournament(tournamentId);
+        const match = getCurrentMatch();
+    
+        if (!match.game_id) {
+            // Aucun game_id n'existe encore, ce joueur doit créer la partie
+            await window.gameManager.startGame();
+            
+            // Récupérer le game_id généré
+            const gameId = window.gameManager.gameId;
+            
+            // Après création, mettre à jour le match avec le game_id
+            updateMatchGameId(match.id, gameId);
+            
+            // Rediriger vers la page du jeu
+            window.location.hash = 'play/' + gameId;
         } else {
-            const errorData = await response.json();
-            alert('Failed to set player ready: ' + (errorData.error || 'Unknown error'));
+            // Un game_id existe déjà, ce joueur doit rejoindre la partie
+            window.gameManager.joinGame(match.game_id);
+            
+            // Rediriger vers la page du jeu
+            window.location.hash = 'play/' + match.game_id;
         }
     });
 
@@ -405,6 +418,34 @@ async function initTournamentActions(tournament) {
             const errorData = await response.json();
             alert('Failed to forfeit tournament: ' + (errorData.error || 'Unknown error'));
         }
+    });
+}
+
+// Fonction pour récupérer le match actif pour le joueur actuel
+function getCurrentMatch() {
+    // Récupérer le match actif dans le DOM
+    const activeMatch = document.querySelector('.tournament_match-active');
+    if (!activeMatch) {
+        alert('No active match found');
+        return null;
+    }
+    
+    // Récupérer les données du match depuis les attributs data-*
+    return {
+        id: activeMatch.dataset.matchId,
+        game_id: activeMatch.dataset.gameId || null
+    };
+}
+
+// Fonction pour mettre à jour le game_id dans le match
+function updateMatchGameId(matchId, gameId) {
+    fetch(`/api/tournaments/match/${matchId}/update-game-id/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ game_id: gameId })
     });
 }
 
