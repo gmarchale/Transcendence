@@ -597,6 +597,60 @@ class TournamentViewSet(viewsets.ModelViewSet):
         return Response(data)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_match_details(request, match_id):
+    try:
+        match = TournamentMatch.objects.get(id=match_id)
+        
+        # Create a response with the match details
+        data = {
+            'id': match.id,
+            'tournament_id': match.tournament.id,
+            'round_number': match.round_number,
+            'match_number': match.match_number,
+            'status': match.status,
+        }
+        
+        # Add player information safely
+        try:
+            data['player1_id'] = match.player1.id if match.player1 else None
+        except Exception as e:
+            print(f"Error getting player1: {e}")
+            data['player1_id'] = None
+            
+        try:
+            data['player2_id'] = match.player2.id if match.player2 else None
+        except Exception as e:
+            print(f"Error getting player2: {e}")
+            data['player2_id'] = None
+            
+        try:
+            data['winner_id'] = match.winner.id if match.winner else None
+        except Exception as e:
+            print(f"Error getting winner: {e}")
+            data['winner_id'] = None
+            
+        try:
+            data['game_id'] = match.game.id if match.game else None
+        except Exception as e:
+            print(f"Error getting game: {e}")
+            data['game_id'] = None
+            
+        # Add timestamp information safely
+        try:
+            data['started_at'] = match.started_at
+        except Exception as e:
+            print(f"Error getting started_at: {e}")
+            data['started_at'] = None
+        
+        return Response(data)
+    except TournamentMatch.DoesNotExist:
+        return Response({'error': 'Match not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Unexpected error in get_match_details: {e}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_match_game_id(request, match_id):

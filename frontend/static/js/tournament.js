@@ -406,12 +406,27 @@ async function initTournamentActions(tournament) {
             });
         }
         
-        const match = getCurrentMatch();
-        console.log('Match object:', match);
-        console.log('Game ID from match:', match.game_id, 'Type:', typeof match.game_id);
-    
-        if (!match || !match.game_id) {
-            console.log('No game ID found, creating new game');
+        // Get the current match from the DOM
+        const domMatch = getCurrentMatch();
+        if (!domMatch) {
+            alert('No active match found');
+            return;
+        }
+        
+        // Get the latest match details directly from the server
+        const serverMatch = await getMatchDetailsFromServer(domMatch.id);
+        console.log('Match details from server:', serverMatch);
+        
+        // Check if the match has a game ID in the database
+        if (serverMatch && serverMatch.game_id) {
+            console.log(`Found game ID ${serverMatch.game_id} in the database, joining game`);
+            // Un game_id existe déjà, ce joueur doit rejoindre la partie
+            window.gameManager.joinGame(serverMatch.game_id);
+            
+            // Rediriger vers la page du jeu
+            window.location.hash = 'play/' + serverMatch.game_id;
+        } else {
+            console.log('No game ID found in the database, creating new game');
             // Aucun game_id n'existe encore, ce joueur doit créer la partie
             await window.gameManager.startGame();
             
@@ -419,16 +434,16 @@ async function initTournamentActions(tournament) {
             const gameId = window.gameManager.gameId;
             
             // Après création, mettre à jour le match avec le game_id
-            updateMatchGameId(match.id, gameId);
+            const updateSuccess = await updateMatchGameId(domMatch.id, gameId);
+            
+            if (updateSuccess) {
+                console.log(`Successfully updated match ${domMatch.id} with game ID ${gameId}, redirecting to game`);
+            } else {
+                console.warn(`Failed to update match with game ID, but still redirecting to game`);
+            }
             
             // Rediriger vers la page du jeu
             window.location.hash = 'play/' + gameId;
-        } else {
-            // Un game_id existe déjà, ce joueur doit rejoindre la partie
-            window.gameManager.joinGame(match.game_id);
-            
-            // Rediriger vers la page du jeu
-            window.location.hash = 'play/' + match.game_id;
         }
     });
 
@@ -479,16 +494,85 @@ function getCurrentMatch() {
     };
 }
 
+// Fonction pour récupérer un cookie par son nom
+function getCookie(name) {
+    let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : null;
+}
+
+// Fonction pour récupérer les détails d'un match depuis le serveur
+async function getMatchDetailsFromServer(matchId) {
+    console.log(`Fetching match details for match ID ${matchId} from server`);
+    try {
+        const response = await fetch(`/api/tournaments/match/${matchId}/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'include' // Include cookies for authentication
+        });
+        
+        console.log(`Server response status: ${response.status}`);
+        
+        if (response.ok) {
+            const matchData = await response.json();
+            console.log(`Match details from server:`, matchData);
+            return matchData;
+        } else {
+            // Try to get more detailed error information
+            try {
+                const errorData = await response.json();
+                console.error(`Failed to fetch match details: ${response.statusText}`, errorData);
+            } catch (e) {
+                console.error(`Failed to fetch match details: ${response.statusText}`);
+            }
+            
+            // If the match doesn't exist in the database, return a minimal object
+            return { id: matchId, game_id: null };
+        }
+    } catch (error) {
+        console.error(`Error fetching match details: ${error.message}`);
+        // Return a minimal object so the code can continue
+        return { id: matchId, game_id: null };
+    }
+}
+
 // Fonction pour mettre à jour le game_id dans le match
-function updateMatchGameId(matchId, gameId) {
-    fetch(`/api/tournaments/match/${matchId}/update-game-id/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({ game_id: gameId })
-    });
+async function updateMatchGameId(matchId, gameId) {
+    console.log(`Updating match ${matchId} with game ID ${gameId}`);
+    try {
+        const response = await fetch(`/api/tournaments/match/${matchId}/update-game-id/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ game_id: gameId })
+        });
+        
+        if (response.ok) {
+            console.log(`Successfully updated match ${matchId} with game ID ${gameId}`);
+            
+            // Update the DOM element with the new game ID
+            const matchElement = document.querySelector(`.tournament_match[data-match-id="${matchId}"]`);
+            if (matchElement) {
+                matchElement.dataset.gameId = gameId;
+                console.log(`Updated DOM element with game ID ${gameId}`);
+            } else {
+                console.error(`Could not find match element with ID ${matchId}`);
+            }
+            
+            return true;
+        } else {
+            const errorData = await response.json();
+            console.error(`Failed to update match: ${errorData.error || response.statusText}`);
+            return false;
+        }
+    } catch (error) {
+        console.error(`Error updating match with game ID: ${error.message}`);
+        return false;
+    }
 }
 
 function getRoundName(roundSize) {

@@ -19,4 +19,7 @@ urlpatterns = [
     
     # Route pour mettre à jour le game_id d'un match
     path('match/<int:match_id>/update-game-id/', views.update_match_game_id, name='update-match-game-id'),
+    
+    # Route pour récupérer les détails d'un match
+    path('match/<int:match_id>/', views.get_match_details, name='get-match-details'),
 ]
