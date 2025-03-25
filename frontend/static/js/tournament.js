@@ -117,7 +117,10 @@ function displayMatches(tournament) {
             const matchDiv = document.createElement('div');
             matchDiv.className = `tournament_match`;
             matchDiv.dataset.matchId = match.id;
-            matchDiv.dataset.gameId = match.game ? match.game.id : '';
+            // Only set gameId if match.game exists and has an id
+            if (match.game && match.game.id) {
+                matchDiv.dataset.gameId = match.game.id;
+            }
             
             // Marquer le match comme actif si le joueur actuel est impliqué et que le match est en cours
             if (match.status === 'in_progress' && 
@@ -381,11 +384,34 @@ async function initTournamentActions(tournament) {
         // Initialize gameManager if it doesn't exist
         if (!window.gameManager) {
             window.gameManager = new PongGame();
+            
+            // Wait for the WebSocket connection to be established
+            console.log('Waiting for WebSocket connection to be established...');
+            await new Promise(resolve => {
+                // Check every 100ms if the WebSocket is ready
+                const checkInterval = setInterval(() => {
+                    if (window.gameManager.uiSocket && window.gameManager.uiSocket.readyState === WebSocket.OPEN) {
+                        clearInterval(checkInterval);
+                        console.log('WebSocket connection established, proceeding with game creation/joining');
+                        resolve();
+                    }
+                }, 100);
+                
+                // Set a timeout of 5 seconds
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    console.log('WebSocket connection timed out, proceeding anyway');
+                    resolve();
+                }, 5000);
+            });
         }
         
         const match = getCurrentMatch();
+        console.log('Match object:', match);
+        console.log('Game ID from match:', match.game_id, 'Type:', typeof match.game_id);
     
-        if (!match.game_id) {
+        if (!match || !match.game_id) {
+            console.log('No game ID found, creating new game');
             // Aucun game_id n'existe encore, ce joueur doit créer la partie
             await window.gameManager.startGame();
             
@@ -430,15 +456,26 @@ async function initTournamentActions(tournament) {
 function getCurrentMatch() {
     // Récupérer le match actif dans le DOM
     const activeMatch = document.querySelector('.tournament_match-active');
+    console.log('Active match element:', activeMatch);
+    
     if (!activeMatch) {
         alert('No active match found');
         return null;
     }
     
+    console.log('Match data attributes:', {
+        matchId: activeMatch.dataset.matchId,
+        gameId: activeMatch.dataset.gameId
+    });
+    
     // Récupérer les données du match depuis les attributs data-*
+    // Only use gameId if it's actually defined and not the string 'undefined'
+    const gameId = activeMatch.dataset.gameId && activeMatch.dataset.gameId !== 'undefined' ? 
+                   activeMatch.dataset.gameId : null;
+                   
     return {
         id: activeMatch.dataset.matchId,
-        game_id: activeMatch.dataset.gameId || null
+        game_id: gameId
     };
 }
 
