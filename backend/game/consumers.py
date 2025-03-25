@@ -134,7 +134,7 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
         """Update game's player2 and status"""
         try:
             game.player2 = player2
-            game.status = 'active'
+            game.status = 'playing'
             game.save(update_fields=['player2', 'status', 'updated_at'])
             return game
         except Exception as e:

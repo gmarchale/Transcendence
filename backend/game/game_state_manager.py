@@ -39,7 +39,7 @@ class GameStateManager:
     def create_game(cls, game_id: str, player1_id: str, player1_username: str):
         """Initialize a new game state"""
         cls._instances[game_id] = {
-            'ball': {'x': 400, 'y': 300, 'dx': 3, 'dy': 3, 'radius': 10},
+            'ball': {'x': 400, 'y': 300, 'dx': 40, 'dy': 40, 'radius': 10},
             'paddles': {
                 'player1': {'x': 50, 'y': 250, 'width': 20, 'height': 100},
                 'player2': {'x': 730, 'y': 250, 'width': 20, 'height': 100}
@@ -108,8 +108,8 @@ class GameStateManager:
             game_state['ball'].update({
                 'x': game_state['canvas']['width'] / 2,
                 'y': game_state['canvas']['height'] / 2,
-                'dx': 3 * (1 if random.random() > 0.5 else -1),
-                'dy': 3 * (1 if random.random() > 0.5 else -1)
+                'dx': 40 * (1 if random.random() > 0.5 else -1),
+                'dy': 40 * (1 if random.random() > 0.5 else -1)
             })
 
         print(f"[DEBUG] Game state after update:")
@@ -186,7 +186,7 @@ class GameStateManager:
                 ball['x'] + ball['radius'] >= paddle['x'] and
                 ball['y'] >= paddle['y'] and
                 ball['y'] <= paddle['y'] + paddle['height']):
-                ball['dx'] *= -1.05  # Reduced speed increase on paddle hits from 1.1 to 1.05
+                ball['dx'] *= -1.1  # Reduced speed increase on paddle hits from 1.1 to 1.05
                 break
 
         # Score points
@@ -258,8 +258,8 @@ class GameStateManager:
         game_state['ball'].update({
             'x': game_state['canvas']['width'] / 2,
             'y': game_state['canvas']['height'] / 2,
-            'dx': 3 * (1 if random.random() > 0.5 else -1),
-            'dy': 3 * (1 if random.random() > 0.5 else -1)
+            'dx': 40 * (1 if random.random() > 0.5 else -1),
+            'dy': 40 * (1 if random.random() > 0.5 else -1)
         })
 
     @classmethod
