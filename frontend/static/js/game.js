@@ -42,6 +42,10 @@ class PongGame {
         this.player1Name = document.getElementById('player1_name');
         this.player2Name = document.getElementById('player2_name');
 
+
+        this.player1Avatar = document.getElementById('player1_avatar');
+        this.player2Avatar = document.getElementById('player2_avatar');
+
         if (this.player1Ready) {
             this.player1Ready.addEventListener('click', () => this.handleReadyClick());
         }
@@ -1091,6 +1095,85 @@ class PongGame {
         const isPlayer2 = this.playerId === parseInt(players.player2?.id, 10);
 
         // Update player 1 ready button and name
+        console.log(players.player1.id)
+        console.log(players.player1.username[0])
+
+        if (players.player1)
+        {
+            fetch("/api/users/get_avatar/" + players.player1.id + "/", {
+                method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+            .then(response => response.json())
+            .then(data2 => {
+                if (data2.avatar != null)
+                {
+                    let imgElement = document.getElementById("player1_avatar");
+                    let placeholder = document.createElement("div");
+                    placeholder.className = "profile_avatar";
+                    placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+                    placeholder.id = "profile_avatar";
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                }
+                else {
+                    let imgElement = document.getElementById("player1_avatar");
+                    let placeholder = document.createElement("div");
+                    placeholder.className = "profile_placeholder";
+                    placeholder.textContent = players.player1.username[0];
+                    placeholder.id = "player1_avatar";
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                }
+
+            })
+            .catch(error => console.error("Error while getting avatar:", error));
+        }
+        else
+        {
+            let imgElement = document.getElementById("player2_avatar");
+            let placeholder = document.createElement("div");
+            placeholder.className = "profile_placeholder";
+            placeholder.textContent = "?";
+            placeholder.id = "player2_avatar";
+            imgElement.parentNode.replaceChild(placeholder, imgElement);
+        }
+
+        if (players.player2)
+        {
+                fetch("/api/users/get_avatar/" + players.player2.id + "/", {
+                    method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                })
+                .then(response => response.json())
+                .then(data2 => {
+                    if (data2.avatar != null)
+                    {
+                        let imgElement = document.getElementById("player2_avatar");
+                        let placeholder = document.createElement("div");
+                        placeholder.className = "profile_avatar";
+                        placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+                        placeholder.id = "profile_avatar";
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    }
+                    else {
+                        let imgElement = document.getElementById("player2_avatar");
+                        let placeholder = document.createElement("div");
+                        placeholder.className = "profile_placeholder";
+                        placeholder.textContent = players.player2.username[0];
+                        placeholder.id = "player2_avatar";
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    }
+
+                })
+                .catch(error => console.error("Error while getting avatar:", error));
+        }
+        else
+        {
+            let imgElement = document.getElementById("player2_avatar");
+            let placeholder = document.createElement("div");
+            placeholder.className = "profile_placeholder";
+            placeholder.textContent = "?";
+            placeholder.id = "player2_avatar";
+            imgElement.parentNode.replaceChild(placeholder, imgElement);
+        }
+
         if (players.player1 && this.player1Ready) {
             // Update name
             if (this.player1Name) {
@@ -1134,15 +1217,15 @@ class PongGame {
         const inputSection = document.getElementById('joinGameInputSection');
         const resultMessage = document.getElementById('joinGameResultMessage');
         const closeResultButton = document.getElementById('closeJoinGameResult');
-        
+
         resultSection.style.display = 'none';
         inputSection.style.display = 'block';
         gameIdInput.value = '';
-        
+
         modal.style.display = 'flex';
-        
+
         setTimeout(() => gameIdInput.focus(), 100);
-        
+
         const handleJoin = () => {
             const gameId = gameIdInput.value.trim();
             if (gameId) {
@@ -1156,7 +1239,7 @@ class PongGame {
                 resultMessage.className = 'game_error-message';
             }
         };
-        
+
         const closeModal = () => {
             modal.style.display = 'none';
             confirmButton.removeEventListener('click', handleJoin);
@@ -1164,14 +1247,14 @@ class PongGame {
             closeResultButton.removeEventListener('click', closeModal);
             gameIdInput.removeEventListener('keypress', handleEnterKey);
         };
-        
+
         const handleEnterKey = (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleJoin();
             }
         };
-        
+
         confirmButton.addEventListener('click', handleJoin);
         cancelButton.addEventListener('click', closeModal);
         closeResultButton.addEventListener('click', closeModal);

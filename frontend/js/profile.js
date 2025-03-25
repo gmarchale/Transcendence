@@ -14,8 +14,8 @@
 
 async function loadProfile(){
     console.log("Loading profile.")
-    
-   
+
+
     document.getElementById("profile_container").classList.add("active");
     if(getHashParam("id") != null){
         try {
@@ -49,7 +49,7 @@ async function loadProfile(){
                         placeholder.id = "profile_avatar";
                         imgElement.parentNode.replaceChild(placeholder, imgElement);
                     }
-                    
+
                     // Check status after avatar is loaded
                     checkUserStatus(getHashParam("id"));
                 })
@@ -82,7 +82,7 @@ async function loadProfile(){
             placeholder.id = "profile_avatar";
             imgElement.parentNode.replaceChild(placeholder, imgElement);
         }
-        
+
 		updateUserStatusDisplay(0);
     }
     loadFriendship(0);
@@ -98,7 +98,7 @@ async function checkUserStatus(userId = null) {
             method: 'GET',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }
         });
-        
+
         if (statusResponse.ok) {
             const statusData = await statusResponse.json();
             updateUserStatusDisplay(statusData.status);
@@ -114,7 +114,7 @@ async function checkUserStatus(userId = null) {
 function updateUserStatusDisplay(status) {
     // Get the username-subinfo-container where we'll add the status
     const subinfoContainer = document.querySelector('.profile_username-subinfo-container');
-    
+
     // Create or get the status element
     let statusElement = document.getElementById("user_status");
     if (!statusElement) {
@@ -122,7 +122,7 @@ function updateUserStatusDisplay(status) {
         statusElement.id = "user_status";
         subinfoContainer.appendChild(statusElement);
     }
-    
+
     // Update status text and appearance based on status code
     if (status === 0) {
         statusElement.textContent = "Online";
