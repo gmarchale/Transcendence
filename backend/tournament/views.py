@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from channels.layers import get_channel_layer
@@ -595,3 +595,32 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 tournament_data['player_status'] = 'eliminated'
 
         return Response(data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_match_game_id(request, match_id):
+    match = TournamentMatch.objects.get(id=match_id)
+    game_id = request.data.get('game_id')
+    
+    # Récupérer l'objet Game correspondant au game_id
+    game = None
+    if game_id:
+        game = get_object_or_404(Game, id=game_id)
+    
+    # Mettre à jour la relation avec l'objet Game
+    match.game = game
+    match.save()
+    
+    # Notifier tous les clients connectés au tournoi
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'tournament_{match.tournament.id}',
+        {
+            'type': 'match_update',
+            'match_id': match_id,
+            'game_id': game_id
+        }
+    )
+    
+    return Response({'success': True})

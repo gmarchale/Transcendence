@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from .models import Tournament, TournamentMatch
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
 import math
 import logging
 from game.models import Game
@@ -44,7 +45,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 tournament_id=self.tournament_id,
                 status='in_progress'
             ).filter(
-                models.Q(player1=self.user) | models.Q(player2=self.user)
+                Q(player1=self.user) | Q(player2=self.user)
             ).first()
         except Exception as e:
             logger.error(f"Error getting active match: {str(e)}")
@@ -173,12 +174,14 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'round_size': event['round_size'],
             'players': event['players']
         }))
+        
 
     async def match_update(self, event):
         # Send match update to client
         await self.send(text_data=json.dumps({
             'type': 'match_update',
             'match_id': event['match_id'],
+            'game_id': event.get('game_id'),
             'status': event.get('status'),
             'winner_id': event.get('winner_id'),
             'player1_ready': event.get('player1_ready'),
@@ -215,3 +218,5 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'type': 'tournament_matches',
             'matches': event['matches']
         }))
+
+    
