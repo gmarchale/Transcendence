@@ -19,7 +19,7 @@ function loadSettings(){
 
 				let noBlockedP = document.createElement("p");
 				noBlockedP.id = "settings_noblocked";
-				noBlockedP.textContent = getTranslation("settings_noblocked");
+                noBlockedP.textContent = getTranslationID("settings_noblocked");
 				
 				noBlockedUl.appendChild(noBlockedP);
 				blockedList.appendChild(noBlockedUl);
@@ -117,6 +117,7 @@ async function initSettings(){
             loadChat();
     }
     await loadTranslations();
+    await loadTranslationsID();
 
     let selectedFile = null;
     let cropper = null;
@@ -265,4 +266,25 @@ function getTranslation(key) {
         return "NULL"; 
 
     return translationsCache[selectedLanguage]?.[key] ?? "NULL";
+}
+
+let translationsIDCache = null;
+async function loadTranslationsID() {
+	console.log("reloading lang2")
+    try {
+        const response = await fetch("languages/lang.json", { cache: "no-cache" });
+        translationsIDCache = await response.json();
+    } catch (error) {
+        console.error("Error reading translations json :", error);
+        translationsIDCache = {};
+    }
+}
+
+function getTranslationID(key) {
+    let selectedLanguage = localStorage.getItem("language") || "fr";
+    
+    if (!translationsIDCache)
+        return "NULL"; 
+
+    return translationsIDCache[selectedLanguage]?.[key] ?? "NULL";
 }

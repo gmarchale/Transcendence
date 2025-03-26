@@ -24,7 +24,6 @@
 		"chat_input": "Écris un message.. (max 400 caractères.)",
 
 		"settings_unblock_button": "Débloquer ",
-		"settings_noblocked": "Aucun utilisateur n'est bloqué.",
 		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !",
 		"settings_avatar_upload_success": "Votre avatar a été mis à jour!",
 		"settings_username_change_success": "Votre nom d'utilisateur a été mis à jour!",
@@ -58,7 +57,6 @@
 		"chat_input": "Write a message.. (max 400 char.)",
 
 		"settings_unblock_button": "Unblock ",
-		"settings_noblocked": "No users are blocked.",
 		"settings_select_png": "Please only select a JPEG or PNG file.",
 		"settings_avatar_upload_success": "Sucessfully updated your logo!",
 		"settings_username_change_success": "Sucessfully updated your username!",

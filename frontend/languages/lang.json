@@ -17,6 +17,7 @@
 		"settings_image_popup": "Recadrez et confirmer votre nouvel avatar!",
 		"settings_avatar_upload_button": "📂 Sélectionner un nouvel avatar..",
 		"settings_avatar_remove": "Supprimer l'avatar existant.",
+		"settings_noblocked": "Aucun utilisateur n'est bloqué.",
 
 		"profile_send_msg": "Envoyer un message",
 		"profile_user_not_found" : "Utilisateur inconnu.",
@@ -48,6 +49,7 @@
 		"settings_image_popup": "Crop and confirm your new logo!",
 		"settings_avatar_upload_button": "📂 Select a new logo..",
 		"settings_avatar_remove": "Delete current logo.",
+		"settings_noblocked": "No users are blocked.",
 
 		"profile_send_msg": "Send private message",
 		"profile_user_not_found" : "User not found.",
