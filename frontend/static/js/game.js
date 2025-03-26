@@ -922,21 +922,55 @@ class PongGame {
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.gap = '20px';
 
-        // Create "Create New Game" button
+        // Create button based on where the game was launched from
         const homeButton = document.createElement('button');
-        homeButton.innerText = 'Go to Lobby';
+        
+        // Simple way to check if we came from a tournament - check the referrer
+        const referrer = document.referrer;
+        const currentHash = window.location.hash;
+        const fromTournament = this.fromTournament || localStorage.getItem('fromTournament') === 'true';
+        
+        if (fromTournament || currentHash.includes('tournament')) {
+            // Tournament game button
+            homeButton.innerText = 'Go to Tournament';
+            homeButton.style.backgroundColor = '#2196F3'; // Blue for tournament
+            homeButton.onclick = () => {
+                document.body.removeChild(overlay);
+                // Get tournament ID from localStorage if available
+                const tournamentId = localStorage.getItem('currentTournamentId');
+                
+                // Clear localStorage values
+                localStorage.removeItem('fromTournament');
+                localStorage.removeItem('currentTournamentId');
+                
+                if (tournamentId) {
+                    window.location.href = `#tournament/${tournamentId}`;
+                } else {
+                    // Fallback to tournaments list
+                    window.location.href = '#tournaments';
+                }
+            };
+        } else {
+            // Regular game button
+            homeButton.innerText = 'Go to Lobby';
+            homeButton.style.backgroundColor = '#4CAF50'; // Green for regular games
+            homeButton.onclick = () => {
+                document.body.removeChild(overlay);
+                
+                // Clear localStorage values (just to be safe)
+                localStorage.removeItem('fromTournament');
+                localStorage.removeItem('currentTournamentId');
+                
+                window.location.href = '#game';
+            };
+        }
+        
         homeButton.style.padding = '15px 30px';
         homeButton.style.fontSize = '1.2em';
         homeButton.style.cursor = 'pointer';
-        homeButton.style.backgroundColor = '#4CAF50';
         homeButton.style.color = 'white';
         homeButton.style.border = 'none';
         homeButton.style.borderRadius = '5px';
-        homeButton.onclick = () => {
-            // Just remove the overlay and navigate, don't close the WebSocket
-            document.body.removeChild(overlay);
-            window.location.href = '#game';
-        };
 
         // Add buttons to container
         buttonsContainer.appendChild(homeButton);

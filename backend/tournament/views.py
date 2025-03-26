@@ -102,7 +102,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
         game = Game.objects.create(
             player1=match.player1,
             player2=match.player2,
-            status='playing'  # Set to playing immediately since both players are known
+            status='waiting'  # Set to waiting
         )
         
         # Link the game to the match

@@ -130,11 +130,18 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def update_game_player2(self, game, player2):
-        """Update game's player2 and status"""
+    def update_game_player2(self, game, player):
+        """Update game's player2 or player1 based on player ID"""
         try:
-            game.player2 = player2
-            game.status = 'playing'
+            # Check if the player is player1
+            if game.player1 and str(game.player1.id) == str(player.id):
+                logger.info(f"Player {player.username} is already player1 in game {game.id}")
+                # No need to update anything
+                return game
+            
+            # Otherwise, join as player2
+            game.player2 = player
+            game.status = 'waiting'
             game.save(update_fields=['player2', 'status', 'updated_at'])
             return game
         except Exception as e:
@@ -210,14 +217,18 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 
                 # Check if game has ended and needs to send notification
                 if game_state and game_state.get('_send_end_notification') and game_state.get('_end_notification_data'):
+                    print(f"[DEBUG] Game {game_id} has end notification flag set, sending notification")
                     # Send game end notification
                     notification_data = game_state.get('_end_notification_data')
+                    print(f"[DEBUG] Notification data: {notification_data}")
                     await self.channel_layer.group_send(
                         game_group,
                         notification_data
                     )
+                    print(f"[DEBUG] Game end notification sent to game group: {game_group}")
                     # Clear notification flag to avoid sending multiple times
                     GameStateManager._instances[str(game_id)]['_send_end_notification'] = False
+                    print(f"[DEBUG] Cleared notification flag for game {game_id}")
                 
                 # Broadcast updated state
                 game_group = f"game_{game_id}"
@@ -484,6 +495,7 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
     async def game_end_message(self, event):
         """Handle game end message"""
         try:
+            print(f"[DEBUG] game_end_message handler called with event: {event}")
             # Forward to clients
             await self.send_json({
                 'type': 'game_end',
@@ -492,28 +504,88 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 'duration_formatted': event.get('duration_formatted', '00:00'),
                 'final_score': event['final_score']
             })
+            print(f"[DEBUG] Sent game_end message to client")
             
             # Forward to tournament consumer if this game is part of a tournament
-            game_id = self.game_id if hasattr(self, 'game_id') else None
+            # First try to get game_id from the event
+            game_id = event.get('game_id')
             if game_id:
+                print(f"[DEBUG] Got game_id from event: {game_id}")
+            # If not in event, try to get it from self
+            elif hasattr(self, 'game_id'):
+                game_id = self.game_id
+                print(f"[DEBUG] Got game_id from self: {game_id}")
+            else:
+                print(f"[DEBUG] Could not find game_id in event or self")
+                
+            if game_id:
+                print(f"[DEBUG] Checking if game {game_id} is part of a tournament match")
+                logger.info(f"Checking if game {game_id} is part of a tournament match")
                 from tournament.models import TournamentMatch
-                match = await database_sync_to_async(
-                    lambda: TournamentMatch.objects.filter(game_id=game_id).first()
-                )()
+                print(f"[DEBUG] Looking up tournament match for game {game_id}")
+                try:
+                    # Import at module level to avoid async issues
+                    from channels.db import database_sync_to_async
+                    
+                    # Define a standalone function for the database query
+                    @database_sync_to_async
+                    def get_tournament_match(game_id):
+                        try:
+                            print(f"[DEBUG] Inside sync function: looking for match with game_id={game_id}")
+                            match = TournamentMatch.objects.filter(game_id=game_id).first()
+                            print(f"[DEBUG] Inside sync function: found match: {match}")
+                            return match
+                        except Exception as e:
+                            print(f"[DEBUG] Inside sync function: error: {str(e)}")
+                            return None
+                    
+                    # Call the function with await
+                    match = await get_tournament_match(game_id)
+                    print(f"[DEBUG] Tournament match lookup result: {match}")
+                except Exception as e:
+                    print(f"[DEBUG] Error looking up tournament match: {str(e)}")
+                    match = None
                 
                 if match:
-                    # Add game_id to the event
-                    tournament_event = event.copy()
-                    tournament_event['game_id'] = game_id
+                    logger.info(f"Game {game_id} is part of tournament {match.tournament_id}, match {match.id}")
+                    # Create tournament notification
+                    tournament_notification = {
+                        # Remove 'type' key to avoid conflict with the outer message type
+                        'game_id': str(game_id),
+                        'winner_id': event.get('winner_id'),
+                        'tournament_id': str(match.tournament_id),  # Add tournament_id to the notification
+                        'match_id': str(match.id),  # Add match_id to the notification
+                        'duration': event.get('duration'),
+                        'duration_formatted': event.get('duration_formatted', '00:00'),
+                        'final_score': event.get('final_score')
+                    }
                     
+                    # If winner_id is not in the event, try to get it from the game state
+                    if 'winner_id' not in tournament_notification or not tournament_notification['winner_id']:
+                        game_state = GameStateManager.get_game_state(str(game_id))
+                        if game_state and 'winner' in game_state:
+                            winner_key = game_state['winner']
+                            if 'players' in game_state and winner_key in game_state['players']:
+                                if isinstance(game_state['players'][winner_key], dict) and 'id' in game_state['players'][winner_key]:
+                                    tournament_notification['winner_id'] = game_state['players'][winner_key]['id']
+                    
+                    logger.info(f"Sending tournament notification: {tournament_notification}")
                     # Send to tournament group
-                    await self.channel_layer.group_send(
-                        f'tournament_{match.tournament_id}',
-                        {
-                            'type': 'receive_json',
-                            'content': tournament_event
-                        }
-                    )
+                    tournament_group = f'tournament_{match.tournament_id}'
+                    print(f"[DEBUG] Sending notification to tournament group: {tournament_group}")
+                    try:
+                        await self.channel_layer.group_send(
+                            tournament_group,
+                            {
+                                'type': 'handle_game_end',  # Must match the method name in TournamentConsumer
+                                **tournament_notification
+                            }
+                        )
+                        print(f"[DEBUG] Successfully sent notification to tournament group: {tournament_group}")
+                    except Exception as e:
+                        print(f"[DEBUG] Error sending notification to tournament group: {str(e)}")
+                else:
+                    logger.info(f"Game {game_id} is not part of any tournament match")
         except Exception as e:
             logger.error(f"Error in game_end_message handler: {str(e)}", exc_info=True)
 
