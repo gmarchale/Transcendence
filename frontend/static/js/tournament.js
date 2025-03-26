@@ -74,6 +74,40 @@ function initSocket(tournamentId) {
                     showNotification(message, 'success', 5000);
                 }
             });
+        } else if (data.type === 'tournament_update') {
+            // Handle tournament updates (completion, winner announcement, etc.)
+            if (data.status === 'completed' && data.winner_id) {
+                // Reload tournament data to get the latest state
+                loadTournament(tournamentId).then(tournament => {
+                    if (tournament) {
+                        // Update the UI
+                        displayTournamentName(tournament.name);
+                        displayPlayers(tournament);
+                        displayMatches(tournament);
+                        initTournamentActions(tournament);
+                        
+                        // Instead of showing a notification, automatically redirect to game lobby
+                        // Close WebSocket connection
+                        if (currentSocket) {
+                            currentSocket.close();
+                            currentSocket = null;
+                        }
+                        
+                        // Get winner name
+                        let winnerName = 'Unknown';
+                        if (tournament.winner) {
+                            winnerName = tournament.winner.display_name || tournament.winner.username;
+                        }
+                        
+                        // Create a simple notification that will appear in the game lobby
+                        const message = `Tournament completed! ${winnerName} has won the tournament.`;
+                        localStorage.setItem('tournament_completion_message', message);
+                        
+                        // Navigate to game lobby
+                        window.location.hash = '#game';
+                    }
+                });
+            }
         }
     };
 
@@ -420,6 +454,11 @@ async function initTournamentActions(tournament) {
         // Check if the match has a game ID in the database
         if (serverMatch && serverMatch.game_id) {
             console.log(`Found game ID ${serverMatch.game_id} in the database, joining game`);
+            
+            // Store information that this game is from a tournament
+            localStorage.setItem('fromTournament', 'true');
+            localStorage.setItem('currentTournamentId', getTournamentId());
+            
             // Un game_id existe déjà, ce joueur doit rejoindre la partie
             window.gameManager.joinGame(serverMatch.game_id);
             
@@ -443,7 +482,7 @@ async function initTournamentActions(tournament) {
             }
             
             // Rediriger vers la page du jeu
-            window.location.hash = 'play/' + gameId;
+            window.location.hash = 'play/' + serverMatch.game_id;
         }
     });
 
@@ -517,7 +556,6 @@ async function getMatchDetailsFromServer(matchId) {
         
         if (response.ok) {
             const matchData = await response.json();
-            console.log(`Match details from server:`, matchData);
             return matchData;
         } else {
             // Try to get more detailed error information

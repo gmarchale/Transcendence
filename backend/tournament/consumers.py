@@ -223,10 +223,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         """Handle JSON messages received from WebSocket"""
         try:
             message_type = content.get('type')
+            logger.info(f"Received WebSocket message: {message_type}")
             
-            if message_type == 'game_end_message':
-                # Handle game end notification
-                await self.handle_game_end(content)
+            # Add any WebSocket message handling here if needed in the future
         except Exception as e:
             logger.error(f"Error in receive_json: {str(e)}", exc_info=True)
     
@@ -234,12 +233,35 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     def get_match_by_game_id(self, game_id):
         """Get tournament match by game ID"""
         try:
-            return TournamentMatch.objects.filter(
+            print(f"[DEBUG] get_match_by_game_id: Looking for match with game_id={game_id} in tournament_id={self.tournament_id}")
+            # First try to find the match with status='in_progress'
+            match = TournamentMatch.objects.filter(
                 tournament_id=self.tournament_id,
                 game_id=game_id,
                 status='in_progress'
             ).first()
+            
+            if not match:
+                print(f"[DEBUG] No in_progress match found, trying without status filter")
+                # If not found, try without the status filter
+                match = TournamentMatch.objects.filter(
+                    tournament_id=self.tournament_id,
+                    game_id=game_id
+                ).first()
+                
+            if not match:
+                print(f"[DEBUG] No match found in tournament {self.tournament_id}, trying all tournaments")
+                # If still not found, try all tournaments
+                match = TournamentMatch.objects.filter(
+                    game_id=game_id
+                ).first()
+                if match:
+                    print(f"[DEBUG] Found match in tournament {match.tournament_id} instead of {self.tournament_id}")
+            
+            print(f"[DEBUG] Final match lookup result: {match}")
+            return match
         except Exception as e:
+            print(f"[DEBUG] Error getting match by game ID: {str(e)}")
             logger.error(f"Error getting match by game ID: {str(e)}")
             return None
             
@@ -337,11 +359,24 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def handle_game_end(self, content):
         """Handle game end notification"""
         try:
+            print(f"[DEBUG] Tournament consumer handling game end: {content}")
+            logger.info(f"Tournament consumer handling game end: {content}")
             game_id = content.get('game_id')
             winner_id = content.get('winner_id')
+            tournament_id = content.get('tournament_id')
+            
+            print(f"[DEBUG] Extracted game_id: {game_id}, winner_id: {winner_id}, tournament_id: {tournament_id}")
+            
+            # If tournament_id is provided in the message and different from self.tournament_id,
+            # update self.tournament_id to match
+            if tournament_id and str(tournament_id) != str(getattr(self, 'tournament_id', None)):
+                print(f"[DEBUG] Updating tournament_id from {getattr(self, 'tournament_id', None)} to {tournament_id}")
+                self.tournament_id = str(tournament_id)
+                self.tournament_group_name = f'tournament_{self.tournament_id}'
             
             if not game_id or not winner_id:
-                logger.error(f"Missing game_id or winner_id in game_end message")
+                print(f"[DEBUG] Missing game_id or winner_id in game_end message: {content}")
+                logger.error(f"Missing game_id or winner_id in game_end message: {content}")
                 return
                 
             # Find match associated with this game

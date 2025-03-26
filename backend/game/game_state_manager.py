@@ -201,8 +201,10 @@ class GameStateManager:
 
         # Check for game end
         if game_state['score']['player1'] >= 5 or game_state['score']['player2'] >= 5:
+            print(f"[DEBUG] Game {game_id} has ended! Scores: {game_state['score']['player1']} - {game_state['score']['player2']}")
             game_state['status'] = 'finished'
             game_state['winner'] = 'player1' if game_state['score']['player1'] > game_state['score']['player2'] else 'player2'
+            print(f"[DEBUG] Game {game_id} winner: {game_state['winner']}")
             
             # Calculate duration
             if 'start_time' in game_state:
@@ -220,6 +222,7 @@ class GameStateManager:
             
             # Mark game for sending end notification
             game_state['_send_end_notification'] = True
+            print(f"[DEBUG] Game {game_id} marked for end notification")
             
             # Store end game data for notification
             winner_key = game_state['winner']
@@ -228,12 +231,17 @@ class GameStateManager:
             if 'players' in game_state and winner_key in game_state['players']:
                 if hasattr(game_state['players'][winner_key], 'id'):
                     winner_id = game_state['players'][winner_key].id
+                    print(f"[DEBUG] Found winner ID from attribute: {winner_id}")
                 elif isinstance(game_state['players'][winner_key], dict) and 'id' in game_state['players'][winner_key]:
                     winner_id = game_state['players'][winner_key]['id']
+                    print(f"[DEBUG] Found winner ID from dict: {winner_id}")
+            else:
+                print(f"[DEBUG] Could not find winner ID. Players: {game_state.get('players', 'None')}")
             
             # Store notification data
             game_state['_end_notification_data'] = {
                 'type': 'game_end_message',
+                'game_id': game_id,  # Add game_id to the notification data
                 'winner': winner_key,
                 'winner_id': winner_id,
                 'duration': game_state.get('duration', 0),
@@ -243,6 +251,7 @@ class GameStateManager:
                     'player2': game_state['score']['player2']
                 }
             }
+            print(f"[DEBUG] End notification data prepared: {game_state['_end_notification_data']}")
             
         return cls._serialize_game_state(game_state)
 
