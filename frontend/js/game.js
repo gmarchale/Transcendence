@@ -4,8 +4,8 @@ let gameInitialized = false;
 
 function loadGame(){
 	console.log("Loading game.")
-    if(gameInitialized == false)
-        setTimeout(initializeGame, 300);
+    // if(gameInitialized == false)
+    initializeGame();
 }
 
 function initGame(){

@@ -44,6 +44,7 @@ class PongGame {
         this.player2Ready = document.getElementById('player2_ready');
         this.player1Name = document.getElementById('player1_name');
         this.player2Name = document.getElementById('player2_name');
+        this.player2Name.textContent = "Waiting for player..";
 
 
         this.player1Avatar = document.getElementById('player1_avatar');
@@ -989,7 +990,6 @@ class PongGame {
         // Update player 1 ready button and name
         console.log(players.player1.id)
         console.log(players.player1.username[0])
-
 
         if (players.player1 && this.player1ProfileLoaded == false)
         {
