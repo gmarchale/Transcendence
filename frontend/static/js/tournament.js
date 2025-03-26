@@ -70,7 +70,7 @@ function initSocket(tournamentId) {
             const roundName = getRoundName(data.round_size);
             loadTournament(tournamentId).then(tournament => {
                 if (tournament) {
-                    const message = `Tournament: ${tournament.name}\n${roundName} vs ${opponent}\n5 minutes to join or 1 minute once opponent is ready`;
+                    const message = getTranslation("global_tournament")+`: ${tournament.name}\n${roundName} vs ${opponent}\n`+getTranslation("tournament_five_min");
                     showNotification(message, 'success', 5000);
                 }
             });
@@ -92,7 +92,7 @@ function displayMatches(tournament) {
     gamesListElement.innerHTML = '';
 
     if (!tournament.matches || tournament.matches.length === 0) {
-        gamesListElement.innerHTML = '<div class="tournament_no-games">No games in this tournament yet</div>';
+        gamesListElement.innerHTML = '<div class="tournament_no-games">'+getTranslation("tournament_no_game")+'</div>';
         return;
     }
     
@@ -159,7 +159,7 @@ function displayMatches(tournament) {
             statusDiv.className = 'tournament_match-status';
             
             if (match.winner_display_name) {
-                statusDiv.textContent = `Winner: ${match.winner_display_name}`;
+                statusDiv.textContent = getTranslation("global_winner")+`: ${match.winner_display_name}`;
             } else {
                 statusDiv.textContent = match.status.replace(/_/g, ' ');
             }
@@ -240,7 +240,7 @@ function displayTournamentsPage(tournaments) {
     tournamentList.innerHTML = '';
 
     if (!tournaments || tournaments.length === 0) {
-        tournamentList.innerHTML = '<p class="game_error-message">No tournaments found</p>';
+        tournamentList.innerHTML = '<p class="game_error-message">'+getTranslation("game_no_tournaments_found")+'</p>';
         return;
     }
 
@@ -274,7 +274,7 @@ function displayPlayers(tournament) {
     playersListElement.innerHTML = '';
 
     if (!tournament.players || tournament.players.length === 0) {
-        playersListElement.innerHTML = '<div class="tournament_no-players">No players have joined this tournament yet</div>';
+        playersListElement.innerHTML = '<div class="tournament_no-players">'+getTranslation("tournament_no_players")+'</div>';
         return;
     }
     
@@ -305,7 +305,7 @@ function displayPlayers(tournament) {
 
     const playerCountElement = document.createElement('div');
     playerCountElement.className = 'tournament_player-count';
-    playerCountElement.textContent = `Players: ${tournament.players.length}/${tournament.max_players}`;
+    playerCountElement.textContent = getTranslation("global_players")+`: ${tournament.players.length}/${tournament.max_players}`;
     playersListElement.appendChild(playerCountElement);
 }
 
@@ -349,11 +349,11 @@ async function initTournamentActions(tournament) {
         if (!isTournamentFull) {
             startButton.disabled = true;
             startButton.classList.add('tournament_btn-disabled');
-            startButton.title = `Waiting for more players (${tournament.players.length}/${tournament.max_players})`;
+            startButton.title = getTranslation("tournament_waiting_players")+` (${tournament.players.length}/${tournament.max_players})`;
         } else {
             startButton.disabled = false;
             startButton.classList.remove('tournament_btn-disabled');
-            startButton.title = 'Start the tournament';
+            startButton.title = getTranslation("tournament_start_btn");
         }
         
         startButton.addEventListener('click', async function() {
@@ -371,7 +371,7 @@ async function initTournamentActions(tournament) {
                     loadTournament(tournamentId);
                 } else {
                     const errorData = await response.json();
-                    alert('Failed to start tournament: ' + (errorData.error || 'Unknown error'));
+                    alert(getTranslation("tournament_start_fail") + (errorData.error || 'Unknown error'));
                 }
             }
         });
@@ -462,7 +462,7 @@ async function initTournamentActions(tournament) {
             window.location.hash = '#game';
         } else {
             const errorData = await response.json();
-            alert('Failed to forfeit tournament: ' + (errorData.error || 'Unknown error'));
+            alert(getTranslation("tournament_forfeit_fail") + (errorData.error || 'Unknown error'));
         }
     });
 }
@@ -474,7 +474,7 @@ function getCurrentMatch() {
     console.log('Active match element:', activeMatch);
     
     if (!activeMatch) {
-        alert('No active match found');
+        alert(getTranslation("tournament_no_game"));
         return null;
     }
     

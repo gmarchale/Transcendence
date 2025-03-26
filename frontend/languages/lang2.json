@@ -1,5 +1,12 @@
 {
     "fr": {
+		"global_try_again" : "Veuillez réessayer svp.",
+		"global_players" : "Joueurs",
+		"global_winner" : "Vainqueur",
+		"global_tournament" : "Tournoi",
+		"global_notready" : "Pas prêt",
+		"global_ready" : "Prêt!",
+
         "profile_block_manage_block": "Bloquer",
 		"profile_block_manage_unblock": "Débloquer",
 		"profile_friend_manage_add": "Demander en ami",
@@ -26,6 +33,28 @@
 		"chat_back_to_friends": "Retour",
 		"chat_input": "Écris un message.. (max 400 caractères.)",
 
+		"game_tournament_create" : "Créer un Tournoi",
+		"game_tournament_join" : "Rejoidre un Tournoi",
+		"game_no_tournaments_found" : "Pas de Tournois trouvés",
+		"game_tournament_created" : "Tournoi créé!\nID du Tournoi: ",
+		"game_tournament_created2" : "\nPartage cet ID avec d'autres joueurs pour les affronter!",
+		"game_tournament_creation_error" : "Erreur lors de la création du tournoi: ",
+		"game_tournament_joined" : "Tournoi rejoind avec succès!",
+		"game_tournament_joining_error" : "Erreur lors de l'accès au tournoi: ",
+		"game_tournament_full" : "Le Tournoi est plein!",
+		"game_tournament_nickname_already_taken" : "Ce nom d'utilisateur est déja utilisé dans ce Tournoi",
+		"game_tournament_already_in" : "Vous êtes déjà dans ce Tournoi",
+
+		"tournament_no_game" : "Pas de parties lancées pour le moment.",
+		"tournament_no_players" : "Aucun joueur n'a encore rejoinds ce Tournoi.",
+		"tournament_waiting_players" : "En attente de joueurs..",
+		"tournament_start_btn" : "Lancer le Tournoi!",
+		"tournament_start_fail" : "Erreur lors du lancement du Tournoi: ",
+		"tournament_forfeit_fail" : "Erreur lors de l'abandon du Tournoi: ",
+		"tournament_five_min" : "5 minutes pour rejoindre ou 1 minute quand l'adversaire est prêt",
+
+		"play_waiting_player": "En attente de joueur..",
+
 		"settings_unblock_button": "Débloquer ",
 		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !",
 		"settings_avatar_upload_success": "Votre avatar a été mis à jour!",
@@ -36,6 +65,13 @@
 		"settings_password_change_success": "Mot de passe mis à jour!\nReconnectez-vous."
     },
     "en": {
+		"global_try_again" : "Please try again.",
+		"global_players" : "Players",
+		"global_winner" : "Winner",
+		"global_tournament" : "Tournament",
+		"global_notready" : "Not Ready",
+		"global_ready" : "Ready!",
+
         "profile_block_manage_block": "Block",
 		"profile_block_manage_unblock": "Unblock",
 		"profile_friend_manage_add": "Add friend",
@@ -61,6 +97,28 @@
 		"chat_send_message": "Send",
 		"chat_back_to_friends": "Back",
 		"chat_input": "Write a message.. (max 400 char.)",
+
+		"game_tournament_create" : "Create a Tournament",
+		"game_tournament_join" : "Join a Tournament",
+		"game_no_tournaments_found" : "No tournaments found",
+		"game_tournament_created" : "Tournament created!\nTournament ID: ",
+		"game_tournament_created2" : "\nShare this ID with other players to join.",
+		"game_tournament_creation_error" : "Error creating tournament: ",
+		"game_tournament_joined" : "Successfully joined Tournament!",
+		"game_tournament_joining_error" : "Error joining tournament: ",
+		"game_tournament_full" : "Tournament is full",
+		"game_tournament_nickname_already_taken" : "This nickname is already taken in this tournament",
+		"game_tournament_already_in" : "You are already in this tournament",
+
+		"tournament_no_game" : "No games in this tournament yet",
+		"tournament_no_players" : "No players have joined this tournament yet",
+		"tournament_waiting_players" : "Waiting for more players..",
+		"tournament_start_btn" : "Start the tournament",
+		"tournament_start_fail" : "Failed to start tournament: ",
+		"tournament_forfeit_fail" : "Failed to forfeit tournament: ",
+		"tournament_five_min" : "5 minutes to join or 1 minute once opponent is ready",
+
+		"play_waiting_player": "Waiting for player..",
 
 		"settings_unblock_button": "Unblock ",
 		"settings_select_png": "Please only select a JPEG or PNG file.",

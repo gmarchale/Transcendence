@@ -44,7 +44,7 @@ class PongGame {
         this.player2Ready = document.getElementById('player2_ready');
         this.player1Name = document.getElementById('player1_name');
         this.player2Name = document.getElementById('player2_name');
-        this.player2Name.textContent = "Waiting for player..";
+        this.player2Name.textContent = getTranslation("play_waiting_player");
 
 
         this.player1Avatar = document.getElementById('player1_avatar');
@@ -420,12 +420,12 @@ class PongGame {
 
                     // Reset both ready buttons to Not Ready
                     if (this.player1Ready) {
-                        this.player1Ready.textContent = 'Not Ready';
+                        this.player1Ready.textContent = getTranslation("global_notready");
                         this.player1Ready.classList.remove('ready');
                         this.player1Ready.disabled = !this.playerId === parseInt(message.player1_id, 10);
                     }
                     if (this.player2Ready) {
-                        this.player2Ready.textContent = 'Not Ready';
+                        this.player2Ready.textContent = getTranslation("global_notready");
                         this.player2Ready.classList.remove('ready');
                         this.player2Ready.disabled = true;  // Player 2 hasn't joined yet
                     }
@@ -1076,10 +1076,10 @@ class PongGame {
             }
 
             console.log('Updating player 1 ready state:', players.player1.is_ready);
-            this.player1Ready.textContent = 'Not Ready';  // Always start as Not Ready
+            this.player1Ready.textContent = getTranslation("global_notready");  // Always start as Not Ready
             this.player1Ready.classList.remove('ready');  // Remove ready class by default
             if (players.player1.is_ready) {  // Only update if explicitly ready
-                this.player1Ready.textContent = 'Ready!';
+                this.player1Ready.textContent = getTranslation("global_ready");;
                 this.player1Ready.classList.add('ready');
             }
             this.player1Ready.disabled = !isPlayer1 || players.player1.is_ready;
@@ -1093,10 +1093,10 @@ class PongGame {
             }
 
             console.log('Updating player 2 ready state:', players.player2.is_ready);
-            this.player2Ready.textContent = 'Not Ready';  // Always start as Not Ready
+            this.player2Ready.textContent = getTranslation("global_notready");  // Always start as Not Ready
             this.player2Ready.classList.remove('ready');  // Remove ready class by default
             if (players.player2.is_ready) {  // Only update if explicitly ready
-                this.player2Ready.textContent = 'Ready!';
+                this.player2Ready.textContent = getTranslation("global_ready");;
                 this.player2Ready.classList.add('ready');
             }
             this.player2Ready.disabled = !isPlayer2 || players.player2.is_ready;
