@@ -207,7 +207,18 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 # Update ball position
                 GameStateManager.update_ball_position(str(game_id))
                 game_state = GameStateManager.get_game_state(str(game_id))
-
+                
+                # Check if game has ended and needs to send notification
+                if game_state and game_state.get('_send_end_notification') and game_state.get('_end_notification_data'):
+                    # Send game end notification
+                    notification_data = game_state.get('_end_notification_data')
+                    await self.channel_layer.group_send(
+                        game_group,
+                        notification_data
+                    )
+                    # Clear notification flag to avoid sending multiple times
+                    GameStateManager._instances[str(game_id)]['_send_end_notification'] = False
+                
                 # Broadcast updated state
                 game_group = f"game_{game_id}"
                 await self.channel_layer.group_send(
@@ -473,12 +484,36 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
     async def game_end_message(self, event):
         """Handle game end message"""
         try:
+            # Forward to clients
             await self.send_json({
                 'type': 'game_end',
                 'winner': event['winner'],
                 'duration': event['duration'],
+                'duration_formatted': event.get('duration_formatted', '00:00'),
                 'final_score': event['final_score']
             })
+            
+            # Forward to tournament consumer if this game is part of a tournament
+            game_id = self.game_id if hasattr(self, 'game_id') else None
+            if game_id:
+                from tournament.models import TournamentMatch
+                match = await database_sync_to_async(
+                    lambda: TournamentMatch.objects.filter(game_id=game_id).first()
+                )()
+                
+                if match:
+                    # Add game_id to the event
+                    tournament_event = event.copy()
+                    tournament_event['game_id'] = game_id
+                    
+                    # Send to tournament group
+                    await self.channel_layer.group_send(
+                        f'tournament_{match.tournament_id}',
+                        {
+                            'type': 'receive_json',
+                            'content': tournament_event
+                        }
+                    )
         except Exception as e:
             logger.error(f"Error in game_end_message handler: {str(e)}", exc_info=True)
 

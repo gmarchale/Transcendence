@@ -538,13 +538,13 @@ class PongGame {
                     }
 
                     // Show game over message with winner and duration
-                    if (this.gameStatus) {
-                        const winner = message.winner === 'player1' ? 'Player 1' : 'Player 2';
-                        const duration = message.duration_formatted;
-                        const score = `${message.final_score.player1} - ${message.final_score.player2}`;
-                        this.gameStatus.textContent = `Game Over! ${winner} wins! (${score}) Duration: ${duration}`;
-                        console.log('Updated game status with:', this.gameStatus.textContent);
-                    }
+                    // if (this.gameStatus) {
+                    //     const winner = message.winner === 'player1' ? 'Player 1' : 'Player 2';
+                    //     const duration = message.duration_formatted;
+                    //     const score = `${message.final_score.player1} - ${message.final_score.player2}`;
+                    //     this.gameStatus.textContent = `Game Over! ${winner} wins! (${score}) Duration: ${duration}`;
+                    //     console.log('Updated game status with:', this.gameStatus.textContent);
+                    // }
 
                     // Disable game controls
                     if (this.createGameBtn) {
@@ -932,12 +932,8 @@ class PongGame {
         homeButton.style.border = 'none';
         homeButton.style.borderRadius = '5px';
         homeButton.onclick = () => {
-            // Clean up WebSocket before navigating
-            if (this.uiSocket) {
-                this.uiSocket.onclose = null; // Remove onclose handler
-                this.uiSocket.close();
-                this.uiSocket = null;
-            }
+            // Just remove the overlay and navigate, don't close the WebSocket
+            document.body.removeChild(overlay);
             window.location.href = '#game';
         };
 
@@ -954,119 +950,11 @@ class PongGame {
         document.body.appendChild(overlay);
 
         // Clean up WebSocket connection
-        if (this.uiSocket) {
-            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.uiSocket.close();
-            this.uiSocket = null;
-        }
-    }
-
-    handleGameOver(data) {
-        const winner = data.winner;
-        const duration = data.duration;
-
-        // Stop the game loop
-        this.gameStarted = false;
-
-        // Create game end overlay
-        const overlay = document.createElement('div');
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        overlay.style.display = 'flex';
-        overlay.style.flexDirection = 'column';
-        overlay.style.justifyContent = 'center';
-        overlay.style.alignItems = 'center';
-        overlay.style.zIndex = '1000';
-
-        // Create result text
-        const resultText = document.createElement('h1');
-        resultText.style.color = '#fff';
-        resultText.style.marginBottom = '20px';
-        resultText.style.fontSize = '2.5em';
-        resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
-
-        // Create score text
-        const scoreText = document.createElement('h2');
-        scoreText.style.color = '#fff';
-        scoreText.style.marginBottom = '20px';
-        scoreText.style.fontSize = '1.8em';
-        scoreText.innerText = `Final Score: ${data.final_score.player1} - ${data.final_score.player2}`;
-
-        // Create duration text
-        const durationText = document.createElement('h3');
-        durationText.style.color = '#fff';
-        durationText.style.marginBottom = '30px';
-        durationText.style.fontSize = '1.5em';
-        durationText.innerText = `Game Duration: ${duration}`;
-
-        // Create buttons container
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.style.display = 'flex';
-        buttonsContainer.style.gap = '20px';
-
-        // Create "Create New Game" button
-        const createButton = document.createElement('button');
-        createButton.innerText = 'Create New Game';
-        createButton.style.padding = '15px 30px';
-        createButton.style.fontSize = '1.2em';
-        createButton.style.cursor = 'pointer';
-        createButton.style.backgroundColor = '#4CAF50';
-        createButton.style.color = 'white';
-        createButton.style.border = 'none';
-        createButton.style.borderRadius = '5px';
-        createButton.onclick = () => {
-            // Clean up WebSocket before navigating
-            if (this.uiSocket) {
-                this.uiSocket.onclose = null; // Remove onclose handler
-                this.uiSocket.close();
-                this.uiSocket = null;
-            }
-            window.location.href = '#game';
-        };
-
-        // Create "Join Game" button
-        const joinButton = document.createElement('button');
-        joinButton.innerText = 'Join Game';
-        joinButton.style.padding = '15px 30px';
-        joinButton.style.fontSize = '1.2em';
-        joinButton.style.cursor = 'pointer';
-        joinButton.style.backgroundColor = '#2196F3';
-        joinButton.style.color = 'white';
-        joinButton.style.border = 'none';
-        joinButton.style.borderRadius = '5px';
-        joinButton.onclick = () => {
-            // Clean up WebSocket before navigating
-            if (this.uiSocket) {
-                this.uiSocket.onclose = null; // Remove onclose handler
-                this.uiSocket.close();
-                this.uiSocket = null;
-            }
-            window.location.href = '#game/join/';
-        };
-
-        // Add buttons to container
-        buttonsContainer.appendChild(createButton);
-        buttonsContainer.appendChild(joinButton);
-
-        // Add elements to overlay
-        overlay.appendChild(resultText);
-        overlay.appendChild(scoreText);
-        overlay.appendChild(durationText);
-        overlay.appendChild(buttonsContainer);
-
-        // Add overlay to body
-        document.body.appendChild(overlay);
-
-        // Clean up WebSocket connection
-        if (this.uiSocket) {
-            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.uiSocket.close();
-            this.uiSocket = null;
-        }
+        // if (this.uiSocket) {
+        //     this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+        //     this.uiSocket.close();
+        //     this.uiSocket = null;
+        // }
     }
 
     handleReadyClick() {
