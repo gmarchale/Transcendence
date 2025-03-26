@@ -27,6 +27,7 @@
             <div class="game_chips-container">
                 <p class="game_chips-label">Number of Players</p>
                 <div class="game_chips-group">
+                    <button class="game_chip" data-players="2">2</button>
                     <button class="game_chip" data-players="4">4</button>
                     <button class="game_chip" data-players="8">8</button>
                     <button class="game_chip" data-players="16">16</button>
@@ -69,6 +70,22 @@
         <div id="tournamentList" class="game_tournament-buttons"></div>
         <div class="game_modal-buttons">
             <button class="game_btn" id="closeTournamentList">Close</button>
+        </div>
+    </div>
+</div>
+<div id="joinGameModal" class="game_modal">
+    <div class="game_modal-content">
+        <h2>Join Game</h2>
+        <div id="joinGameInputSection">
+            <input type="text" id="gameIdInput" placeholder="Enter Game ID" class="game_input">
+            <div class="game_modal-buttons">
+                <button class="game_btn" id="confirmJoinGame">Join</button>
+                <button class="game_btn" id="cancelJoinGame">Cancel</button>
+            </div>
+        </div>
+        <div id="joinGameResultSection" style="display: none;">
+            <p id="joinGameResultMessage"></p>
+            <button class="game_btn game_btn-full" id="closeJoinGameResult">OK</button>
         </div>
     </div>
 </div>

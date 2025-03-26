@@ -182,13 +182,13 @@
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
 }
 
-#tournamentReady {
+#GoToGame {
     background: rgba(0, 255, 136, 0.2);
     border: 2px solid #00ff88;
     color: #00ff88;
 }
 
-#tournamentReady:hover {
+#GoToGame:hover {
     color: #000000;
     background-color: #00e676;
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);

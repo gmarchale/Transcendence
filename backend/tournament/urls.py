@@ -16,4 +16,10 @@ urlpatterns = [
     path('<int:pk>/player-ready/', views.TournamentViewSet.as_view({'post': 'player_ready'}), name='tournament-player-ready'),
     path('<int:pk>/forfeit/', views.TournamentViewSet.as_view({'post': 'forfeit'}), name='tournament-forfeit'),
     path('player-tournaments/<int:player_id>/', views.TournamentViewSet.as_view({'get': 'get_player_tournaments'}), name='player-tournaments'),
+    
+    # Route pour mettre à jour le game_id d'un match
+    path('match/<int:match_id>/update-game-id/', views.update_match_game_id, name='update-match-game-id'),
+    
+    # Route pour récupérer les détails d'un match
+    path('match/<int:match_id>/', views.get_match_details, name='get-match-details'),
 ]

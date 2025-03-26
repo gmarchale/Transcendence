@@ -88,7 +88,7 @@ def game_status(request):
 
     if active_game:
         return Response({
-            'status': 'active',
+            'status': 'playing',
             'game_id': str(active_game.id),
             'player1': active_game.player1.username,
             'player2': active_game.player2.username if active_game.player2 else None,

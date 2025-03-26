@@ -1,14 +1,16 @@
+
+let game = null;
+let gameInitialized = false;
+
 function loadGame(){
 	console.log("Loading game.")
+    if(gameInitialized == false)
+        setTimeout(initializeGame, 300);
 }
 
 function initGame(){
 	console.log("Initializing game.")
-    setTimeout(initializeGame, 300);
 }
-
-let game = null;
-let gameInitialized = false;
 
 async function initializeGame() {
     console.log('Loading game script...');

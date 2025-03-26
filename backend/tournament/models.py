@@ -47,7 +47,7 @@ class TournamentMatch(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
-
+    
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='matches')
     game = models.OneToOneField(Game, on_delete=models.SET_NULL, null=True, blank=True)
     player1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tournament_matches_1')

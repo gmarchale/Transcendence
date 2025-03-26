@@ -134,7 +134,7 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
         """Update game's player2 and status"""
         try:
             game.player2 = player2
-            game.status = 'active'
+            game.status = 'playing'
             game.save(update_fields=['player2', 'status', 'updated_at'])
             return game
         except Exception as e:
@@ -459,8 +459,9 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
     async def game_state_update(self, event):
         """Handle game state update"""
         try:
-            print(f"[DEBUG] GameUIConsumer: Received game state update, status: {event.get('game_state', {}).get('status')}")
-            print(f"[DEBUG] Game state update: {event.get('game_state')}")
+            # Debug messages disabled
+            # print(f"[DEBUG] GameUIConsumer: Received game state update, status: {event.get('game_state', {}).get('status')}")
+            # print(f"[DEBUG] Game state update: {event.get('game_state')}")
             await self.send_json({
                 'type': 'game_state_update',
                 'game_state': event.get('game_state', {}),

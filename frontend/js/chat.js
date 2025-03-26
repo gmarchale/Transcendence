@@ -25,12 +25,12 @@ function loadChat(){
 				let noFriendsP = document.createElement("p");
 				noFriendsP.id = "chat_nofriends";
 				noFriendsP.textContent = getTranslation("chat_nofriends");
-				
+
 				noFriendsUl.appendChild(noFriendsP);
 				friendsList.appendChild(noFriendsUl);
 			}
 
-				
+
 			data.mutual_friends.forEach(friend => {
 				let li = document.createElement("ul");
 				li.id = "chat_friends_ul"
@@ -50,7 +50,7 @@ function loadChat(){
 		}
 	})
 	.catch(error => console.error("Error while getting friend list :", error));
-	
+
     let inputField = document.getElementById("chat_input");
     let sendButton = document.getElementById("chat_send_message");
 
@@ -124,6 +124,26 @@ async function chat_sendMessage() {
     }));
 }
 
+async function chat_sendMessageValue(id_value) {
+	if (!chat_Socket || chat_Socket.readyState !== WebSocket.OPEN) {
+        console.error("WebSocket non connecte, message non envoye.");
+        return;
+    }
+
+	const userId = chat_currentlyWith;
+
+	let inputField = document.getElementById("chat_input");
+	let message = `Come try to beat me! Game id : ${id_value}`;
+	if (message === "") return;
+
+
+	chat_Socket.send(JSON.stringify({
+        "sender_id": getCookie("id"),
+        "receiver_id": userId,
+        "message": message
+    }));
+}
+
 function chat_appendMessage(sender, message, isUser) {
 	let messagesContainer = document.getElementById("chat_messages");
 	let messageDiv = document.createElement("div");
@@ -172,7 +192,7 @@ async function fetchMessages(friendId) {
 
 	const response = await fetch(`/api/chat/get_message/?id_user_1=${friendId}`);
 	const data = await response.json();
-	
+
 	document.getElementById("chat_messages").innerHTML = "";
 	data.messages.forEach(msg => {
 		let isUser = msg.sender == getCookie("id") ? true : false;
@@ -209,7 +229,7 @@ function openChat(username, friendId) {
 	let chatBox = document.getElementById("chat_container");
 	let settings = document.getElementById("chat_settings");
 
-	friendsList.style.display = "none"; 
+	friendsList.style.display = "none";
 	chatBox.style.display = "block";
 	settings.style.display = "block";
 	chat_currentlyWith = friendId;
@@ -249,7 +269,7 @@ function initChat(){
 		let clickedElement = event.target;
 		if (!clickedElement.closest("#chat_settings") && !clickedElement.closest("#chat_dropdownMenu")) {
 			let isClosed = !chatContainer.classList.contains("expanded");
-			if (isClosed 
+			if (isClosed
 				&& (location.hash.split('?')[0].slice(1) || 'game') != 'register'
 				&& (location.hash.split('?')[0].slice(1) || 'game') != 'login'){
 				loadChat()
@@ -267,7 +287,7 @@ function initChat(){
 			chatContainer.classList.toggle("expanded");
 		}
 	});
-	
+
 
 	backToFriends.addEventListener("click", function () {
 		closeChat()
@@ -285,6 +305,7 @@ function initChat(){
 			chat_closeMenu(menu);
 		}
     });
+	//chat_dropdownMenuButton_PlayPong
 
 	document.addEventListener('click', function(event) {
         const menu = document.getElementById('chat_dropdownMenu');
