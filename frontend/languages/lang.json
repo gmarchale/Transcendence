@@ -21,10 +21,18 @@
 
 		"profile_send_msg": "Envoyer un message",
 		"profile_user_not_found" : "Utilisateur inconnu.",
+		"profile_match_played" : "Parties jouées",
+		"profile_match_won" : "Victoires",
+		"profile_match_lost" : "Défaites",
+		"profile_match_history" : "Historique des matchs",
 
 		"chat_dropdownMenuButton_Profile": "Accéder au profil",
 		"chat_dropdownMenuButton_PlayPong": "Affrontrer au PONG!",
 		"chat_block": "Bloquer",
+
+		"friends_addfriend" : "Ajouter un ami",
+		"friends_blocked" : "Utilisateurs bloqués:",
+		"friends_myfriends" : "Mes amis:",
 
 		"header_profilebutton": "Profile",
 		"header_settingsbutton": "Paramètres",
@@ -53,13 +61,22 @@
 
 		"profile_send_msg": "Send private message",
 		"profile_user_not_found" : "User not found.",
+		"profile_match_played" : "Matches Played",
+		"profile_match_won" : "Victories",
+		"profile_match_lost" : "Defeats",
+		"profile_match_history" : "Match history",
 
 		"chat_dropdownMenuButton_Profile": "Check profile",
 		"chat_dropdownMenuButton_PlayPong": "Ask for a PONG!",
 		"chat_block": "Block",
 
+		"friends_addfriend" : "Add friend",
+		"friends_blocked" : "Users blocked:",
+		"friends_myfriends" : "My friends:",
+
 		"header_profilebutton": "Profile",
 		"header_settingsbutton": "Settings",
+		"header_friendsbutton": "Friends",
 		"header_logoutbutton": "Logout"
     }
 }

@@ -16,6 +16,9 @@
 		"profile_block_unblocked_success": "Utilisateur débloqué avec succès!",
 		"profile_block_success": "Utilisateur bloqué!",
 		"profile_block_no_yourself": "Vous ne pouvez pas vous bloquer vous même.",
+		"profile_user_online" : "En ligne",
+		"profile_user_offline" : "Hors ligne",
+		"profile_user_away" : "AFK",
 
 		"chat_nofriends": "Vous n'avez pas d'amis.",
 		"chat_friendlist_title": "Amis",
@@ -49,6 +52,9 @@
 		"profile_block_unblocked_success": "User successfully unblocked!",
 		"profile_block_success": "User bocked!",
 		"profile_block_no_yourself": "You can't block yourself.",
+		"profile_user_online" : "Online",
+		"profile_user_offline" : "Offline",
+		"profile_user_away" : "AFK",
 
 		"chat_nofriends": "You don't have any friend.",
 		"chat_friendlist_title": "Friends",
