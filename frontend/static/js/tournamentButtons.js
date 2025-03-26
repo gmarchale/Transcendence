@@ -22,7 +22,7 @@ function initTournamentButtons() {
     });
     
     document.getElementById('game_createTournamentBtn').addEventListener('click', function() {
-        modalTitle.textContent = 'Create Tournament'; // retablit le content si on veut recreer un tournoi
+        modalTitle.textContent = getTranslation("game_tournament_create"); // retablit le content si on veut recreer un tournoi
         inputSection.style.display = 'block'; // retablit le display si on veut recreer un tournoi
         resultSection.style.display = 'none'; // cache le resultat
         nameInput.value = ''; // vide le buffer
@@ -82,7 +82,7 @@ function initTournamentButtons() {
     const joinModalTitle = document.getElementById('joinModalTitle');
     
     document.getElementById('game_joinTournamentBtn').addEventListener('click', function() {
-        joinModalTitle.textContent = 'Join Tournament';
+        joinModalTitle.textContent = getTranslation("game_tournament_join");
         joinInputSection.style.display = 'block';
         joinResultSection.style.display = 'none';
         idInput.value = '';
@@ -159,16 +159,16 @@ async function createTournament(name, playersNum) {
         if (response.ok) {
             modalTitle.textContent = 'Success!';
             resultMessage.className = 'game_success-message';
-            resultMessage.textContent = `Tournament created!\nTournament ID: ${data.id}\nShare this ID with other players to join.`;
+            resultMessage.textContent = getTranslation("game_tournament_created")+data.id+getTranslation("game_tournament_created2");
         } else {
             modalTitle.textContent = 'Error';
             resultMessage.className = 'game_error-message';
-            resultMessage.textContent = 'Error creating tournament: ' + data.error;
+            resultMessage.textContent = getTranslation("game_tournament_creation_error") + data.error;
         }
     } catch (error) {
         modalTitle.textContent = 'Error';
         resultMessage.className = 'game_error-message';
-        resultMessage.textContent = 'Error creating tournament. Please try again.';
+        resultMessage.textContent = getTranslation("game_tournament_creation_error")+getTranslation("global_try_again");
         console.error('Error:', error);
     }
 
@@ -199,19 +199,19 @@ async function joinTournament(tournamentId, displayName) {
         if (response.ok) {
             modalTitle.textContent = 'Success!';
             resultMessage.className = 'game_success-message';
-            resultMessage.textContent = 'Successfully joined tournament!';
+            resultMessage.textContent = getTranslation("game_tournament_joined");
         } else {
             modalTitle.textContent = 'Error';
             resultMessage.className = 'game_error-message';
-            let errorMessage = 'Error joining tournament';
+            let errorMessage = getTranslation("game_tournament_joining_error");
             
             // erreurs specifiques
             if (data.error === 'Tournament is full') {
-                errorMessage = 'Tournament is full';
+                errorMessage = getTranslation("game_tournament_full");
             } else if (data.error === 'This display name is already taken in this tournament') {
-                errorMessage = 'This nickname is already taken in this tournament';
+                errorMessage = getTranslation("game_tournament_nickname_already_taken");
             } else if (data.error === 'You are already in this tournament') {
-                errorMessage = 'You are already in this tournament';
+                errorMessage = getTranslation("game_tournament_already_in");
             }
             
             resultMessage.textContent = errorMessage;
@@ -219,7 +219,7 @@ async function joinTournament(tournamentId, displayName) {
     } catch (error) {
         modalTitle.textContent = 'Error';
         resultMessage.className = 'game_error-message';
-        resultMessage.textContent = 'Error joining tournament. Please try again.';
+        resultMessage.textContent = getTranslation("game_tournament_joining_error")+getTranslation("global_try_again");
         console.error('Error:', error);
     }
 
@@ -267,7 +267,7 @@ function displayTournaments(tournaments) {
     tournamentList.innerHTML = ''; // refresh l'interieur 
     
     if (tournaments.length === 0) {
-        tournamentList.innerHTML = '<p class="game_error-message">No tournaments found</p>';
+        tournamentList.innerHTML = '<p class="game_error-message">'+getTranslation("game_no_tournaments_found")+'</p>';
         return;
     }
 

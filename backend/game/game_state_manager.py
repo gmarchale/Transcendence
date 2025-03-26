@@ -204,9 +204,46 @@ class GameStateManager:
             game_state['status'] = 'finished'
             game_state['winner'] = 'player1' if game_state['score']['player1'] > game_state['score']['player2'] else 'player2'
             
+            # Calculate duration
+            if 'start_time' in game_state:
+                duration = int(time.time() - game_state['start_time'])
+                minutes = duration // 60
+                seconds = duration % 60
+                game_state['duration'] = duration
+                game_state['duration_formatted'] = f"{minutes:02d}:{seconds:02d}"
+            else:
+                game_state['duration'] = 0
+                game_state['duration_formatted'] = "00:00"
+            
             # Save the game state to the database at the end of the game
             cls.save_game_state_to_db(game_id, game_state)
-
+            
+            # Mark game for sending end notification
+            game_state['_send_end_notification'] = True
+            
+            # Store end game data for notification
+            winner_key = game_state['winner']
+            winner_id = None
+            
+            if 'players' in game_state and winner_key in game_state['players']:
+                if hasattr(game_state['players'][winner_key], 'id'):
+                    winner_id = game_state['players'][winner_key].id
+                elif isinstance(game_state['players'][winner_key], dict) and 'id' in game_state['players'][winner_key]:
+                    winner_id = game_state['players'][winner_key]['id']
+            
+            # Store notification data
+            game_state['_end_notification_data'] = {
+                'type': 'game_end_message',
+                'winner': winner_key,
+                'winner_id': winner_id,
+                'duration': game_state.get('duration', 0),
+                'duration_formatted': game_state.get('duration_formatted', '00:00'),
+                'final_score': {
+                    'player1': game_state['score']['player1'],
+                    'player2': game_state['score']['player2']
+                }
+            }
+            
         return cls._serialize_game_state(game_state)
 
     @classmethod

@@ -219,4 +219,180 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'matches': event['matches']
         }))
 
+    async def receive_json(self, content):
+        """Handle JSON messages received from WebSocket"""
+        try:
+            message_type = content.get('type')
+            
+            if message_type == 'game_end_message':
+                # Handle game end notification
+                await self.handle_game_end(content)
+        except Exception as e:
+            logger.error(f"Error in receive_json: {str(e)}", exc_info=True)
+    
+    @database_sync_to_async
+    def get_match_by_game_id(self, game_id):
+        """Get tournament match by game ID"""
+        try:
+            return TournamentMatch.objects.filter(
+                tournament_id=self.tournament_id,
+                game_id=game_id,
+                status='in_progress'
+            ).first()
+        except Exception as e:
+            logger.error(f"Error getting match by game ID: {str(e)}")
+            return None
+            
+    @database_sync_to_async
+    def get_user_by_id(self, user_id):
+        """Get user by ID"""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            return User.objects.get(id=user_id)
+        except Exception as e:
+            logger.error(f"Error getting user by ID: {str(e)}")
+            return None
+            
+    @database_sync_to_async
+    def update_match_with_winner(self, match, winner):
+        """Update match with winner"""
+        from django.utils import timezone
+        
+        try:
+            # Set match winner
+            match.winner = winner
+            match.status = 'completed'
+            match.ended_at = timezone.now()
+            match.save()
+            
+            # Update tournament player status
+            tournament = match.tournament
+            loser = match.player2 if winner == match.player1 else match.player1
+            
+            # Update the loser's alive status to False
+            from tournament.models import TournamentPlayer
+            TournamentPlayer.objects.filter(
+                tournament=tournament,
+                player=loser
+            ).update(alive=False)
+            
+            # Update the game status
+            if match.game:
+                match.game.status = 'finished'
+                match.game.winner = winner
+                match.game.save()
+            
+            # Check if there's only one player alive
+            alive_players = TournamentPlayer.objects.filter(
+                tournament=tournament,
+                alive=True
+            ).count()
+            
+            # If only one player is alive or this was the final match, complete the tournament
+            import math
+            if alive_players == 1 or match.round_number == math.ceil(math.log2(tournament.players.count())):
+                tournament.status = 'completed'
+                tournament.winner = winner
+                tournament.ended_at = timezone.now()
+                tournament.save()
+                return True
+            
+            # Create next round match if needed
+            next_match_number = (match.match_number + 1) // 2
+            current_round_matches = TournamentMatch.objects.filter(
+                tournament=tournament,
+                round_number=match.round_number,
+                match_number__in=[match.match_number - (1 if match.match_number % 2 == 0 else 0), 
+                                match.match_number + (1 if match.match_number % 2 == 1 else 0)]
+            )
+            
+            if all(m.status == 'completed' for m in current_round_matches):
+                # Both matches are complete, create next round match
+                winners = [m.winner for m in current_round_matches]
+                next_match = TournamentMatch.objects.create(
+                    tournament=tournament,
+                    player1=winners[0],
+                    player2=winners[1] if len(winners) > 1 else None,
+                    round_number=match.round_number + 1,
+                    match_number=next_match_number,
+                    status='pending'
+                )
+                
+                # Send match creation event to tournament group
+                # await self.channel_layer.group_send(
+                #     f'tournament_{tournament.id}',
+                #     {
+                #         'type': 'match_created',
+                #         'match': next_match
+                #     }
+                # )
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error updating match with winner: {str(e)}", exc_info=True)
+            return False
+            
+    async def handle_game_end(self, content):
+        """Handle game end notification"""
+        try:
+            game_id = content.get('game_id')
+            winner_id = content.get('winner_id')
+            
+            if not game_id or not winner_id:
+                logger.error(f"Missing game_id or winner_id in game_end message")
+                return
+                
+            # Find match associated with this game
+            match = await self.get_match_by_game_id(game_id)
+            if not match:
+                logger.error(f"No match found for game {game_id}")
+                return
+                
+            # Get winner user
+            winner = await self.get_user_by_id(winner_id)
+            if not winner:
+                logger.error(f"No user found with ID {winner_id}")
+                return
+                
+            # Update match with winner
+            tournament_completed = await self.update_match_with_winner(match, winner)
+            
+            # Get winner's display name
+            from tournament.models import TournamentPlayer
+            winner_display_name = await database_sync_to_async(
+                lambda: TournamentPlayer.objects.get(tournament=match.tournament, player=winner).display_name
+            )()
+            
+            # Send update to all clients in tournament group
+            await self.channel_layer.group_send(
+                self.tournament_group_name,
+                {
+                    'type': 'match_update',
+                    'match_id': match.id,
+                    'match_number': match.match_number,
+                    'round_size': 2 ** (match.round_number - 1),
+                    'winner': {
+                        'id': winner.id,
+                        'display_name': winner_display_name
+                    },
+                    'status': 'completed'
+                }
+            )
+            
+            # If tournament completed, send additional message
+            if tournament_completed:
+                await self.channel_layer.group_send(
+                    self.tournament_group_name,
+                    {
+                        'type': 'tournament_update',
+                        'status': 'completed',
+                        'winner_id': winner.id,
+                        'message': f"Tournament completed! Winner: {winner.username}"
+                    }
+                )
+                
+        except Exception as e:
+            logger.error(f"Error handling game end: {str(e)}", exc_info=True)
     

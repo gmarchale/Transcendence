@@ -125,13 +125,13 @@ function updateUserStatusDisplay(status) {
 
     // Update status text and appearance based on status code
     if (status === 0) {
-        statusElement.textContent = "Online";
+        statusElement.textContent = getTranslation("profile_user_online");
         statusElement.className = "status-online";
     } else if (status === 1) {
-        statusElement.textContent = "Offline";
+        statusElement.textContent = getTranslation("profile_user_offline");
         statusElement.className = "status-offline";
     } else if (status === 2) {
-        statusElement.textContent = "Away";
+        statusElement.textContent = getTranslation("profile_user_away");
         statusElement.className = "status-away";
     }
 }
