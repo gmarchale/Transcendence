@@ -17,7 +17,7 @@ function initTournamentButtons() {
         chip.addEventListener('click', function() {
             chips.forEach(c => c.classList.remove('selected'));
             this.classList.add('selected');
-            selectedPlayers = 2; // Fixed at 2 players for testing
+            selectedPlayers = parseInt(this.getAttribute('data-players')); // Get the selected player count from the data attribute
         });
     });
     

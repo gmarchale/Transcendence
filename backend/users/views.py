@@ -389,12 +389,12 @@ def heart_beat(request):
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
 def check_status(request):
-    
+
     id_user_0 = request.query_params.get('id_user_0')
 
     if not id_user_0:
         return Response({'error': 'id_user_0 is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     try:
         user_0 = get_object_or_404(User, id=id_user_0)
 
@@ -410,14 +410,14 @@ def check_status(request):
         print("STATUS: OFFLINE - User is logged out")
         return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
 
-    elif last_logout and last_logout > last_login: 
+    elif last_logout and last_logout > last_login:
         print("STATUS: OFFLINE - User is logged out")
         return Response({'status': 1}, status=status.HTTP_200_OK) # User is logged out (offline)
 
     elif timezone.now() - last_active < timedelta(minutes=1) or timezone.now() - last_login < timedelta(minutes=2):
         print("STATUS: ONLINE - User is logged in and active")
         return Response({'status': 0}, status=status.HTTP_200_OK) # User is logged in and active (online)
-    
+
     else:
         print("STATUS: AWAY - User is logged in but away")
         return Response({'status': 2}, status=status.HTTP_200_OK) # User is logged in but away (inactive for more than 2 minutes)

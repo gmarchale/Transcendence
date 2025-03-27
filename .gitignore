@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
+#env/
 build/
 develop-eggs/
 dist/
@@ -21,7 +21,7 @@ var/
 *.egg
 
 # Virtual Environment
-venv/
+#venv/
 ENV/
 
 # IDE
@@ -47,5 +47,5 @@ yarn-error.log*
 
 # Docker
 .docker/
-*.env
+#*.env
 /.history
