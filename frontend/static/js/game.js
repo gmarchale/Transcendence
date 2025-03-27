@@ -942,13 +942,28 @@ class PongGame {
                 // Clear localStorage values
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
-                
-                if (tournamentId) {
-                    window.location.href = `#tournament/${tournamentId}`;
-                } else {
-                    // Fallback to tournaments list
-                    window.location.href = '#tournaments';
+                if (this.playerId == data.winner_id) { // Si le joueur a gagne
+                    console.log("Winnerid = %d", data.winner_id)
+                    console.log("playerID = %d", this.playerId)
+                    console.log("YOU WON");
+
+                    if (tournamentId) {
+                        window.location.href = `#tournament/${tournamentId}`;
+                    } else {
+                        // Fallback to tournaments list
+                        window.location.href = '#tournaments';
+                    }
+                    
                 }
+                else // si le joueur a perdu
+                {
+                    console.log("Winnerid = %d", data.winner_id)
+                    console.log("playerID = %d", this.playerId)
+                    console.log("YOU LOST");
+                    window.location.href = `#game`;
+                    this.init();
+                }
+
             };
         } else {
             // Regular game button
