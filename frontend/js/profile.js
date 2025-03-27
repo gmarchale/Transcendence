@@ -34,6 +34,7 @@ async function loadProfile(){
                 .then(data2 => {
                     if (data2.avatar != null)
                     {
+                        console.log(data2.avatar)
                         let imgElement = document.getElementById("profile_avatar");
                         let placeholder = document.createElement("div");
                         placeholder.className = "profile_avatar";
@@ -46,6 +47,7 @@ async function loadProfile(){
                         let placeholder = document.createElement("div");
                         placeholder.className = "profile_placeholder";
                         placeholder.textContent = data.username[0];
+                        console.log("Hey!")
                         placeholder.id = "profile_avatar";
                         imgElement.parentNode.replaceChild(placeholder, imgElement);
                     }

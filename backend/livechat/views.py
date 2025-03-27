@@ -160,6 +160,54 @@ def add_friend_username(request):
     FriendUser.objects.create(id_user_0=user_adding, id_user_1=user_to_add)
     return Response({'message': f'{user_to_add.username} has been added friend by {user_adding.username}'}, status=status.HTTP_201_CREATED)
 
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def get_pending_friends(request):
+    id_user = request.user.id
+    if not id_user:
+        return Response({'error': 'User id is required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = get_object_or_404(User, id=id_user)
+    except Exception:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        pending_list = []
+        friend_requests = FriendUser.objects.filter(id_user_0=id_user)
+        for friend_req in friend_requests:
+            if not FriendUser.objects.filter(id_user_0=friend_req.id_user_1, id_user_1=id_user).exists():
+                pending_list.append(friend_req.id_user_1)
+        return Response({"pending": pending_list}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@ensure_csrf_cookie
+@permission_classes([IsAuthenticated])
+def get_waiting_friends(request):
+    id_user = request.user.id
+    if not id_user:
+        return Response({'error': 'User id is required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = get_object_or_404(User, id=id_user)
+    except Exception:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        waiting_list = []
+        friend_requests = FriendUser.objects.filter(id_user_1=id_user)
+        for friend_req in friend_requests:
+            if not FriendUser.objects.filter(id_user_0=id_user, id_user_1=friend_req.id_user_0).exists():
+                waiting_list.append(friend_req.id_user_0)
+        return Response({"waiting": waiting_list}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['POST'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
