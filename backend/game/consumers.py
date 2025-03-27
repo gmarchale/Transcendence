@@ -500,6 +500,7 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({
                 'type': 'game_end',
                 'winner': event['winner'],
+                'winner_id': event.get('winner_id'),  # Add winner_id to the message
                 'duration': event['duration'],
                 'duration_formatted': event.get('duration_formatted', '00:00'),
                 'final_score': event['final_score']
