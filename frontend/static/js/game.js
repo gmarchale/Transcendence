@@ -943,10 +943,6 @@ class PongGame {
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
                 if (this.playerId == data.winner_id) { // Si le joueur a gagne
-                    console.log("Winnerid = %d", data.winner_id)
-                    console.log("playerID = %d", this.playerId)
-                    console.log("YOU WON");
-
                     if (tournamentId) {
                         window.location.href = `#tournament/${tournamentId}`;
                     } else {
@@ -957,13 +953,9 @@ class PongGame {
                 }
                 else // si le joueur a perdu
                 {
-                    console.log("Winnerid = %d", data.winner_id)
-                    console.log("playerID = %d", this.playerId)
-                    console.log("YOU LOST");
                     window.location.href = `#game`;
-                    this.init();
+                    // need to fix boutons when getting redirected (just reload page?)
                 }
-
             };
         } else {
             // Regular game button
