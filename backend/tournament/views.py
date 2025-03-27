@@ -169,7 +169,9 @@ class TournamentViewSet(viewsets.ModelViewSet):
         num_rounds = math.ceil(math.log2(num_players))
         matches_data = []
         
-        # Create first round matches and their games
+        # Create all tournament matches upfront (without games)
+        # First, create all first round matches
+        first_round_matches = []
         matches_in_round = num_players // 2
         for i in range(matches_in_round):
             match = TournamentMatch.objects.create(
@@ -177,10 +179,10 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 player1=players[i*2],
                 player2=players[i*2 + 1] if i*2 + 1 < num_players else None,
                 round_number=1,
-                match_number=i + 1
+                match_number=i + 1,
+                status='pending'  # All matches start as pending
             )
-            # Create a game for this match
-            self.create_tournament_game(match)
+            first_round_matches.append(match)
             
             # Add match data for WebSocket
             player1_data = TournamentPlayer.objects.get(tournament=tournament, player=players[i*2])
@@ -191,19 +193,50 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 'player1': {'id': players[i*2].id, 'display_name': player1_data.display_name},
                 'player2': {'id': players[i*2 + 1].id, 'display_name': player2_data.display_name} if player2_data else None
             })
-
-            # Send match ready notification for this match
+        
+        # Create future round matches with placeholder user ID 0
+        # Get or create a placeholder user with ID 0
+        placeholder_user, created = User.objects.get_or_create(
+            id=0,
+            defaults={
+                'username': 'placeholder',
+                'email': 'placeholder@example.com'
+            }
+        )
+        
+        # Create future round matches with placeholder user
+        for round_num in range(2, num_rounds + 1):
+            matches_in_round = 2 ** (num_rounds - round_num)
+            for i in range(matches_in_round):
+                TournamentMatch.objects.create(
+                    tournament=tournament,
+                    player1=placeholder_user,  # Placeholder user
+                    player2=placeholder_user,  # Placeholder user
+                    round_number=round_num,
+                    match_number=i + 1,
+                    status='pending'
+                )
+        
+        # Only create a game for the first match of the first round
+        if first_round_matches:
+            first_match = first_round_matches[0]
+            self.create_tournament_game(first_match)
+            
+            # Send match ready notification for the first match
+            player1_data = TournamentPlayer.objects.get(tournament=tournament, player=first_match.player1)
+            player2_data = TournamentPlayer.objects.get(tournament=tournament, player=first_match.player2) if first_match.player2 else None
+            
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 f'tournament_{tournament.id}',
                 {
                     'type': 'match_ready_notification',
-                    'match_id': match.id,
-                    'match_number': i + 1,
+                    'match_id': first_match.id,
+                    'match_number': 1,
                     'round_size': 2 ** (num_rounds - 1),
                     'players': [
-                        {'id': players[i*2].id, 'display_name': player1_data.display_name},
-                        {'id': players[i*2 + 1].id, 'display_name': player2_data.display_name} if player2_data else None
+                        {'id': first_match.player1.id, 'display_name': player1_data.display_name},
+                        {'id': first_match.player2.id, 'display_name': player2_data.display_name} if player2_data else None
                     ]
                 }
             )
@@ -305,45 +338,90 @@ class TournamentViewSet(viewsets.ModelViewSet):
         
         # If not final match, create the next round match if both matches are complete
         next_match_number = (match.match_number + 1) // 2
+        
+        # Find the paired match in the current round
+        # For match 1, the pair is match 2; for match 3, the pair is match 4, etc.
+        pair_match_number = match.match_number + 1 if match.match_number % 2 == 1 else match.match_number - 1
+        
         current_round_matches = TournamentMatch.objects.filter(
             tournament=tournament,
             round_number=match.round_number,
-            match_number__in=[match.match_number - (1 if match.match_number % 2 == 0 else 0), 
-                            match.match_number + (1 if match.match_number % 2 == 1 else 0)]
+            match_number__in=[match.match_number, pair_match_number]
         )
         
-        if all(m.status == 'completed' for m in current_round_matches):
-            # Both matches are complete, create next round match
-            winners = [m.winner for m in current_round_matches]
-            next_match = TournamentMatch.objects.create(
-                tournament=tournament,
-                player1=winners[0],
-                player2=winners[1] if len(winners) > 1 else None,
-                round_number=match.round_number + 1,
-                match_number=next_match_number
-            )
-            # Create a game for the next match
-            self.create_tournament_game(next_match)
-
+        # First, check if there are any pending matches in the current round that need a game created for them
+        next_pending_match = TournamentMatch.objects.filter(
+            tournament=tournament,
+            round_number=match.round_number,
+            status='pending',
+            game__isnull=True
+        ).order_by('match_number').first()
+        
+        if next_pending_match:
+            # Create a game for the next pending match in the current round
+            self.create_tournament_game(next_pending_match)
+            
             # Get display names for the players
-            player1_data = TournamentPlayer.objects.get(tournament=tournament, player=winners[0])
-            player2_data = TournamentPlayer.objects.get(tournament=tournament, player=winners[1]) if len(winners) > 1 else None
-
-            # Send match ready notification for next match
+            player1_data = TournamentPlayer.objects.get(tournament=tournament, player=next_pending_match.player1)
+            player2_data = TournamentPlayer.objects.get(tournament=tournament, player=next_pending_match.player2) if next_pending_match.player2 else None
+            
+            # Send match ready notification for the next match
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 f'tournament_{tournament.id}',
                 {
                     'type': 'match_ready_notification',
-                    'match_id': next_match.id,
-                    'match_number': next_match_number,
-                    'round_size': 2 ** (num_rounds - next_match.round_number),
+                    'match_id': next_pending_match.id,
+                    'match_number': next_pending_match.match_number,
+                    'round_size': 2 ** (num_rounds - next_pending_match.round_number),
                     'players': [
-                        {'id': winners[0].id, 'display_name': player1_data.display_name},
-                        {'id': winners[1].id, 'display_name': player2_data.display_name} if player2_data else None
+                        {'id': next_pending_match.player1.id, 'display_name': player1_data.display_name},
+                        {'id': next_pending_match.player2.id, 'display_name': player2_data.display_name} if player2_data else None
                     ]
                 }
             )
+        elif all(m.status == 'completed' for m in current_round_matches):
+            # All matches in the current round are completed, update the next round match
+            winners = [m.winner for m in current_round_matches]
+            
+            # Find the existing match in the next round
+            next_match = TournamentMatch.objects.get(
+                tournament=tournament,
+                round_number=match.round_number + 1,
+                match_number=next_match_number
+            )
+            
+            # Update the match with the winners
+            next_match.player1 = winners[0]
+            next_match.player2 = winners[1] if len(winners) > 1 else None
+            next_match.save()
+            
+            # Check if this is the first match of the next round
+            is_first_match_of_round = next_match.match_number == 1
+            
+            # If this is the first match of the next round, create a game for it
+            if is_first_match_of_round:
+                self.create_tournament_game(next_match)
+                
+                # Get display names for the players
+                player1_data = TournamentPlayer.objects.get(tournament=tournament, player=winners[0])
+                player2_data = TournamentPlayer.objects.get(tournament=tournament, player=winners[1]) if len(winners) > 1 else None
+                
+                # Send match ready notification for the next match
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f'tournament_{tournament.id}',
+                    {
+                        'type': 'match_ready_notification',
+                        'match_id': next_match.id,
+                        'match_number': next_match.match_number,
+                        'round_size': 2 ** (num_rounds - next_match.round_number),
+                        'players': [
+                            {'id': winners[0].id, 'display_name': player1_data.display_name},
+                            {'id': winners[1].id, 'display_name': player2_data.display_name} if player2_data else None
+                        ]
+                    }
+                )
         
         return Response({'status': 'match completed'})
 
