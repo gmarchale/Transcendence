@@ -684,6 +684,17 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
             game = await update_game()
 
             # Initialize game state in GameStateManager
+            print(f"[DEBUG] Player {self.user.id} ({self.user.username}) joining game {game.id}")
+            print(f"[DEBUG] Player1 ID: {game.player1.id}, Player2 ID: {self.user.id}")
+            
+            # Make sure player IDs are different
+            if str(game.player1.id) == str(self.user.id):
+                await self.send_json({
+                    'type': 'error',
+                    'message': 'Cannot join your own game'
+                })
+                return
+                
             new_state = GameStateManager.join_game(str(game.id), str(self.user.id), self.user.username)
             if not new_state:
                 await self.send_json({
@@ -726,10 +737,10 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 'message': str(e)
             })
 
-    async def handle_player_ready(self, game_id):
+    async def handle_player_ready(self, game_id, player_role=None):
         """Handle player ready message"""
         try:
-            print(f"[DEBUG] Handling player ready for game {game_id}")
+            print(f"[DEBUG] Handling player ready for game {game_id}, player role: {player_role}")
             if not game_id:
                 await self.send_json({
                     'type': 'error',
@@ -750,8 +761,24 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
             game_group = f"game_{game_id}"
             print(f"[DEBUG] Setting player ready in game {game_id}")
             
-            # Set player ready in game state
-            new_state = GameStateManager.set_player_ready(str(game_id), str(self.user.id))
+            # Determine if this user is player1 or player2
+            is_player1 = await database_sync_to_async(lambda: game.player1 == self.user)()
+            is_player2 = await database_sync_to_async(lambda: game.player2 == self.user)()
+            
+            # Use the role from the message if provided, otherwise determine from the game
+            if player_role:
+                print(f"[DEBUG] Using provided player role: {player_role}")
+            elif is_player1:
+                player_role = 'player1'
+                print(f"[DEBUG] Determined user is player1")
+            elif is_player2:
+                player_role = 'player2'
+                print(f"[DEBUG] Determined user is player2")
+            else:
+                print(f"[DEBUG] Could not determine player role")
+            
+            # Set player ready in game state with role information
+            new_state = GameStateManager.set_player_ready(str(game_id), str(self.user.id), player_role)
             if new_state:
                 print(f"[DEBUG] New game state: {new_state}")
                 
@@ -823,7 +850,8 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 await self.receive_json({'type': 'rejoin_game_group', 'game_id': game_id})
             elif message_type == 'player_ready':
                 game_id = data.get('game_id')
-                await self.handle_player_ready(game_id)
+                player_role = data.get('player_role')  # Get player role if provided
+                await self.handle_player_ready(game_id, player_role)
             elif message_type == 'paddle_move':
                 game_id = data.get('game_id')
                 direction = data.get('direction')

@@ -63,19 +63,35 @@ class GameStateManager:
         if game_id in cls._instances:
             game_state = cls._instances[game_id]
             if game_state['status'] == 'waiting':
+                # Check if player2 already exists and has a different ID
+                if game_state['players']['player2'] and game_state['players']['player2'].id != player2_id:
+                    print(f"[DEBUG] Warning: Replacing player2 ID {game_state['players']['player2'].id} with {player2_id}")
+                
+                # Make sure player2's ID is different from player1's ID
+                if game_state['players']['player1'] and game_state['players']['player1'].id == player2_id:
+                    print(f"[DEBUG] Error: player2_id {player2_id} is the same as player1_id")
+                    print(f"[DEBUG] This should not happen - players must have different IDs")
+                    return None
+                
+                # Create player2 state with the correct ID
                 game_state['players']['player2'] = PlayerState(
                     id=player2_id, 
                     username=player2_username,
                     is_ready=False
                 )
+                
+                print(f"[DEBUG] Player 2 joined game {game_id}")
+                print(f"[DEBUG] Player 1: {game_state['players']['player1'].username} (ID: {game_state['players']['player1'].id})")
+                print(f"[DEBUG] Player 2: {game_state['players']['player2'].username} (ID: {game_state['players']['player2'].id})")
+                
                 # Return the serialized game state
                 return cls._serialize_game_state(game_state)
         return None
 
     @classmethod
-    def set_player_ready(cls, game_id: str, player_id: str) -> Optional[Dict]:
+    def set_player_ready(cls, game_id: str, player_id: str, player_role: str = None) -> Optional[Dict]:
         """Set a player's ready status"""
-        print(f"[DEBUG] Setting ready status for player {player_id} in game {game_id}")
+        print(f"[DEBUG] Setting ready status for player {player_id} in game {game_id}, role: {player_role}")
         if game_id not in cls._instances:
             print(f"[DEBUG] Game {game_id} not found in instances")
             return None
@@ -88,13 +104,28 @@ class GameStateManager:
         print(f"[DEBUG] - Player 1: {player1.username} (ID: {player1.id}) Ready: {player1.is_ready}")
         print(f"[DEBUG] - Player 2: {player2.username} (ID: {player2.id}) Ready: {player2.is_ready}" if player2 else "[DEBUG] - Player 2: Not joined yet")
 
-        # Update ready status for the correct player
-        if player1 and player1.id == player_id:
-            print(f"[DEBUG] Setting Player 1 {player1.username} ready state to True")
+        # First try to use the explicit player role if provided
+        if player_role == 'player1':
+            print(f"[DEBUG] Using explicit player1 role for {player_id}")
             player1.is_ready = True
-        elif player2 and player2.id == player_id:
-            print(f"[DEBUG] Setting Player 2 {player2.username} ready state to True")
+        elif player_role == 'player2':
+            print(f"[DEBUG] Using explicit player2 role for {player_id}")
+            if player2:
+                player2.is_ready = True
+            else:
+                print(f"[DEBUG] Player2 not found in game state")
+                return None
+        # Fall back to ID comparison if no role provided
+        elif player1 and str(player1.id) == str(player_id):
+            print(f"[DEBUG] Setting Player 1 {player1.username} ready state to True based on ID")
+            player1.is_ready = True
+        elif player2 and str(player2.id) == str(player_id):
+            print(f"[DEBUG] Setting Player 2 {player2.username} ready state to True based on ID")
             player2.is_ready = True
+        else:
+            print(f"[DEBUG] No matching player found for ID {player_id}")
+            print(f"[DEBUG] Player1 ID: {player1.id if player1 else 'None'}, Player2 ID: {player2.id if player2 else 'None'}")
+            return None
 
         # Check if both players are ready
         if (player1 and player2 and 
