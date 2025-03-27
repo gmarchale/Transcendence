@@ -942,12 +942,19 @@ class PongGame {
                 // Clear localStorage values
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
-                
-                if (tournamentId) {
-                    window.location.href = `#tournament/${tournamentId}`;
-                } else {
-                    // Fallback to tournaments list
-                    window.location.href = '#tournaments';
+                if (this.playerId == data.winner_id) { // Si le joueur a gagne
+                    if (tournamentId) {
+                        window.location.href = `#tournament/${tournamentId}`;
+                    } else {
+                        // Fallback to tournaments list
+                        window.location.href = '#tournaments';
+                    }
+                    
+                }
+                else // si le joueur a perdu
+                {
+                    window.location.href = `#game`;
+                    // need to fix boutons when getting redirected (just reload page?)
                 }
             };
         } else {
