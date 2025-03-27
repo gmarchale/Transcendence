@@ -162,7 +162,7 @@ def add_friend_username(request):
 
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
 def get_pending_friends(request):
@@ -173,19 +173,18 @@ def get_pending_friends(request):
         user = get_object_or_404(User, id=id_user)
     except Exception:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
     try:
-        pending_list = []
-        friend_requests = FriendUser.objects.filter(id_user_0=id_user)
+        pending_ids = []
+        friend_requests = FriendUser.objects.filter(id_user_0=user)
         for friend_req in friend_requests:
-            if not FriendUser.objects.filter(id_user_0=friend_req.id_user_1, id_user_1=id_user).exists():
-                pending_list.append(friend_req.id_user_1)
-        return Response({"pending": pending_list}, status=status.HTTP_200_OK)
+            if not FriendUser.objects.filter(id_user_0=friend_req.id_user_1, id_user_1=user).exists():
+                pending_ids.append(friend_req.id_user_1.id)
+        pending_users = User.objects.filter(id__in=pending_ids).values("id", "username")
+        return Response({"pending": list(pending_users)}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-@api_view(['POST'])
+@api_view(['GET'])
 @ensure_csrf_cookie
 @permission_classes([IsAuthenticated])
 def get_waiting_friends(request):
@@ -198,15 +197,16 @@ def get_waiting_friends(request):
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     try:
-        waiting_list = []
-        friend_requests = FriendUser.objects.filter(id_user_1=id_user)
+        waiting_ids = []
+        friend_requests = FriendUser.objects.filter(id_user_1=user)
         for friend_req in friend_requests:
-            if not FriendUser.objects.filter(id_user_0=id_user, id_user_1=friend_req.id_user_0).exists():
-                waiting_list.append(friend_req.id_user_0)
-        return Response({"waiting": waiting_list}, status=status.HTTP_200_OK)
+            if not FriendUser.objects.filter(id_user_0=user, id_user_1=friend_req.id_user_0).exists():
+                waiting_ids.append(friend_req.id_user_0.id)
+        waiting_users = User.objects.filter(id__in=waiting_ids).values("id", "username")
+        return Response({"waiting": list(waiting_users)}, status=status.HTTP_200_OK)
+
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['POST'])
 @ensure_csrf_cookie

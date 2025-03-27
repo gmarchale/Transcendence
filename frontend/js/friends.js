@@ -1,64 +1,20 @@
 async function loadFriends(){
 	console.log("Loading friends.")
+	document.getElementById("friendsList").classList.add("active");
+	document.getElementById("pendingList").classList.add("active");
+	document.getElementById("waitingList").classList.add("active");
+	document.getElementById("blockedList").classList.add("active");
+	fetchPendingUsers();
 	fetchFriends();
 	fetchBlockedUsers();
-	document.getElementById("friends_container").classList.add("active");
-	try {
-		const response = await fetch('/api/chat/get_friends/', {
-			method: 'GET',
-			headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }
-		});
-		const data = await response.json();
-		
-		const friendsList = document.getElementById("friends_list");
-		friendsList.innerHTML = '';
-		
-		if(data.friends && data.friends.length > 0){
-			data.friends.forEach(friend => {
-				const friendElement = document.createElement('div');
-				friendElement.className = 'friends-item';
-				friendElement.innerHTML = `
-					<div class="friends-item-info">
-						<img src="/images/logo.jpg" alt="Friend Avatar" class="friends_avatar">
-						<span class="friends_username">${friend.username}</span>
-					</div>
-					<div class="friends-item-actions">
-						<button class="friends_message-btn" onclick="openChat('${friend.id}')">Message</button>
-						<button class="friends_remove-btn" onclick="manageFriendship('${friend.id}', 'delete_friend_user')">Remove</button>
-					</div>
-				`;
-				friendsList.appendChild(friendElement);
-			});
-		} else {
-			friendsList.innerHTML = '<p class="friends_no-items">No friends found</p>';
-		}
-		
-		// Load pending requests
-		loadPendingRequests();
-	} catch (error) {
-		console.error('Error loading friends:', error);
-		document.getElementById("friends_container").classList.remove("active");
-		document.getElementById("friends_not_found_container").classList.add("active");
-		document.getElementById("friends_not_found").textContent = "Error loading friends";
-	}
+	fetchWaitingUsers();
 }
 
 
 function initFriends(){
 	console.log("Initializing friends page.")
-	
-	// document.getElementById('friends_search_button').addEventListener('click', addFriend);
-	// document.getElementById('friends_search').addEventListener('keypress', function(e) {
-	// 	if(e.key === 'Enter') {
-	// 		addFriend();
-	// 	}
-	// });
-	
-	// fetchFriends();
 }
 
-// fetchFriends();
-// fetchBlockedUsers(); //TO DO
 
 async function addFriend() {
 	const friendInput = document.getElementById('friendInput').value;
@@ -74,7 +30,7 @@ async function addFriend() {
 
 async function fetchFriends() {
     console.log("Loading friend list.");
-    fetch("/api/chat/get_friends/", {
+    await fetch("/api/chat/get_friends/", {
         method: "GET",
         credentials: "include"
     })
@@ -103,9 +59,71 @@ async function fetchFriends() {
     .catch(error => console.error("Error while getting friend list :", error));
 }
 
+async function fetchPendingUsers() {
+    console.log("Loading pending users list.");
+    await fetch("/api/chat/get_pending_friends/", {
+        method: "GET",
+        credentials: "include"
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response data:", data);
+        if (data.pending && data.pending.length > 0) {
+            let pendingUsersUl = document.getElementById("pendingList");
+            pendingUsersUl.innerHTML = "";
+
+            data.pending.forEach(pendingUser => {
+                let li = document.createElement("li");
+                li.textContent = pendingUser.username;
+                li.classList.add("pending-user-item");
+                li.dataset.pendingUserId = pendingUser.id;
+                pendingUsersUl.appendChild(li);
+
+                li.addEventListener("click", function () {
+                    window.location.href = `#profile?id=${pendingUser.id}`;
+                });
+            });
+        } else {
+            console.warn("No pending users found.");
+        }
+    })
+    .catch(error => console.error("Error while getting pending users list:", error));
+}
+
+async function fetchWaitingUsers() {
+    console.log("Loading waiting users list.");
+    await fetch("/api/chat/get_waiting_friends/", {
+        method: "GET",
+        credentials: "include"
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response data:", data);
+        if (data.waiting && data.waiting.length > 0) {
+            let waitingUsersUl = document.getElementById("waitingList");
+            waitingUsersUl.innerHTML = "";
+
+            data.waiting.forEach(waitingUser => {
+                let li = document.createElement("li");
+                li.textContent = waitingUser.username;
+                li.classList.add("waiting-user-item");
+                li.dataset.waitingUserId = waitingUser.id;
+                waitingUsersUl.appendChild(li);
+
+                li.addEventListener("click", function () {
+                    window.location.href = `#profile?id=${waitingUser.id}`;
+                });
+            });
+        } else {
+            console.warn("No waiting users found.");
+        }
+    })
+    .catch(error => console.error("Error while getting waiting users list:", error));
+}
+
 async function fetchBlockedUsers() {
     console.log("Loading blocked users list.");
-    fetch("/api/chat/get_blocked/", {
+    await fetch("/api/chat/get_blocked/", {
         method: "GET",
         credentials: "include"
     })
