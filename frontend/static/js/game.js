@@ -1,5 +1,22 @@
 console.log('=== GAME.JS LOADED ===');
 
+// Function to get the current page from the URL hash
+function getPage() {
+    const hash = window.location.hash.substring(1); // Remove the # character
+    
+    if (!hash) return 'game'; // Default page
+    
+    if (hash === 'game') return 'game';
+    if (hash.startsWith('play/')) return 'play';
+    if (hash.startsWith('tournament')) return 'tournament';
+    if (hash === 'tournaments') return 'tournaments';
+    if (hash === 'profile') return 'profile';
+    
+    // Extract the first part of the hash if it contains a slash
+    const firstPart = hash.split('/')[0];
+    return firstPart || 'game';
+}
+
 class PongGame {
     constructor() {
         // Bind methods to this instance first
@@ -274,6 +291,53 @@ class PongGame {
         this.joinGameBtn.addEventListener('click', () => this.showJoinGameForm());
         window.addEventListener('keydown', this.handleKeyPress);
         window.addEventListener('keyup', this.handleKeyUp);
+        
+        // Handle browser navigation (back/forward buttons)
+        window.addEventListener('popstate', () => this.handleNavigation());
+        
+        // Handle page unload/refresh
+        window.addEventListener('beforeunload', () => this.handleBeforeUnload());
+    }
+    
+    handleNavigation() {
+        console.log('Navigation detected (browser back/forward button)');
+        const currentPage = getPage();
+        console.log('Current page:', currentPage);
+        
+        // Only clean up WebSocket when navigating away from the play page
+        if (currentPage === 'play') {
+            console.log('On play page, keeping WebSocket connection');
+        } else if (this.gameStarted) {
+            console.log('Game was started but leaving play page, cleaning up WebSocket');
+            this.cleanupWebSocket();
+        } else {
+            this.cleanupWebSocket();
+            console.log('Not on play page and no game started, no cleanup needed');
+        }
+    }
+    
+    handleBeforeUnload() {
+        console.log('Page unload detected');
+        const currentPage = getPage();
+        console.log('Current page on unload:', currentPage);
+        
+        // Only clean up WebSocket when unloading from the play page
+        if (currentPage === 'play') {
+            console.log('Leaving play page, cleaning up WebSocket');
+            this.cleanupWebSocket();
+        } else {
+            console.log('Not on play page, no cleanup needed');
+        }
+    }
+    
+    cleanupWebSocket() {
+        if (this.uiSocket) {
+            console.log('Closing WebSocket connection due to navigation');
+            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+            this.uiSocket.close();
+            this.uiSocket = null;
+            this.connected = false;
+        }
     }
 
     handleKeyUp(event) {
@@ -449,13 +513,14 @@ class PongGame {
     }
 
     async startGame() {
+        
         if (this.isCreatingGame) return;
         this.isCreatingGame = true;
 
         try {
-            if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN) {
-                throw new Error('WebSocket connection not ready');
-            }
+            // if (!this.uiSocket || this.uiSocket.readyState !== WebSocket.OPEN) {
+            //     throw new Error('WebSocket connection not ready');
+            // }
 
             console.log('Creating game via HTTP POST...');
             const response = await fetch('/api/game/create/', {
@@ -673,6 +738,7 @@ class PongGame {
     }
 
     joinGame(gameId) {
+
         try {
             // Parse gameId as integer
             this.gameId = parseInt(gameId, 10);
@@ -1062,6 +1128,14 @@ class PongGame {
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
 
+                if (this.uiSocket) {
+                    console.log('Closing WebSocket connection in handleGameEnd');
+                    this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+                    this.uiSocket.close();
+                    this.uiSocket = null;
+                    this.connected = false;
+                }
+
                 window.location.href = '#game';
             };
         }
@@ -1086,11 +1160,13 @@ class PongGame {
         document.body.appendChild(overlay);
 
         // Clean up WebSocket connection
-        // if (this.uiSocket) {
-        //     this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
-        //     this.uiSocket.close();
-        //     this.uiSocket = null;
-        // }
+        if (this.uiSocket) {
+            console.log('Closing WebSocket connection in handleGameEnd');
+            this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+            this.uiSocket.close();
+            this.uiSocket = null;
+            this.connected = false;
+        }
     }
 
     handleReadyClick() {
