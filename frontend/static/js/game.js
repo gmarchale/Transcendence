@@ -167,6 +167,21 @@ class PongGame {
             this.player2Score = document.getElementById('game_player2Score');
             console.log('Player 2 score:', this.player2Score);
 
+
+            let imgElement0 = document.getElementById("player1_avatar");
+            let placeholder0 = document.createElement("div");
+            placeholder0.className = "profile_placeholder";
+            placeholder0.textContent = "?";
+            placeholder0.id = "player1_avatar";
+            imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+
+            let imgElement1 = document.getElementById("player2_avatar");
+            let placeholder1 = document.createElement("div");
+            placeholder1.className = "profile_placeholder";
+            placeholder1.textContent = "?";
+            placeholder1.id = "player2_avatar";
+            imgElement1.parentNode.replaceChild(placeholder1, imgElement1);
+
             // Initialize canvas if it exists
             if (this.canvas) {
                 this.ctx = this.canvas.getContext('2d');
@@ -357,6 +372,82 @@ class PongGame {
         };
     }
 
+    updateProfilePic(message)
+    {
+        if (message.game_state.players.player1)
+        {
+            fetch("/api/users/get_avatar/" + message.game_state.players.player1.id + "/", {
+                 method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+            .then(response => response.json())
+            .then(data2 => {
+                if (data2.avatar != null)
+                {
+                    let imgElement = document.getElementById("player1_avatar");
+                    let placeholder = document.createElement("div");
+                    placeholder.className = "profile_avatar";
+                    placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+                    placeholder.id = "profile_avatar";
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                }
+                else {
+                    let imgElement = document.getElementById("player1_avatar");
+                    let placeholder = document.createElement("div");
+                    placeholder.className = "profile_placeholder";
+                    placeholder.textContent = message.game_state.players.player1.username[0];
+                    placeholder.id = "player1_avatar";
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                }
+                })
+            .catch(error => console.error("Error while getting avatar:", error));
+        }
+        else
+        {
+            let imgElement0 = document.getElementById("player1_avatar");
+            let placeholder0 = document.createElement("div");
+            placeholder0.className = "profile_placeholder";
+            placeholder0.textContent = "?";
+            placeholder0.id = "player1_avatar";
+            imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+        }
+        if (message.game_state.players.player2)
+            {
+                fetch("/api/users/get_avatar/" + message.game_state.players.player2.id + "/", {
+                     method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                })
+                .then(response => response.json())
+                .then(data2 => {
+                    if (data2.avatar != null)
+                    {
+                        let imgElement = document.getElementById("player2_avatar");
+                        let placeholder = document.createElement("div");
+                        placeholder.className = "profile_avatar";
+                        placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+                        placeholder.id = "profile_avatar";
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    }
+                    else {
+                        let imgElement = document.getElementById("player2_avatar");
+                        let placeholder = document.createElement("div");
+                        placeholder.className = "profile_placeholder";
+                        placeholder.textContent = message.game_state.players.player2.username[0];
+                        placeholder.id = "player2_avatar";
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    }
+                    })
+                .catch(error => console.error("Error while getting avatar:", error));
+            }
+            else
+            {
+                let imgElement0 = document.getElementById("player2_avatar");
+                let placeholder0 = document.createElement("div");
+                placeholder0.className = "profile_placeholder";
+                placeholder0.textContent = "?";
+                placeholder0.id = "player2_avatar";
+                imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+            }
+    }
+
     async startGame() {
         if (this.isCreatingGame) return;
         this.isCreatingGame = true;
@@ -417,7 +508,7 @@ class PongGame {
                     this.playerId = parseInt(message.player1_id, 10);  // Set player ID from player1 info
                     this.gameState = message.game_state;  // Make sure we store the game state
                     this.isCreatingGame = false;
-
+                    console.log(message)
                     // Reset both ready buttons to Not Ready
                     if (this.player1Ready) {
                         this.player1Ready.textContent = getTranslation("global_notready");
@@ -431,6 +522,8 @@ class PongGame {
                     }
 
                     // Initialize ready button states with the new game state
+                    console.log('Game XXXX:', message.game_state);
+                    this.updateProfilePic(message);
                     this.updateReadyState(message.game_state);
 
                     // Only join game group and set URL if we have a valid game ID
@@ -467,7 +560,7 @@ class PongGame {
                         this.playerId = parseInt(message.player2_id, 10);
                         console.log('We are player 2 with ID:', this.playerId);
                     }
-
+                    this.updateProfilePic(message);
                     // Initialize ready button states with the new game state
                     if (message.game_state) {
                         this.gameState = message.game_state;
@@ -924,12 +1017,12 @@ class PongGame {
 
         // Create button based on where the game was launched from
         const homeButton = document.createElement('button');
-        
+
         // Simple way to check if we came from a tournament - check the referrer
         const referrer = document.referrer;
         const currentHash = window.location.hash;
         const fromTournament = this.fromTournament || localStorage.getItem('fromTournament') === 'true';
-        
+
         if (fromTournament || currentHash.includes('tournament')) {
             // Tournament game button
             homeButton.innerText = 'Go to Tournament';
@@ -938,10 +1031,11 @@ class PongGame {
                 document.body.removeChild(overlay);
                 // Get tournament ID from localStorage if available
                 const tournamentId = localStorage.getItem('currentTournamentId');
-                
+
                 // Clear localStorage values
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
+              
                 if (this.playerId == data.winner_id) { // Si le joueur a gagne
                     if (tournamentId) {
                         window.location.href = `#tournament/${tournamentId}`;
@@ -963,15 +1057,15 @@ class PongGame {
             homeButton.style.backgroundColor = '#4CAF50'; // Green for regular games
             homeButton.onclick = () => {
                 document.body.removeChild(overlay);
-                
+
                 // Clear localStorage values (just to be safe)
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
-                
+
                 window.location.href = '#game';
             };
         }
-        
+
         homeButton.style.padding = '15px 30px';
         homeButton.style.fontSize = '1.2em';
         homeButton.style.cursor = 'pointer';
@@ -1125,83 +1219,65 @@ class PongGame {
         console.log(players.player1.id)
         console.log(players.player1.username[0])
 
-        if (players.player1 && this.player1ProfileLoaded == false)
-        {
-            this.player1ProfileLoaded = true;
-            fetch("/api/users/get_avatar/" + players.player1.id + "/", {
-                method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            })
-            .then(response => response.json())
-            .then(data2 => {
-                if (data2.avatar != null)
-                {
-                    let imgElement = document.getElementById("player1_avatar");
-                    let placeholder = document.createElement("div");
-                    placeholder.className = "profile_avatar";
-                    placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-                    placeholder.id = "profile_avatar";
-                    imgElement.parentNode.replaceChild(placeholder, imgElement);
-                }
-                else {
-                    let imgElement = document.getElementById("player1_avatar");
-                    let placeholder = document.createElement("div");
-                    placeholder.className = "profile_placeholder";
-                    placeholder.textContent = players.player1.username[0];
-                    placeholder.id = "player1_avatar";
-                    imgElement.parentNode.replaceChild(placeholder, imgElement);
-                }
+            // if (players.player1 && this.player1ProfileLoaded == false)
+            // {
+            //     this.player1ProfileLoaded = true;
+            //     fetch("/api/users/get_avatar/" + players.player1.id + "/", {
+            //         method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            //     })
+            //     .then(response => response.json())
+            //     .then(data2 => {
+            //         if (data2.avatar != null)
+            //         {
+            //             let imgElement = document.getElementById("player1_avatar");
+            //             let placeholder = document.createElement("div");
+            //             placeholder.className = "profile_avatar";
+            //             placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+            //             placeholder.id = "profile_avatar";
+            //             imgElement.parentNode.replaceChild(placeholder, imgElement);
+            //         }
+            //         else {
+            //             let imgElement = document.getElementById("player1_avatar");
+            //             let placeholder = document.createElement("div");
+            //             placeholder.className = "profile_placeholder";
+            //             placeholder.textContent = players.player1.username[0];
+            //             placeholder.id = "player1_avatar";
+            //             imgElement.parentNode.replaceChild(placeholder, imgElement);
+            //         }
 
-            })
-            .catch(error => console.error("Error while getting avatar:", error));
-        }
-        else if (this.player1ProfileLoaded == false)
-        {
-            let imgElement = document.getElementById("player2_avatar");
-            let placeholder = document.createElement("div");
-            placeholder.className = "profile_placeholder";
-            placeholder.textContent = "?";
-            placeholder.id = "player2_avatar";
-            imgElement.parentNode.replaceChild(placeholder, imgElement);
-        }
+            //     })
+            //     .catch(error => console.error("Error while getting avatar:", error));
+            // }
 
-        if (players.player2 && this.player2ProfileLoaded == false)
-        {
-            this.player2ProfileLoaded = true;
-                fetch("/api/users/get_avatar/" + players.player2.id + "/", {
-                    method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-                })
-                .then(response => response.json())
-                .then(data2 => {
-                    if (data2.avatar != null)
-                    {
-                        let imgElement = document.getElementById("player2_avatar");
-                        let placeholder = document.createElement("div");
-                        placeholder.className = "profile_avatar";
-                        placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-                        placeholder.id = "profile_avatar";
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
-                    }
-                    else {
-                        let imgElement = document.getElementById("player2_avatar");
-                        let placeholder = document.createElement("div");
-                        placeholder.className = "profile_placeholder";
-                        placeholder.textContent = players.player2.username[0];
-                        placeholder.id = "player2_avatar";
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
-                    }
+            // if (players.player2 && this.player2ProfileLoaded == false)
+            // {
+            //     this.player2ProfileLoaded = true;
+            //         fetch("/api/users/get_avatar/" + players.player2.id + "/", {
+            //             method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            //         })
+            //         .then(response => response.json())
+            //         .then(data2 => {
+            //             if (data2.avatar != null)
+            //             {
+            //                 let imgElement = document.getElementById("player2_avatar");
+            //                 let placeholder = document.createElement("div");
+            //                 placeholder.className = "profile_avatar";
+            //                 placeholder.style.backgroundImage = `url('${data2.avatar}')`;
+            //                 placeholder.id = "profile_avatar";
+            //                 imgElement.parentNode.replaceChild(placeholder, imgElement);
+            //             }
+            //             else {
+            //                 let imgElement = document.getElementById("player2_avatar");
+            //                 let placeholder = document.createElement("div");
+            //                 placeholder.className = "profile_placeholder";
+            //                 placeholder.textContent = players.player2.username[0];
+            //                 placeholder.id = "player2_avatar";
+            //                 imgElement.parentNode.replaceChild(placeholder, imgElement);
+            //             }
 
-                })
-                .catch(error => console.error("Error while getting avatar:", error));
-        }
-        else if (this.player2ProfileLoaded == false)
-        {
-            let imgElement = document.getElementById("player2_avatar");
-            let placeholder = document.createElement("div");
-            placeholder.className = "profile_placeholder";
-            placeholder.textContent = "?";
-            placeholder.id = "player2_avatar";
-            imgElement.parentNode.replaceChild(placeholder, imgElement);
-        }
+            //         })
+            //         .catch(error => console.error("Error while getting avatar:", error));
+            // }
 
         if (players.player1 && this.player1Ready) {
             // Update name
