@@ -446,7 +446,9 @@ class PongGame {
     updateProfilePic(message)
     {
         if (!message.game_state)
+        {
             return;
+        }
         if (!message.game_state.players)
             return;
         if (message.game_state.players.player1)
