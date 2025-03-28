@@ -87,24 +87,34 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 else:
                     # Vérifie si l'autre match de la paire est terminé
                     next_match_number = (self.active_match.match_number + 1) // 2
+                    
+                    # Find the paired match in the current round
+                    # For match 1, the pair is match 2; for match 3, the pair is match 4, etc.
+                    pair_match_number = self.active_match.match_number + 1 if self.active_match.match_number % 2 == 1 else self.active_match.match_number - 1
+                    
                     current_round_matches = TournamentMatch.objects.filter(
                         tournament=tournament,
                         round_number=self.active_match.round_number,
                         match_number__in=[
-                            self.active_match.match_number - (1 if self.active_match.match_number % 2 == 0 else 0),
-                            self.active_match.match_number + (1 if self.active_match.match_number % 2 == 1 else 0)
+                            self.active_match.match_number,
+                            pair_match_number
                         ]
                     )
 
                     if all(m.status == 'completed' for m in current_round_matches):
                         winners = [m.winner for m in current_round_matches]
-                        next_match = TournamentMatch.objects.create(
+                        
+                        # Find the existing match in the next round instead of creating a new one
+                        next_match = TournamentMatch.objects.get(
                             tournament=tournament,
-                            player1=winners[0],
-                            player2=winners[1] if len(winners) > 1 else None,
                             round_number=self.active_match.round_number + 1,
                             match_number=next_match_number
                         )
+                        
+                        # Update the match with the winners
+                        next_match.player1 = winners[0]
+                        next_match.player2 = winners[1] if len(winners) > 1 else None
+                        next_match.save()
 
                 return {
                     'match_id': self.active_match.id,
@@ -322,33 +332,151 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             
             # Create next round match if needed
             next_match_number = (match.match_number + 1) // 2
+            
+            # Find the paired match in the current round
+            # For match 1, the pair is match 2; for match 3, the pair is match 4, etc.
+            pair_match_number = match.match_number + 1 if match.match_number % 2 == 1 else match.match_number - 1
+            
             current_round_matches = TournamentMatch.objects.filter(
                 tournament=tournament,
                 round_number=match.round_number,
-                match_number__in=[match.match_number - (1 if match.match_number % 2 == 0 else 0), 
-                                match.match_number + (1 if match.match_number % 2 == 1 else 0)]
+                match_number__in=[match.match_number, pair_match_number]
             )
             
-            if all(m.status == 'completed' for m in current_round_matches):
-                # Both matches are complete, create next round match
-                winners = [m.winner for m in current_round_matches]
-                next_match = TournamentMatch.objects.create(
-                    tournament=tournament,
-                    player1=winners[0],
-                    player2=winners[1] if len(winners) > 1 else None,
-                    round_number=match.round_number + 1,
-                    match_number=next_match_number,
-                    status='pending'
+            # First, check if there are any pending matches in the current round that need a game created for them
+            next_pending_match = TournamentMatch.objects.filter(
+                tournament=tournament,
+                round_number=match.round_number,
+                status='pending',
+                game__isnull=True
+            ).order_by('match_number').first()
+            
+            if next_pending_match:
+                # Create a game for the next pending match in the current round
+                from game.models import Game
+                game = Game.objects.create(
+                    player1=next_pending_match.player1,
+                    player2=next_pending_match.player2,
+                    status='waiting'
                 )
                 
-                # Send match creation event to tournament group
-                # await self.channel_layer.group_send(
-                #     f'tournament_{tournament.id}',
-                #     {
-                #         'type': 'match_created',
-                #         'match': next_match
-                #     }
-                # )
+                # Link the game to the match
+                next_pending_match.game = game
+                next_pending_match.status = 'in_progress'
+                next_pending_match.started_at = timezone.now()
+                next_pending_match.save()
+                
+                # Initialize game state in memory
+                from game.game_state_manager import GameStateManager
+                GameStateManager.create_game(str(game.id), str(next_pending_match.player1.id), next_pending_match.player1.username)
+                if next_pending_match.player2:
+                    GameStateManager.join_game(str(game.id), str(next_pending_match.player2.id), next_pending_match.player2.username)
+                
+                # Notify players through WebSocket that their tournament match is ready
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                tournament_group = f'tournament_{tournament.id}'
+                game_group = f'game_{game.id}'
+                
+                # Send tournament match ready notification
+                async_to_sync(channel_layer.group_send)(
+                    tournament_group,
+                    {
+                        'type': 'match_ready',
+                        'match_id': next_pending_match.id,
+                        'game_id': game.id,
+                        'player1_id': next_pending_match.player1.id,
+                        'player2_id': next_pending_match.player2.id if next_pending_match.player2 else None
+                    }
+                )
+                
+                # Send game start notification through game WebSocket
+                async_to_sync(channel_layer.group_send)(
+                    game_group,
+                    {
+                        'type': 'game_start',
+                        'game_id': game.id,
+                        'player1_id': next_pending_match.player1.id,
+                        'player2_id': next_pending_match.player2.id if next_pending_match.player2 else None,
+                        'tournament_match_id': next_pending_match.id
+                    }
+                )
+            elif all(m.status == 'completed' for m in current_round_matches):
+                # All matches in the current round are completed, update the next round match
+                winners = [m.winner for m in current_round_matches]
+                
+                # Find the existing match in the next round
+                try:
+                    next_match = TournamentMatch.objects.get(
+                        tournament=tournament,
+                        round_number=match.round_number + 1,
+                        match_number=next_match_number
+                    )
+                    
+                    # Update the match with the winners
+                    next_match.player1 = winners[0]
+                    next_match.player2 = winners[1] if len(winners) > 1 else None
+                    next_match.save()
+                    
+                    # Check if this is the first match of the next round
+                    is_first_match_of_round = next_match.match_number == 1
+                    
+                    # If this is the first match of the next round, create a game for it
+                    if is_first_match_of_round:
+                        # Create a game for this match
+                        from game.models import Game
+                        game = Game.objects.create(
+                            player1=winners[0],
+                            player2=winners[1] if len(winners) > 1 else None,
+                            status='waiting'
+                        )
+                        
+                        # Link the game to the match
+                        next_match.game = game
+                        next_match.status = 'in_progress'
+                        next_match.started_at = timezone.now()
+                        next_match.save()
+                        
+                        # Initialize game state in memory
+                        from game.game_state_manager import GameStateManager
+                        GameStateManager.create_game(str(game.id), str(winners[0].id), winners[0].username)
+                        if len(winners) > 1 and winners[1]:
+                            GameStateManager.join_game(str(game.id), str(winners[1].id), winners[1].username)
+                        
+                        # Notify players through WebSocket that their tournament match is ready
+                        from channels.layers import get_channel_layer
+                        from asgiref.sync import async_to_sync
+                        channel_layer = get_channel_layer()
+                        tournament_group = f'tournament_{tournament.id}'
+                        game_group = f'game_{game.id}'
+                        
+                        # Send tournament match ready notification
+                        async_to_sync(channel_layer.group_send)(
+                            tournament_group,
+                            {
+                                'type': 'match_ready',
+                                'match_id': next_match.id,
+                                'game_id': game.id,
+                                'player1_id': winners[0].id,
+                                'player2_id': winners[1].id if len(winners) > 1 and winners[1] else None
+                            }
+                        )
+                        
+                        # Send game start notification through game WebSocket
+                        async_to_sync(channel_layer.group_send)(
+                            game_group,
+                            {
+                                'type': 'game_start',
+                                'game_id': game.id,
+                                'player1_id': winners[0].id,
+                                'player2_id': winners[1].id if len(winners) > 1 and winners[1] else None,
+                                'tournament_match_id': next_match.id
+                            }
+                        )
+                except TournamentMatch.DoesNotExist:
+                    # If the match doesn't exist, log an error
+                    logger.error(f"Next round match not found: round {match.round_number + 1}, match number {next_match_number}")
             
             return False
             
