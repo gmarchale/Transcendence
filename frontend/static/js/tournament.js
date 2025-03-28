@@ -451,6 +451,21 @@ async function initTournamentActions(tournament) {
         const serverMatch = await getMatchDetailsFromServer(domMatch.id);
         console.log('Match details from server:', serverMatch);
         
+        // Verify if the current user is one of the players in this match
+        const currentUserId = window.gameManager.currentUser?.id;
+        if (!currentUserId) {
+            console.error('Current user ID not available');
+            alert(getTranslation('tournament_error') || 'An error occurred');
+            return;
+        }
+        
+        // Check if current user is player1 or player2 in this match
+        if (serverMatch.player1_id !== currentUserId && serverMatch.player2_id !== currentUserId) {
+            console.warn(`Current user (${currentUserId}) is not a player in this match (players: ${serverMatch.player1_id}, ${serverMatch.player2_id})`);
+            alert(getTranslation('tournament_not_your_match') || 'You are not a player in this match');
+            return;
+        }
+        
         // Check if the match has a game ID in the database
         if (serverMatch && serverMatch.game_id) {
             console.log(`Found game ID ${serverMatch.game_id} in the database, joining game`);

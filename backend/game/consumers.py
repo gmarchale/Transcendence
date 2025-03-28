@@ -139,6 +139,15 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
                 # No need to update anything
                 return game
             
+            # Check if game already has player2 and if it's not the current player
+            if game.player2:
+                if str(game.player2.id) == str(player.id):
+                    logger.info(f"Player {player.username} is already player2 in game {game.id}")
+                    return game
+                else:
+                    logger.warning(f"Player {player.username} tried to join game {game.id} but player2 slot is taken by {game.player2.username}")
+                    return None
+            
             # Otherwise, join as player2
             game.player2 = player
             game.status = 'waiting'
