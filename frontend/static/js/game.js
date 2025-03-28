@@ -3,15 +3,15 @@ console.log('=== GAME.JS LOADED ===');
 // Function to get the current page from the URL hash
 function getPage() {
     const hash = window.location.hash.substring(1); // Remove the # character
-    
+
     if (!hash) return 'game'; // Default page
-    
+
     if (hash === 'game') return 'game';
     if (hash.startsWith('play/')) return 'play';
     if (hash.startsWith('tournament')) return 'tournament';
     if (hash === 'tournaments') return 'tournaments';
     if (hash === 'profile') return 'profile';
-    
+
     // Extract the first part of the hash if it contains a slash
     const firstPart = hash.split('/')[0];
     return firstPart || 'game';
@@ -248,6 +248,7 @@ class PongGame {
 
     initializeGameState() {
         // Game state
+        console.log("ICI CA LOAD");
         this.gameStarted = false;
         this.gameId = null;
         this.playerId = null;
@@ -291,19 +292,19 @@ class PongGame {
         this.joinGameBtn.addEventListener('click', () => this.showJoinGameForm());
         window.addEventListener('keydown', this.handleKeyPress);
         window.addEventListener('keyup', this.handleKeyUp);
-        
+
         // Handle browser navigation (back/forward buttons)
         window.addEventListener('popstate', () => this.handleNavigation());
-        
+
         // Handle page unload/refresh
         window.addEventListener('beforeunload', () => this.handleBeforeUnload());
     }
-    
+
     handleNavigation() {
         console.log('Navigation detected (browser back/forward button)');
         const currentPage = getPage();
         console.log('Current page:', currentPage);
-        
+
         // Only clean up WebSocket when navigating away from the play page
         if (currentPage === 'play') {
             console.log('On play page, keeping WebSocket connection');
@@ -315,12 +316,12 @@ class PongGame {
             console.log('Not on play page and no game started, no cleanup needed');
         }
     }
-    
+
     handleBeforeUnload() {
         console.log('Page unload detected');
         const currentPage = getPage();
         console.log('Current page on unload:', currentPage);
-        
+
         // Only clean up WebSocket when unloading from the play page
         if (currentPage === 'play') {
             console.log('Leaving play page, cleaning up WebSocket');
@@ -329,12 +330,13 @@ class PongGame {
             console.log('Not on play page, no cleanup needed');
         }
     }
-    
+
     cleanupWebSocket() {
         if (this.uiSocket) {
             console.log('Closing WebSocket connection due to navigation');
             this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
             this.uiSocket.close();
+            gameInitialized = false;
             this.uiSocket = null;
             this.connected = false;
         }
@@ -433,11 +435,20 @@ class PongGame {
             const data = JSON.parse(event.data);
             console.log('Received UI WebSocket message:', data);
             this.handleWebSocketMessage(data);
+            //
+            if (data)
+                this.updateProfilePic(data);
+            if (data.game_state)
+                this.updateReadyState(data.game_state);
         };
     }
 
     updateProfilePic(message)
     {
+        if (!message.game_state)
+            return;
+        if (!message.game_state.players)
+            return;
         if (message.game_state.players.player1)
         {
             fetch("/api/users/get_avatar/" + message.game_state.players.player1.id + "/", {
@@ -513,7 +524,7 @@ class PongGame {
     }
 
     async startGame() {
-        
+
         if (this.isCreatingGame) return;
         this.isCreatingGame = true;
 
@@ -1101,7 +1112,7 @@ class PongGame {
                 // Clear localStorage values
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
-              
+
                 if (this.playerId == data.winner_id) { // Si le joueur a gagne
                     if (tournamentId) {
                         window.location.href = `#tournament/${tournamentId}`;
@@ -1109,7 +1120,7 @@ class PongGame {
                         // Fallback to tournaments list
                         window.location.href = '#tournaments';
                     }
-                    
+
                 }
                 else // si le joueur a perdu
                 {
@@ -1132,6 +1143,7 @@ class PongGame {
                     console.log('Closing WebSocket connection in handleGameEnd');
                     this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
                     this.uiSocket.close();
+                    gameInitialized = false;
                     this.uiSocket = null;
                     this.connected = false;
                 }
@@ -1164,6 +1176,7 @@ class PongGame {
             console.log('Closing WebSocket connection in handleGameEnd');
             this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
             this.uiSocket.close();
+            gameInitialized = false;
             this.uiSocket = null;
             this.connected = false;
         }
@@ -1171,7 +1184,7 @@ class PongGame {
 
     handleReadyClick() {
         console.log('Player clicked ready button');
-        
+
         // Try to get gameId from multiple sources
         if (!this.gameId) {
             // Try from gameState
@@ -1188,7 +1201,7 @@ class PongGame {
                 }
             }
         }
-        
+
         if (!this.gameId) {
             console.error('No game ID available');
             return;
@@ -1205,11 +1218,11 @@ class PongGame {
             'game_id': parseInt(this.gameId, 10),
             'player_role': this.gameRole  // Send the player role to the backend
         }));
-        
+
         // Set an optimistic ready flag that we'll use in updateReadyState
         this._optimisticReady = true;
         console.log('Setting optimistic ready flag');
-        
+
         // Optimistically update our own ready state in the UI
         if (this.gameRole === 'player1' && this.player1Ready) {
             console.log('Optimistically updating player 1 ready state');
@@ -1228,7 +1241,7 @@ class PongGame {
         console.log('updateReadyState called with playerId:', this.playerId);
         if (!gameState || !gameState.players) return;
         console.log('Game state:', gameState);
-        
+
         // Store the game state for reference
         this.gameState = gameState;
 
@@ -1240,29 +1253,29 @@ class PongGame {
         if (players.player2) {
             console.log('Player2 ID from state:', players.player2.id, 'Type:', typeof players.player2.id);
         }
-        
+
         // Ensure we're using the correct player IDs
         const player1Id = players.player1?.id ? parseInt(players.player1.id, 10) : null;
         const player2Id = players.player2?.id ? parseInt(players.player2.id, 10) : null;
         const currentPlayerId = this.playerId ? parseInt(this.playerId, 10) : null;
-        
+
         console.log('Parsed IDs - Current:', currentPlayerId, 'Player1:', player1Id, 'Player2:', player2Id);
-        
+
         // Store our role in the game for future reference
         if (this.gameRole === undefined || this.gameRole === 'spectator') {
             // Check if we're player 1
             if (currentPlayerId === player1Id) {
                 this.gameRole = 'player1';
                 console.log('Setting game role to player1');
-            } 
+            }
             // Check if we're player 2 - handle the case where player2Id might be wrong
             else if (currentPlayerId === player2Id && player1Id !== player2Id) {
                 this.gameRole = 'player2';
                 console.log('Setting game role to player2');
-            } 
+            }
             // Special case: if we know we're player 2 from other sources
-            else if (this.playerId && players.player2 && 
-                    parseInt(this.playerId, 10) === parseInt(players.player2.id, 10) && 
+            else if (this.playerId && players.player2 &&
+                    parseInt(this.playerId, 10) === parseInt(players.player2.id, 10) &&
                     parseInt(this.playerId, 10) !== parseInt(players.player1.id, 10)) {
                 this.gameRole = 'player2';
                 console.log('Setting game role to player2 (special case)');
@@ -1272,11 +1285,11 @@ class PongGame {
                 console.log('Setting game role to spectator');
             }
         }
-        
+
         // Use our stored role for consistency if available
         let isPlayer1 = false;
         let isPlayer2 = false;
-        
+
         if (this.gameRole) {
             isPlayer1 = this.gameRole === 'player1';
             isPlayer2 = this.gameRole === 'player2';
@@ -1287,7 +1300,7 @@ class PongGame {
             isPlayer2 = currentPlayerId === player2Id && player1Id !== player2Id; // Ensure player2 is distinct from player1
             console.log('Using direct ID comparison for roles');
         }
-        
+
         console.log('Identity check results - isPlayer1:', isPlayer1, 'isPlayer2:', isPlayer2);
 
 
@@ -1364,23 +1377,23 @@ class PongGame {
             console.log('Updating player 1 ready state:', players.player1.is_ready);
             console.log('Player 1 ID:', players.player1.id, 'Current player ID:', this.playerId);
             console.log('isPlayer1:', isPlayer1, 'Type of player1.id:', typeof players.player1.id, 'Type of this.playerId:', typeof this.playerId);
-            
+
             // Check if this is our ready button based on our stored role
             const isMyReadyButton = this.gameRole === 'player1';
             console.log('Is this my ready button?', isMyReadyButton, 'Game role:', this.gameRole);
-            
+
             this.player1Ready.textContent = getTranslation("global_notready");  // Always start as Not Ready
             this.player1Ready.classList.remove('ready');  // Remove ready class by default
-            
+
             // Use either the server state or our optimistic state
             const isReady = players.player1.is_ready || (isMyReadyButton && this._optimisticReady === true);
             console.log('Is player 1 ready?', isReady, 'Server says:', players.player1.is_ready, 'Optimistic state:', this._optimisticReady);
-            
+
             if (isReady) {  // Update if ready
                 this.player1Ready.textContent = getTranslation("global_ready");
                 this.player1Ready.classList.add('ready');
             }
-            
+
             // Button should be disabled if not player 1 or already ready
             const shouldDisable = !isMyReadyButton || isReady;
             console.log('Player 1 button should be disabled:', shouldDisable, 'Reason:', !isMyReadyButton ? 'Not player 1' : (isReady ? 'Already ready' : 'Can click ready'));
@@ -1397,23 +1410,23 @@ class PongGame {
             console.log('Updating player 2 ready state:', players.player2.is_ready);
             console.log('Player 2 ID:', players.player2.id, 'Current player ID:', this.playerId);
             console.log('isPlayer2:', isPlayer2, 'Type of player2.id:', typeof players.player2.id, 'Type of this.playerId:', typeof this.playerId);
-            
+
             // Check if this is our ready button based on our stored role
             const isMyReadyButton = this.gameRole === 'player2';
             console.log('Is this my ready button?', isMyReadyButton, 'Game role:', this.gameRole);
-            
+
             this.player2Ready.textContent = getTranslation("global_notready");  // Always start as Not Ready
             this.player2Ready.classList.remove('ready');  // Remove ready class by default
-            
+
             // Use either the server state or our optimistic state
             const isReady = players.player2.is_ready || (isMyReadyButton && this._optimisticReady === true);
             console.log('Is player 2 ready?', isReady, 'Server says:', players.player2.is_ready, 'Optimistic state:', this._optimisticReady);
-            
+
             if (isReady) {  // Update if ready
                 this.player2Ready.textContent = getTranslation("global_ready");
                 this.player2Ready.classList.add('ready');
             }
-            
+
             // Button should be disabled if not player 2 or already ready
             const shouldDisable = !isMyReadyButton || isReady;
             console.log('Player 2 button should be disabled:', shouldDisable, 'Reason:', !isMyReadyButton ? 'Not player 2' : (isReady ? 'Already ready' : 'Can click ready'));
