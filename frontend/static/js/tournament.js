@@ -69,10 +69,10 @@ function initSocket(tournamentId) {
             
             const roundName = getRoundName(data.round_size);
             loadTournament(tournamentId).then(tournament => {
-                // if (tournament) { // Empeche de cliquer sur boutons apres tournois
-                //     const message = getTranslation("global_tournament")+`: ${tournament.name}\n${roundName} vs ${opponent}\n`+getTranslation("tournament_five_min");
-                //     showNotification(message, 'success', 5000);
-                // }
+                if (tournament) { // Empeche de cliquer sur boutons apres tournois
+                    const message = getTranslation("global_tournament")+`: ${tournament.name}\n${roundName} vs ${opponent}\n`+getTranslation("tournament_five_min");
+                    showNotification(message, 'success', 5000);
+                }
             });
         } else if (data.type === 'tournament_update') {
             // Handle tournament updates (completion, winner announcement, etc.)

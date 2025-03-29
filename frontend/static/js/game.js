@@ -19,6 +19,9 @@ function getPage() {
 
 class PongGame {
     constructor() {
+        this.player1username = null;
+        this.player2username = null;
+
         // Bind methods to this instance first
         this.handleKeyPress = this.handleKeyPress.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -495,6 +498,10 @@ class PongGame {
     {
         if (message.game_state.players.player1)
         {
+            if (!this.player1username)
+            {
+                this.player1username = message.game_state.players.player1.username;
+            }
             fetch("/api/users/get_avatar/" + message.game_state.players.player1.id + "/", {
                  method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
             })
@@ -531,6 +538,10 @@ class PongGame {
         }
         if (message.game_state.players.player2)
             {
+                if (!this.player2username)
+                {
+                    this.player2username = message.game_state.players.player2.username;
+                }
                 fetch("/api/users/get_avatar/" + message.game_state.players.player2.id + "/", {
                      method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 })
@@ -1115,7 +1126,7 @@ class PongGame {
         resultText.style.color = '#fff';
         resultText.style.marginBottom = '20px';
         resultText.style.fontSize = '2.5em';
-        resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
+        resultText.innerText = `${winner === 'player1' ? this.player1username : this.player2username} Wins!`;
 
         // Create score text
         const scoreText = document.createElement('h2');
