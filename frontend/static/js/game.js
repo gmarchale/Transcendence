@@ -206,14 +206,16 @@ class PongGame {
             placeholder0.className = "profile_placeholder";
             placeholder0.textContent = "?";
             placeholder0.id = "player1_avatar";
-            imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+            if (imgElement0)
+                imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
 
             let imgElement1 = document.getElementById("player2_avatar");
             let placeholder1 = document.createElement("div");
             placeholder1.className = "profile_placeholder";
             placeholder1.textContent = "?";
             placeholder1.id = "player2_avatar";
-            imgElement1.parentNode.replaceChild(placeholder1, imgElement1);
+            if (imgElement1)
+                imgElement1.parentNode.replaceChild(placeholder1, imgElement1);
 
             // Initialize canvas if it exists
             if (this.canvas) {
@@ -1252,7 +1254,17 @@ class PongGame {
             return;
         }
 
+        if (!this.gameRole) {
+            console.error('No gameRole available');
+            return;
+        }
+        if (!this.uiSocket)
+        {
+            console.error('No uiSocket available');
+            return;
+        }
         console.log('Sending player_ready message for game:', this.gameId, 'player:', this.playerId, 'role:', this.gameRole);
+
         this.uiSocket.send(JSON.stringify({
             'type': 'player_ready',
             'game_id': parseInt(this.gameId, 10),
