@@ -234,6 +234,7 @@ class GameStateManager:
         if game_state['score']['player1'] >= 5 or game_state['score']['player2'] >= 5:
             print(f"[DEBUG] Game {game_id} has ended! Scores: {game_state['score']['player1']} - {game_state['score']['player2']}")
             game_state['status'] = 'finished'
+            # COMMENTED OUT: Centralizing winner determination to end_game method only
             game_state['winner'] = 'player1' if game_state['score']['player1'] > game_state['score']['player2'] else 'player2'
             print(f"[DEBUG] Game {game_id} winner: {game_state['winner']}")
             
@@ -451,7 +452,8 @@ class GameStateManager:
                 game.status = 'finished'
                 print(f"[DEBUG] Setting game status to finished")
             
-            # Set winner if available
+            # Set winner if available - COMMENTED OUT TO CENTRALIZE WINNER DETERMINATION
+            # Only the score comparison in end_game method will set the winner
             if 'winner' in game_state:
                 print(f"[DEBUG] Winner found in game_state: {game_state['winner']}")
                 winner_id = None

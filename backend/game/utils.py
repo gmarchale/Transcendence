@@ -50,11 +50,12 @@ def cleanup_inactive_games():
             minutes, seconds = divmod(int(duration_seconds), 60)
             game.duration_formatted = f"{minutes:02d}:{seconds:02d}"
             
-            # Détermination du gagnant
-            if game.score_player1 > game.score_player2:
-                game.winner = game.player1
-            elif game.score_player2 > game.score_player1:
-                game.winner = game.player2
+            # Détermination du gagnant - COMMENTED OUT TO CENTRALIZE WINNER DETERMINATION
+            # Only the score comparison in end_game method will set the winner
+            # if game.score_player1 > game.score_player2:
+            #     game.winner = game.player1
+            # elif game.score_player2 > game.score_player1:
+            #     game.winner = game.player2
             
             # Sauvegarde des modifications
             game.save()

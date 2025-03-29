@@ -192,6 +192,7 @@ class GameUIConsumer(AsyncJsonWebsocketConsumer):
         try:
             if status:
                 game.status = status
+            # COMMENTED OUT: Centralizing winner determination to score comparison only
             if winner:
                 game.winner = winner
             if duration is not None:
