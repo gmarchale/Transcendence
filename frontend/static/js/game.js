@@ -57,6 +57,7 @@ class PongGame {
         this.paddleUpdateInterval = 16; // Update paddle every 16ms (approximately 60fps)
 
         // Initialize ready button handlers
+            this.startGameHandler = this.startGame.bind(this);
         this.player1Ready = document.getElementById('player1_ready');
         this.player2Ready = document.getElementById('player2_ready');
         this.player1Name = document.getElementById('player1_name');
@@ -74,11 +75,26 @@ class PongGame {
             this.player2Ready.addEventListener('click', () => this.handleReadyClick());
         }
 
+        this.handleStartGameClick = this.startGame.bind(this);
+        this.handleChatDropdownClick = () => {
+            if (chat_currentlyWith != null) {
+                this.chatInterface = true;
+                this.startGame();
+            }
+        };
+        this.handleJoinGameClick = this.showJoinGameForm.bind(this);
+        this.handleKeyDown = this.handleKeyPress.bind(this);
+        this.handleKeyUpListener = this.handleKeyUp.bind(this);
+        this.handlePopState = this.handleNavigation.bind(this);
+        this.handleBeforeUnloadListener = this.handleBeforeUnload.bind(this);
+
         // Start initialization
         this.init().catch(error => {
             console.error('Failed to initialize game:', error);
         });
     }
+
+
 
     async init() {
         console.log('Initializing game...');
@@ -277,27 +293,61 @@ class PongGame {
     }
 
     initializeEventListeners() {
-        // Bind event listeners
-        this.createGameBtn.addEventListener('click', () => this.startGame());
-
-
-        document.getElementById('chat_dropdownMenuButton_PlayPong').addEventListener('click', () => {
-            if (chat_currentlyWith != null) {
-                this.chatInterface = true;
-                this.startGame();
-            }
-        });
-
-        this.joinGameBtn.addEventListener('click', () => this.showJoinGameForm());
-        window.addEventListener('keydown', this.handleKeyPress);
-        window.addEventListener('keyup', this.handleKeyUp);
-
-        // Handle browser navigation (back/forward buttons)
-        window.addEventListener('popstate', () => this.handleNavigation());
-
-        // Handle page unload/refresh
-        window.addEventListener('beforeunload', () => this.handleBeforeUnload());
+        // Utilisation des références stockées
+        if (this.createGameBtn) {
+            this.createGameBtn.addEventListener('click', this.handleStartGameClick);
+        }
+        const chatBtn = document.getElementById('chat_dropdownMenuButton_PlayPong');
+        if (chatBtn) {
+            chatBtn.addEventListener('click', this.handleChatDropdownClick);
+        }
+        if (this.joinGameBtn) {
+            this.joinGameBtn.addEventListener('click', this.handleJoinGameClick);
+        }
+        window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keyup', this.handleKeyUpListener);
+        window.addEventListener('popstate', this.handlePopState);
+        window.addEventListener('beforeunload', this.handleBeforeUnloadListener);
     }
+
+    cleanupEventListeners() {
+        if (this.createGameBtn) {
+            this.createGameBtn.removeEventListener('click', this.handleStartGameClick);
+        }
+        const chatBtn = document.getElementById('chat_dropdownMenuButton_PlayPong');
+        if (chatBtn) {
+            chatBtn.removeEventListener('click', this.handleChatDropdownClick);
+        }
+        if (this.joinGameBtn) {
+            this.joinGameBtn.removeEventListener('click', this.handleJoinGameClick);
+        }
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUpListener);
+        window.removeEventListener('popstate', this.handlePopState);
+        window.removeEventListener('beforeunload', this.handleBeforeUnloadListener);
+    }
+    destroy() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        if (this.uiSocket) {
+            this.uiSocket.onclose = null;
+            this.uiSocket.close();
+            this.uiSocket = null;
+            this.connected = false;
+        }
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+        this.cleanupEventListeners();
+    }
+
 
     handleNavigation() {
         console.log('Navigation detected (browser back/forward button)');
@@ -334,7 +384,7 @@ class PongGame {
         if (this.uiSocket) {
             console.log('Closing WebSocket connection due to navigation');
             this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.uiSocket.close();
+            this.destroy();
             gameInitialized = false;
             this.uiSocket = null;
             this.connected = false;
@@ -1132,7 +1182,7 @@ class PongGame {
                 if (this.uiSocket) {
                     console.log('Closing WebSocket connection in handleGameEnd');
                     this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
-                    this.uiSocket.close();
+                    this.destroy();
                     gameInitialized = false;
                     this.uiSocket = null;
                     this.connected = false;
@@ -1165,7 +1215,7 @@ class PongGame {
         if (this.uiSocket) {
             console.log('Closing WebSocket connection in handleGameEnd');
             this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
-            this.uiSocket.close();
+            this.destroy();
             gameInitialized = false;
             this.uiSocket = null;
             this.connected = false;

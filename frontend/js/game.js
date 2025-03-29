@@ -4,13 +4,17 @@ let gameInitialized = false;
 
 function loadGame(){
 	console.log("Loading game.")
-    initializeGame();
+    if (gameInitialized == false)
+        initializeGame();
 }
 
 function initGame(){
 	console.log("Initializing game.")
 }
-
+        // Start initialization
+        //this.init().catch(error => {
+        //    console.error('Failed to initialize game:', error);
+        //});
 async function initializeGame() {
     console.log('Loading game script...');
     try {
