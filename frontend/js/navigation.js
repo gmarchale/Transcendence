@@ -32,7 +32,7 @@ async function loadContentFromHash() {
         switch (mainPath){
             case "profile": loadProfile();break;
             case "settings": loadSettings();break;
-            //case "play": loadPlay();break;
+            case "play": loadPlay();break;
             case "game": loadGame();break;
             case "login": loadLogin();break;
             case "register": loadRegister();break;
