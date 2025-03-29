@@ -192,7 +192,8 @@ async function loadMatchHistory() {
                 } else if (isPlayer2) {
                     opponent = game.player1;
                 }
-
+                if (!opponent)
+                {}
                 let opponentName = opponent ? opponent.username : "In Game";
                 let gameResult = "In Game";
                 if (isPlayer1) {
@@ -229,7 +230,8 @@ async function loadMatchHistory() {
 					td.setAttribute("data-label", "Win / Loss");
 					gameCard.appendChild(td);
                 }
-                matchHistoryList.appendChild(gameCard);
+                if (opponentName)
+                    matchHistoryList.appendChild(gameCard);
             });
         } else {
             matchHistoryList.innerHTML = "<p>Aucun match trouvé.</p>";

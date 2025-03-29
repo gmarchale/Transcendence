@@ -330,7 +330,30 @@ class PongGame {
     }
     destroy() {
 
-        
+        if (this.gameId) {
+            console.log(`Sending request to end game ${this.gameId}`);
+            fetch(`/api/game/end/${this.gameId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to end game: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Game ended successfully:', data);
+            })
+            .catch(error => {
+                console.error('Error ending game:', error);
+            });
+        }
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -507,7 +530,8 @@ class PongGame {
                     placeholder.className = "profile_avatar";
                     placeholder.style.backgroundImage = `url('${data2.avatar}')`;
                     placeholder.id = "profile_avatar";
-                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    if (imgElement)
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 else {
                     let imgElement = document.getElementById("player1_avatar");
@@ -515,7 +539,8 @@ class PongGame {
                     placeholder.className = "profile_placeholder";
                     placeholder.textContent = message.game_state.players.player1.username[0];
                     placeholder.id = "player1_avatar";
-                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    if (imgElement)
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 })
             .catch(error => console.error("Error while getting avatar:", error));
