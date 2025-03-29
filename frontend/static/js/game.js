@@ -330,30 +330,7 @@ class PongGame {
     }
     destroy() {
 
-        if (this.gameId) {
-            console.log(`Sending request to end game ${this.gameId}`);
-            fetch(`/api/game/end/${this.gameId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                credentials: 'include',
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to end game: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Game ended successfully:', data);
-            })
-            .catch(error => {
-                console.error('Error ending game:', error);
-            });
-        }
+        
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -530,8 +507,7 @@ class PongGame {
                     placeholder.className = "profile_avatar";
                     placeholder.style.backgroundImage = `url('${data2.avatar}')`;
                     placeholder.id = "profile_avatar";
-                    if (imgElement)
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 else {
                     let imgElement = document.getElementById("player1_avatar");
@@ -539,8 +515,7 @@ class PongGame {
                     placeholder.className = "profile_placeholder";
                     placeholder.textContent = message.game_state.players.player1.username[0];
                     placeholder.id = "player1_avatar";
-                    if (imgElement)
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 })
             .catch(error => console.error("Error while getting avatar:", error));
@@ -1382,70 +1357,6 @@ class PongGame {
 
         console.log('Identity check results - isPlayer1:', isPlayer1, 'isPlayer2:', isPlayer2);
 
-
-        // Update player 1 ready button and name
-        console.log(players.player1.id)
-        console.log(players.player1.username[0])
-
-            // if (players.player1 && this.player1ProfileLoaded == false)
-            // {
-            //     this.player1ProfileLoaded = true;
-            //     fetch("/api/users/get_avatar/" + players.player1.id + "/", {
-            //         method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            //     })
-            //     .then(response => response.json())
-            //     .then(data2 => {
-            //         if (data2.avatar != null)
-            //         {
-            //             let imgElement = document.getElementById("player1_avatar");
-            //             let placeholder = document.createElement("div");
-            //             placeholder.className = "profile_avatar";
-            //             placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-            //             placeholder.id = "profile_avatar";
-            //             imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //         }
-            //         else {
-            //             let imgElement = document.getElementById("player1_avatar");
-            //             let placeholder = document.createElement("div");
-            //             placeholder.className = "profile_placeholder";
-            //             placeholder.textContent = players.player1.username[0];
-            //             placeholder.id = "player1_avatar";
-            //             imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //         }
-
-            //     })
-            //     .catch(error => console.error("Error while getting avatar:", error));
-            // }
-
-            // if (players.player2 && this.player2ProfileLoaded == false)
-            // {
-            //     this.player2ProfileLoaded = true;
-            //         fetch("/api/users/get_avatar/" + players.player2.id + "/", {
-            //             method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            //         })
-            //         .then(response => response.json())
-            //         .then(data2 => {
-            //             if (data2.avatar != null)
-            //             {
-            //                 let imgElement = document.getElementById("player2_avatar");
-            //                 let placeholder = document.createElement("div");
-            //                 placeholder.className = "profile_avatar";
-            //                 placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-            //                 placeholder.id = "profile_avatar";
-            //                 imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //             }
-            //             else {
-            //                 let imgElement = document.getElementById("player2_avatar");
-            //                 let placeholder = document.createElement("div");
-            //                 placeholder.className = "profile_placeholder";
-            //                 placeholder.textContent = players.player2.username[0];
-            //                 placeholder.id = "player2_avatar";
-            //                 imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //             }
-
-            //         })
-            //         .catch(error => console.error("Error while getting avatar:", error));
-            // }
 
         if (players.player1 && this.player1Ready) {
             // Update name
