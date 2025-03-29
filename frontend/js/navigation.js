@@ -9,7 +9,7 @@ async function loadContentFromHash() {
     document.querySelectorAll(".page").forEach(div => {
         div.classList.remove("active");
     });
-    
+
     let loadPage = 1;
     if(mainPath != "login" && mainPath != "register"){
         let result = await loadHeader();
@@ -36,7 +36,7 @@ async function loadContentFromHash() {
             case "game": loadGame();break;
             case "login": loadLogin();break;
             case "register": loadRegister();break;
-			case "friends": loadFriends();break;
+            case "friends": loadFriends();break;
             case "tournament": loadTournament(pathParam);break;
         }
     }
@@ -63,7 +63,7 @@ function preloadPages() {
 		initSettings();
 		initRegister();
 		initChat();
-
+        //initPlay();
 		initFriends();
 		initTournamentButtons();
 		initTournament();
@@ -91,7 +91,7 @@ function updateHashParam(param, value) {
 }
 
 function getHashParam(param) {
-    let params = new URLSearchParams(location.hash.split('?')[1] || ""); 
+    let params = new URLSearchParams(location.hash.split('?')[1] || "");
     return params.get(param);
 }
 

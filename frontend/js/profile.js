@@ -217,15 +217,18 @@ async function loadMatchHistory() {
                     scoreDisplay = `${game.score_player1} - ${game.score_player2}`;
                 }
 
-                let gameCard = document.createElement('div');
-                gameCard.className = "match_card";
-                gameCard.innerHTML = `
-                    <span><strong></strong> ${gameResult}</span> |
-                    <span><strong>score :</strong> ${scoreDisplay}</span> |
-                    <span><strong>played against :</strong> ${opponentName}</span> |
-                    <span><strong>time :</strong> ${game.duration_formatted ? game.duration_formatted : "N/A"}</span> |
-                    <span><strong>date :</strong> ${game.timestamp}</span>
-                `;
+                let gameCard = document.createElement('tr');
+                // gameCard.className = "match_card";
+                for (let i = 0; i < 5; i++){
+                    const td = document.createElement("td");
+                    if (i == 0) td.textContent = gameResult;
+                    else if (i == 1) td.textContent = scoreDisplay;
+                    else if (i == 2) td.textContent = opponentName;
+                    else if (i == 3) td.textContent = game.duration_formatted ? game.duration_formatted : "N/A";
+                    else if (i == 4) td.textContent = game.timestamp;
+					td.setAttribute("data-label", "Win / Loss");
+					gameCard.appendChild(td);
+                }
                 matchHistoryList.appendChild(gameCard);
             });
         } else {

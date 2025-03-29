@@ -4,7 +4,6 @@ let gameInitialized = false;
 
 function loadGame(){
 	console.log("Loading game.")
-    // if(gameInitialized == false)
     initializeGame();
 }
 
@@ -17,8 +16,8 @@ async function initializeGame() {
     try {
         // await loadGameScript();
         console.log('[GAME] Creating game instance...');
-        game = new PongGame();
         gameInitialized = true;
+        game = new PongGame();
         console.log('[GAME] Game instance created successfully');
     } catch (error) {
         console.error('[GAME] Failed to initialize game:', error);

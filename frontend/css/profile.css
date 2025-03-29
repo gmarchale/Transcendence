@@ -205,3 +205,21 @@
     display: inline-block;
     margin-top: 5px;
 }
+
+#match_table {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#match_table th {
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.profile_match-history {
+    text-align: center;
+}

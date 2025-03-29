@@ -37,17 +37,15 @@ function initAuth(){
         const currentCookies = getAllCookies();
         
         Object.keys(previousCookies).forEach(cookieName => {
-            if (cookieName === "csrftoken") {
-                return;
-            }
-
-            if (!modifiedCookies.has(cookieName)) {
-                if (!(cookieName in currentCookies)){
-                    console.error("cookie "+cookieName+" deleted")
-                    cookieLogout();
-                } else if (previousCookies[cookieName] !== currentCookies[cookieName]){
-                    console.error("cookie "+cookieName+" edited from " + previousCookies[cookieName] +" to "+ currentCookies[cookieName])
-                    cookieLogout();
+            if (cookieName !== "csrftoken") {
+                if (!modifiedCookies.has(cookieName)) {
+                    if (!(cookieName in currentCookies)){
+                        console.error("cookie "+cookieName+" deleted")
+                        cookieLogout();
+                    } else if (previousCookies[cookieName] !== currentCookies[cookieName]){
+                        console.error("cookie "+cookieName+" edited from " + previousCookies[cookieName] +" to "+ currentCookies[cookieName])
+                        cookieLogout();
+                    }
                 }
             }
         });
@@ -159,9 +157,10 @@ async function logout(){
         }
     } catch (error) {
         console.error('Error while logging out:', error);
-    } finally {
+    }
+     finally {
         deleteAllCookies();
-        window.location.href = "#login";
+        location.hash = "#login";
     }
     
 }
