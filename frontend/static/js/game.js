@@ -248,7 +248,6 @@ class PongGame {
 
     initializeGameState() {
         // Game state
-        console.log("ICI CA LOAD");
         this.gameStarted = false;
         this.gameId = null;
         this.playerId = null;
@@ -435,22 +434,11 @@ class PongGame {
             const data = JSON.parse(event.data);
             console.log('Received UI WebSocket message:', data);
             this.handleWebSocketMessage(data);
-            //
-            if (data)
-                this.updateProfilePic(data);
-            if (data.game_state)
-                this.updateReadyState(data.game_state);
         };
     }
 
     updateProfilePic(message)
     {
-        if (!message.game_state)
-        {
-            return;
-        }
-        if (!message.game_state.players)
-            return;
         if (message.game_state.players.player1)
         {
             fetch("/api/users/get_avatar/" + message.game_state.players.player1.id + "/", {

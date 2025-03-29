@@ -4,8 +4,7 @@ let gameInitialized = false;
 
 function loadGame(){
 	console.log("Loading game.")
-    if (gameInitialized == false)
-        initializeGame();
+    initializeGame();
 }
 
 function initGame(){
