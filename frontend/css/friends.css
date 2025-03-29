@@ -1,17 +1,208 @@
-/* Friends page styles */
-#friends-page {
+.friends_container {
+    display: block;
+    opacity: 1;
+    margin-top: 1.5rem;
+    margin-right: 1.5rem;
+    margin-bottom: 1.5rem;
+    margin-left: 10%;
+    margin-right: 10%;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    padding-bottom: 1.5rem;
+}
+
+.friends_group {
+    display: flex;
+    width: 100%;
+    text-align: center;
+    align-items: baseline;
+}
+
+.friends_h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #00ff88;
+}
+
+.friends_subgroup {
+    padding: 20px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    width: 100%;
+    text-align: center;
+    margin-top: 1.5rem;
+    height: 350px;
+    /* display: grid; */
+}
+
+.friends_subgroup.right {
+    margin-right: 1.5rem;
+    margin-left: 0.75rem;
+}
+
+.friends_subgroup.left {
+    margin-left: 1.5rem;
+    margin-right: 0.75rem;
+}
+
+/* Start of ADD friends */
+.friends_addinput {
+    width: 100%;
+    padding: 10px;
+    margin-top: 1.5rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+	margin-bottom: 1rem;
+	color: white;
+	background: #2a2a2a;
+}
+
+.friends_addinput::placeholder {
+    color: #747474;
+}
+
+.friends_addbutton {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+    align-self: baseline;
+}
+
+.friends_addbutton:hover {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+}
+/* End of ADD friends */
+
+/* Start of MY friends */
+.friends_list {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    margin-top: 1.5rem;
+}
+
+.friends_list.active {
+    width: 100%;
+    text-align: center;
+    height: 250px;
+    overflow-y: auto;
+    padding: 0;
+    display: block;
+    opacity: 1;
+}
+
+.friends_ul {
+    position: relative;
+    display: flex;
+    opacity: 1;
+    list-style: none;
+    width: 100%;
+    height: 50px;
+    text-align: center;
+    align-items: center;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: opacity 0.3s ease-in-out;}
+
+.friends_username {
+    transition: opacity 0.3s ease-in-out;
+    z-index: 100;
+    text-align: center;
+    width: 100%;
+    position: absolute;
+}
+
+.friends_ul.special {
+    display: flex;
+    gap: 10px;
+    opacity: 1;
+    border: 0px solid #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.friends_ul.remove, .friends_ul.visit {
+    position: absolute;
+    margin: 0;
+    display: flex;
+    opacity: 0;
+    width: calc(50% - 5px);
+    border: 2px solid #00ff88;
+    background: none;
+    color: #00ff88;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    z-index: 110;
+    margin-right: 5px;
+}
+
+.friends_litext {
+    width: 100%;
+    text-align: center;
+}
+
+.friends_ul.remove {
+    left: 50%;
+    margin-left: 5px;
+    margin-right: 0;
+}
+
+.friends_ul.remove:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.friends_ul.visit:hover {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+}
+
+.friends_ul.special .remove,
+.friends_ul.special .visit {
+    opacity: 1;
+}
+/* End of MY friends */
+
+.friends_ul.pending {
+    transition: all 0.3s ease-in-out;
+}
+
+.friends_ul.pending:hover {
+    background-color: #dc3545;
+    color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+
+/* #friends-page {
     padding: 20px;
     max-width: 800px;
     margin: 0 auto;
-}
+} */
 
-#friends-list {
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
-}
-
-.friend-item {
+/* .friend-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -46,4 +237,4 @@
     text-align: center;
     padding: 20px;
     color: #666;
-}
+} */
