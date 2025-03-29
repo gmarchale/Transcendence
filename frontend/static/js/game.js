@@ -329,6 +329,8 @@ class PongGame {
         window.removeEventListener('beforeunload', this.handleBeforeUnloadListener);
     }
     destroy() {
+
+        
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;

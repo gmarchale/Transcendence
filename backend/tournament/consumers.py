@@ -61,10 +61,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             # Si le match est en cours et qu'un joueur se déconnecte
             if self.active_match.status == 'in_progress':
                 # Détermine le gagnant (l'autre joueur)
-                winner = self.active_match.player2 if self.user == self.active_match.player1 else self.active_match.player1
+                #winner = self.active_match.player2 if self.user == self.active_match.player1 else self.active_match.player1
                 
                 # Met à jour le match
-                self.active_match.winner = winner
+                #self.active_match.winner = winner
                 self.active_match.status = 'completed'
                 self.active_match.ended_at = timezone.now()
                 self.active_match.save()
@@ -81,7 +81,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 if self.active_match.round_number == math.ceil(math.log2(tournament.players.count())):
                     # C'était la finale
                     tournament.status = 'completed'
-                    tournament.winner = winner
+                 #   tournament.winner = winner
                     tournament.ended_at = timezone.now()
                     tournament.save()
                 else:
@@ -139,7 +139,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                             'type': 'match_update',
                             'match_id': result['match_id'],
                             'status': 'completed',
-                            'winner_id': result['winner_id'],
+                            #'winner_id': result['winner_id'],
                             'forfeit': True,
                             'forfeited_by': self.user.id,
                             'reason': 'disconnected'
