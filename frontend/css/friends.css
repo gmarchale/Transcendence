@@ -185,6 +185,7 @@
 }
 /* End of MY friends */
 
+/* Start of PENDING friends */
 .friends_ul.pending {
     transition: all 0.3s ease-in-out;
 }
@@ -193,6 +194,30 @@
     background-color: #dc3545;
     color: white;
     transition: all 0.3s ease-in-out;
+}
+/* End of PENDING friends */
+
+.friends_list_empty {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.friends_list_empty.active{
+    display: block;
+    opacity: 1;
+    padding: 0;
+
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* Edge */
+
+    color: #dc3545;
+    font-size: 1.5rem;
+    text-align: center;
+    align-content: center;
+    margin: 0;
 }
 
 

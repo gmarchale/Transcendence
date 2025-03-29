@@ -37,8 +37,8 @@ async function fetchFriends() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
+        let friendsUl = document.getElementById("friendsList");
         if (data.mutual_friends && data.mutual_friends.length > 0) {
-            let friendsUl = document.getElementById("friendsList");
             friendsUl.innerHTML = "";
 
             data.mutual_friends.forEach(friend => {
@@ -94,6 +94,7 @@ async function fetchFriends() {
                         const data = await response.json();
                         showNotification(getTranslation("profile_friend_removed")+friend.username, "success");
                         friendsUl.removeChild(li);
+                        loadFriends();
                     } catch (error) {
                         console.error('Error logging out:', error);
                     }
@@ -108,7 +109,19 @@ async function fetchFriends() {
                 });
             });
         } else {
-            console.warn("Aucun ami trouvé.");
+            if (!friendsUl.querySelector(".friends_list_empty")) {
+                let noBlockedUl = document.createElement("ul");
+                noBlockedUl.classList.add("friends_list_empty");
+                noBlockedUl.classList.add("active");
+                noBlockedUl.id = "friends_list_empty";
+    
+                let noBlockedP = document.createElement("p");
+                noBlockedP.id = "friends_list_empty";
+                noBlockedP.textContent = getTranslation("friends_not_friends");
+                
+                noBlockedUl.appendChild(noBlockedP);
+                friendsUl.appendChild(noBlockedUl);   
+            }
         }
     })
     .catch(error => console.error("Error while getting friend list :", error));
@@ -123,8 +136,8 @@ async function fetchPendingUsers() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
+        let pendingUsersUl = document.getElementById("pendingList");
         if (data.pending && data.pending.length > 0) {
-            let pendingUsersUl = document.getElementById("pendingList");
             pendingUsersUl.innerHTML = "";
 
             data.pending.forEach(pendingUser => {
@@ -163,6 +176,7 @@ async function fetchPendingUsers() {
                         const data = await response.json();
                         showNotification(getTranslation("profile_friend_cancelled"), "success");
                         pendingUsersUl.removeChild(li);
+                        loadFriends();
                     } catch (error) {
                         console.error('Error logging out:', error);
                     }
@@ -177,7 +191,19 @@ async function fetchPendingUsers() {
                 });
             });
         } else {
-            console.warn("No pending users found.");
+            if (!pendingUsersUl.querySelector(".friends_list_empty")) {
+                let noBlockedUl = document.createElement("ul");
+                noBlockedUl.classList.add("friends_list_empty");
+                noBlockedUl.classList.add("active");
+                noBlockedUl.id = "friends_list_empty";
+
+                let noBlockedP = document.createElement("p");
+                noBlockedP.id = "friends_list_empty";
+                noBlockedP.textContent = getTranslation("friends_not_pending");
+                
+                noBlockedUl.appendChild(noBlockedP);
+                pendingUsersUl.appendChild(noBlockedUl);
+            }
         }
     })
     .catch(error => console.error("Error while getting pending users list:", error));
@@ -192,8 +218,8 @@ async function fetchWaitingUsers() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
+        let waitingUsersUl = document.getElementById("waitingList");
         if (data.waiting && data.waiting.length > 0) {
-            let waitingUsersUl = document.getElementById("waitingList");
             waitingUsersUl.innerHTML = "";
 
             data.waiting.forEach(waitingUser => {
@@ -263,6 +289,7 @@ async function fetchWaitingUsers() {
                         const data = await response.json();
                         showNotification(getTranslation("profile_friend_refused"), "success");
                         waitingUsersUl.removeChild(li);
+                        loadFriends();
                     } catch (error) {
                         console.error('Error logging out:', error);
                     }
@@ -277,7 +304,19 @@ async function fetchWaitingUsers() {
                 });
             });
         } else {
-            console.warn("No waiting users found.");
+            if (!waitingUsersUl.querySelector(".friends_list_empty")) {
+                let noBlockedUl = document.createElement("ul");
+                noBlockedUl.classList.add("friends_list_empty");
+                noBlockedUl.classList.add("active");
+                noBlockedUl.id = "friends_list_empty";
+
+                let noBlockedP = document.createElement("p");
+                noBlockedP.id = "friends_list_empty";
+                noBlockedP.textContent = getTranslation("friends_not_waiting");
+                
+                noBlockedUl.appendChild(noBlockedP);
+                waitingUsersUl.appendChild(noBlockedUl);
+            }
         }
     })
     .catch(error => console.error("Error while getting waiting users list:", error));

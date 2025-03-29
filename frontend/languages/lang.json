@@ -31,8 +31,11 @@
 		"chat_block": "Bloquer",
 
 		"friends_addfriend" : "Ajouter un ami",
-		"friends_blocked" : "Utilisateurs bloqués:",
-		"friends_myfriends" : "Mes amis:",
+		"friends_pendingfriend" : "Requêtes en attente:",
+		"friends_waitingfriend" : "Demande recues:",
+		"friends_myfriend" : "Mes amis:",
+		"friends_add": "Ajouter",
+		"friendInput": "Ajouter un ami via le nom d'utilisateur",
 
 		"game_creategame" : "Créer une Partie",
 		"game_joingame" : "Rejoindre une Partie",
@@ -95,8 +98,11 @@
 		"chat_block": "Block",
 
 		"friends_addfriend" : "Add friend",
-		"friends_blocked" : "Users blocked:",
-		"friends_myfriends" : "My friends:",
+		"friends_pendingfriend" : "Requests sent:",
+		"friends_waitingfriend" : "Requests received:",
+		"friends_myfriend" : "My friends:",
+		"friends_add": "Add",
+		"friendInput": "Add friend from username",
 
 		"game_creategame" : "Create a Game",
 		"game_joingame" : "Join a Game",
@@ -121,6 +127,8 @@
 		"tournament_games" : "Games",
 		"tournament_players" : "Players",
 		"tournamentNotFound" : "Tournament not found!",
+
+		"friends_addfriends": "Add friend",
 
 		"header_profilebutton": "Profile",
 		"header_settingsbutton": "Settings",

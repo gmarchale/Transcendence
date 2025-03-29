@@ -1,24 +1,24 @@
 <div id="friends_container" class="friends_container">
     <div class="friends_group">
         <div class="friends_subgroup left">
-            <h2 class="friends_h2">Add Friends</h2>
-            <input class="friends_addinput" type="text" id="friendInput" placeholder="Type the name of a friend">
-            <button class="friends_addbutton" onclick="addFriend()">Add</button>
+            <h2 class="friends_h2" id="friends_addfriend"></h2>
+            <input class="friends_addinput" type="text" id="friendInput">
+            <button class="friends_addbutton" onclick="addFriend()" id="friends_add"></button>
         </div>
     
         <div class="friends_subgroup right">
-            <h2 class="friends_h2">My Friends</h2>
+            <h2 class="friends_h2" id="friends_myfriend"></h2>
             <ul class="friends_list active" id="friendsList"></ul>
         </div>
     </div>
     <div class="friends_group">
         <div class="friends_subgroup left">
-            <h2 class="friends_h2">Pending</h2>
+            <h2 class="friends_h2" id="friends_pendingfriend"></h2>
             <ul class="friends_list active" id="pendingList"></ul>
         </div>
     
         <div class="friends_subgroup right">
-            <h2 class="friends_h2">Waiting</h2>
+            <h2 class="friends_h2" id="friends_waitingfriend"></h2>
             <ul class="friends_list active" id="waitingList"></ul>
         </div>
     </div>

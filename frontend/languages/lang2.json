@@ -56,6 +56,10 @@
 
 		"play_waiting_player": "En attente de joueur..",
 
+		"friends_not_waiting": "Aucune demande recues.",
+		"friends_not_pending": "Aucune requêtes envoyées.",
+		"friends_not_friends": "Aucun ami trouvé.",
+
 		"settings_unblock_button": "Débloquer ",
 		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !",
 		"settings_avatar_upload_success": "Votre avatar a été mis à jour!",
@@ -121,6 +125,10 @@
 		"tournament_five_min" : "5 minutes to join or 1 minute once opponent is ready",
 
 		"play_waiting_player": "Waiting for player..",
+
+		"friends_not_waiting": "No request received.",
+		"friends_not_pending": "No request sent.",
+		"friends_not_friends": "No friend found.",
 
 		"settings_unblock_button": "Unblock ",
 		"settings_select_png": "Please only select a JPEG or PNG file.",
