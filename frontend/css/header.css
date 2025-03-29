@@ -241,6 +241,7 @@ body {
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
     white-space: pre-line;
     line-height: 1.5;
+    z-index: -1;
 }
 
 .notification.success {
