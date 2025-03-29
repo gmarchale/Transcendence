@@ -59,6 +59,10 @@
 		"friends_not_waiting": "Aucune demande recues.",
 		"friends_not_pending": "Aucune requêtes envoyées.",
 		"friends_not_friends": "Aucun ami trouvé.",
+		"friends_enterusername": "Veuillez indiquer un nom d'utilisateur.",
+		"friends_notfound": "Utilisateur inconnu.",
+		"friends_asked": "Demande d'ami envoyée!",
+		"friends_already_friend": " est déja votre ami ou une demande lui à déjà été envoyée.",
 
 		"settings_unblock_button": "Débloquer ",
 		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !",
@@ -129,6 +133,10 @@
 		"friends_not_waiting": "No request received.",
 		"friends_not_pending": "No request sent.",
 		"friends_not_friends": "No friend found.",
+		"friends_enterusername": "Please enter a username.",
+		"friends_notfound": "User not found.",
+		"friends_asked": "Friend request sent!",
+		"friends_already_friend": " is already your friend or a request as already been sent to him.",
 
 		"settings_unblock_button": "Unblock ",
 		"settings_select_png": "Please only select a JPEG or PNG file.",

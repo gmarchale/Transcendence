@@ -1,9 +1,5 @@
 async function loadFriends(){
 	console.log("Loading friends.")
-	// document.getElementById("friendsList").classList.add("active");
-	// document.getElementById("pendingList").classList.add("active");
-	// document.getElementById("waitingList").classList.add("active");
-	// document.getElementById("blockedList").classList.add("active");
 	fetchPendingUsers();
 	fetchFriends();
 	fetchBlockedUsers();
@@ -18,13 +14,22 @@ function initFriends(){
 
 async function addFriend() {
 	const friendInput = document.getElementById('friendInput').value;
-	if (!friendInput) return alert('enter a name');
-	await fetch('/api/chat/add_friend_username/', {
+	if (!friendInput) return showNotification(getTranslation("friends_enterusername"), "error");
+	const response = await fetch('/api/chat/add_friend_username/', {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
 		body: JSON.stringify({id_user_1: friendInput})
 	});
-	loadFriends(); // Refresh the friends list
+    if(response.ok) {
+        showNotification(getTranslation("friends_asked"));
+        loadFriends();
+    } else {
+        const data = await response.json();
+        console.warn(data.message);
+        if(data.message.includes("already")){
+            showNotification(friendInput + getTranslation("friends_already_friend"), "error");
+        } else showNotification(getTranslation("friends_notfound"), "error");
+    }
 }
 
 
@@ -38,8 +43,8 @@ async function fetchFriends() {
     .then(data => {
         console.log("Response data:", data);
         let friendsUl = document.getElementById("friendsList");
+        friendsUl.innerHTML = "";
         if (data.mutual_friends && data.mutual_friends.length > 0) {
-            friendsUl.innerHTML = "";
 
             data.mutual_friends.forEach(friend => {
                 let li = document.createElement("li");
@@ -137,8 +142,8 @@ async function fetchPendingUsers() {
     .then(data => {
         console.log("Response data:", data);
         let pendingUsersUl = document.getElementById("pendingList");
+        pendingUsersUl.innerHTML = "";
         if (data.pending && data.pending.length > 0) {
-            pendingUsersUl.innerHTML = "";
 
             data.pending.forEach(pendingUser => {
                 let li = document.createElement("li");
@@ -219,8 +224,8 @@ async function fetchWaitingUsers() {
     .then(data => {
         console.log("Response data:", data);
         let waitingUsersUl = document.getElementById("waitingList");
+        waitingUsersUl.innerHTML = "";
         if (data.waiting && data.waiting.length > 0) {
-            waitingUsersUl.innerHTML = "";
 
             data.waiting.forEach(waitingUser => {
                 let li = document.createElement("li");
