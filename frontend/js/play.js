@@ -6,9 +6,6 @@ function loadPlay() {
         return;
     }
 
-    if (game) {
-        console.log("game existe!");
-    }
 
     const hash = window.location.hash;
     const match = hash.match(/#play\/(\d+)/);
