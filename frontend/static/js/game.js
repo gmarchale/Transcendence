@@ -1168,7 +1168,7 @@ class PongGame {
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
 
-                if (this.playerId == data.winner_id) { // Si le joueur a gagne
+                if (this.playerId == data.winner_id) { // if player wins
                     if (tournamentId) {
                         window.location.href = `#tournament/${tournamentId}`;
                     } else {
@@ -1177,10 +1177,9 @@ class PongGame {
                     }
 
                 }
-                else // si le joueur a perdu
+                else
                 {
                     window.location.href = `#game`;
-                    // need to fix boutons when getting redirected (just reload page?)
                 }
             };
         } else {

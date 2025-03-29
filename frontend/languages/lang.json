@@ -61,10 +61,10 @@
 		"tournament_players" : "Joueurs",
 		"tournamentNotFound" : "Tournoi inconnu!",
 
-		"header_profilebutton": "Profile",
+		"header_profilebutton": "Profil",
 		"header_settingsbutton": "Paramètres",
 		"header_friendsbutton": "Amis",
-		"header_logoutbutton": "Déconexion"
+		"header_logoutbutton": "Déconnexion"
     },
     "en": {
         "settings_new_username": "Edit Username :",
