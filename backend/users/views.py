@@ -95,15 +95,18 @@ def oauth_callback(request):
     login(request, user)
 
     avatar_url = None
+    username = None    
     if created:
         avatar_url = update_user_avatar(user, user_data["image"]["link"])
+        username = user_data["login"]
     else:
+        username = user.get_username()
         if user.avatar:
             avatar_url = user.avatar.url
             if not avatar_url.startswith('http'):
                 avatar_url = request.build_absolute_uri(avatar_url)
 
-    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(user_data["login"])+"&avatar="+(avatar_url or "null"))
+    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(username)+"&avatar="+(avatar_url or "null"))
 
 
 @api_view(["GET"])
