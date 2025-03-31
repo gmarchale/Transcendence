@@ -75,3 +75,17 @@ function isRegexUsername(value, showErr) {
         return 0;
     }
 }
+
+function isRegexEmail(value, showErr) {
+    var regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (regex.test(value)) {
+        return 1;
+    } else {
+        if(showErr == 1)
+            showError(getTranslation("global_regexemail"));
+        else
+            showNotification(getTranslation("global_regexemail"), "error");
+        return 0;
+    }
+}

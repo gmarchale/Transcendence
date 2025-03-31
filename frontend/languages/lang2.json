@@ -7,6 +7,7 @@
 		"global_notready" : "Pas prêt",
 		"global_ready" : "Prêt!",
 		"global_regexusername": "Nom d'utilisateur mal formaté.",
+		"global_regexemail": "Email mal formaté.",
 
         "profile_block_manage_block": "Bloquer",
 		"profile_block_manage_unblock": "Débloquer",
@@ -87,6 +88,7 @@
 		"global_notready" : "Not Ready",
 		"global_ready" : "Ready!",
 		"global_regexusername": "Username format is incorrect.",
+		"global_regexemail": "Email format is incorrect.",
 
         "profile_block_manage_block": "Block",
 		"profile_block_manage_unblock": "Unblock",
