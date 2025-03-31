@@ -333,7 +333,7 @@ class PongGame {
     }
     destroy() {
 
-        
+
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -1162,24 +1162,34 @@ class PongGame {
             homeButton.onclick = () => {
                 document.body.removeChild(overlay);
                 // Get tournament ID from localStorage if available
-                const tournamentId = localStorage.getItem('currentTournamentId');
+                //const tournamentId = localStorage.getItem('currentTournamentId');
 
                 // Clear localStorage values
+
+                const tournamentId = data.tournament_id || localStorage.getItem('currentTournamentId');
+
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
 
-                if (this.playerId == data.winner_id) { // if player wins
+                if (this.uiSocket) {
+                    console.log('Closing WebSocket connection in handleGameEnd');
+                    this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+                    this.destroy();
+                    gameInitialized = false;
+                    this.uiSocket = null;
+                    this.connected = false;
+                }
+
+                if (this.playerId == data.winner_id) { // si le joueur gagnant
                     if (tournamentId) {
+                        console.log("ICI C'EST LE AAA");
+                        console.log(tournamentId);
                         window.location.href = `#tournament/${tournamentId}`;
                     } else {
-                        // Fallback to tournaments list
-                        window.location.href = '#tournaments';
+                        window.location.href = '#caca';
                     }
-
-                }
-                else
-                {
-                    window.location.href = `#game`;
+                } else {
+                    window.location.href = '#game';
                 }
             };
         } else {
