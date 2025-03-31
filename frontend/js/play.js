@@ -1,10 +1,10 @@
 function loadPlay() {
     console.log("Loading play.");
 
-    if (gameInitialized == false) {
-        window.location.href = `#game`;
-        return;
-    }
+    // if (gameInitialized == false) {
+    //     window.location.href = `#game`;
+    //     return;
+    // }
 
 
     const hash = window.location.hash;

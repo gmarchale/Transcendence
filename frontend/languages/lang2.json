@@ -19,6 +19,7 @@
 		"profile_friend_requested": "Demande d'ami envoyée!",
 		"profile_friend_userisblocked": "Vous ne pouvez pas demander en ami un utilisateur que vous avez bloqué!",
 		"profile_friend_removed": "Vous n'êtes plus amis avec ",
+		"profile_friend_refused": "Demande d'ami refusée!",
 		"profile_friend_accepted": "Vous avez accepté la demande d'ami!",
 		"profile_block_unblocked_success": "Utilisateur débloqué avec succès!",
 		"profile_block_success": "Utilisateur bloqué!",
@@ -55,6 +56,14 @@
 
 		"play_waiting_player": "En attente de joueur..",
 
+		"friends_not_waiting": "Aucune demande recues.",
+		"friends_not_pending": "Aucune requêtes envoyées.",
+		"friends_not_friends": "Aucun ami trouvé.",
+		"friends_enterusername": "Veuillez indiquer un nom d'utilisateur.",
+		"friends_notfound": "Utilisateur inconnu.",
+		"friends_asked": "Demande d'ami envoyée!",
+		"friends_already_friend": " est déja votre ami ou une demande lui à déjà été envoyée.",
+
 		"settings_unblock_button": "Débloquer ",
 		"settings_select_png": "Veuillez sélectionner un fichier JPEG ou PNG !",
 		"settings_avatar_upload_success": "Votre avatar a été mis à jour!",
@@ -84,6 +93,7 @@
 		"profile_friend_requested": "Friend request successfully sent!",
 		"profile_friend_userisblocked": "You can't be friend with a user you blocked!",
 		"profile_friend_removed": "You're no longer friend with ",
+		"profile_friend_refused": "Friend request denied!",
 		"profile_friend_accepted": "Friend request accepted!",
 		"profile_block_unblocked_success": "User successfully unblocked!",
 		"profile_block_success": "User bocked!",
@@ -119,6 +129,14 @@
 		"tournament_five_min" : "5 minutes to join or 1 minute once opponent is ready",
 
 		"play_waiting_player": "Waiting for player..",
+
+		"friends_not_waiting": "No request received.",
+		"friends_not_pending": "No request sent.",
+		"friends_not_friends": "No friend found.",
+		"friends_enterusername": "Please enter a username.",
+		"friends_notfound": "User not found.",
+		"friends_asked": "Friend request sent!",
+		"friends_already_friend": " is already your friend or a request as already been sent to him.",
 
 		"settings_unblock_button": "Unblock ",
 		"settings_select_png": "Please only select a JPEG or PNG file.",

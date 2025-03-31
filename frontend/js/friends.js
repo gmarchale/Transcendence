@@ -1,9 +1,5 @@
 async function loadFriends(){
 	console.log("Loading friends.")
-	document.getElementById("friendsList").classList.add("active");
-	document.getElementById("pendingList").classList.add("active");
-	document.getElementById("waitingList").classList.add("active");
-	document.getElementById("blockedList").classList.add("active");
 	fetchPendingUsers();
 	fetchFriends();
 	fetchBlockedUsers();
@@ -18,13 +14,22 @@ function initFriends(){
 
 async function addFriend() {
 	const friendInput = document.getElementById('friendInput').value;
-	if (!friendInput) return alert('enter a name');
-	await fetch('/api/chat/add_friend_username/', {
+	if (!friendInput) return showNotification(getTranslation("friends_enterusername"), "error");
+	const response = await fetch('/api/chat/add_friend_username/', {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
 		body: JSON.stringify({id_user_1: friendInput})
 	});
-	loadFriends(); // Refresh the friends list
+    if(response.ok) {
+        showNotification(getTranslation("friends_asked"));
+        loadFriends();
+    } else {
+        const data = await response.json();
+        console.warn(data.message);
+        if(data.message.includes("already")){
+            showNotification(friendInput + getTranslation("friends_already_friend"), "error");
+        } else showNotification(getTranslation("friends_notfound"), "error");
+    }
 }
 
 
@@ -37,23 +42,91 @@ async function fetchFriends() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
+        let friendsUl = document.getElementById("friendsList");
+        friendsUl.innerHTML = "";
         if (data.mutual_friends && data.mutual_friends.length > 0) {
-            let friendsUl = document.getElementById("friendsList");
-            friendsUl.innerHTML = "";
 
             data.mutual_friends.forEach(friend => {
                 let li = document.createElement("li");
-                li.textContent = friend.username;
-                li.classList.add("friend-item");
+                li.classList.add("friends_ul");
+
+                let usernameSpan = document.createElement("span");
+                usernameSpan.classList.add("friends_username");
+                usernameSpan.textContent = friend.username;
+                
+                let li1 = document.createElement("li");
+                let li2 = document.createElement("li");
+                let li1text = document.createElement("span");
+                let li2text = document.createElement("span");
+                li1text.classList.add("friends_litext");
+                li2text.classList.add("friends_litext");
+                li1text.textContent = "Visit profile";
+                li2text.textContent = "Remove friend";
+                li1.classList.add("friends_ul", "visit");
+                li2.classList.add("friends_ul", "remove");
+                li1.appendChild(li1text);
+                li2.appendChild(li2text);
+
+                li.appendChild(li1);
+                li.appendChild(usernameSpan);
+                li.appendChild(li2);
+                function hover(){
+                    li.classList.add("special");
+                    usernameSpan.style.opacity = "0";
+                }
+
+                function unhover(){
+                    li.classList.remove("special");
+                    usernameSpan.style.opacity = "1";
+                }
+
                 li.dataset.friendId = friend.id;
                 friendsUl.appendChild(li);
 
-                li.addEventListener("click", function () {
+                li1.addEventListener("click", function () {
                     window.location.href = `#profile?id=${friend.id}`;
+                });
+
+                li2.addEventListener("click", async function () {
+                    try {
+                        console.log("Managing friendship with "+ friend.id);
+            
+                        const response = await fetch('/api/chat/delete_friend_user/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                            body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: friend.id })
+                        });
+                        const data = await response.json();
+                        showNotification(getTranslation("profile_friend_removed")+friend.username, "success");
+                        friendsUl.removeChild(li);
+                        loadFriends();
+                    } catch (error) {
+                        console.error('Error logging out:', error);
+                    }
+                });
+
+                li.addEventListener("mouseenter", () => {
+                    hover();
+                });
+
+                li.addEventListener("mouseleave", () => {
+                    unhover();
                 });
             });
         } else {
-            console.warn("Aucun ami trouvé.");
+            if (!friendsUl.querySelector(".friends_list_empty")) {
+                let noBlockedUl = document.createElement("ul");
+                noBlockedUl.classList.add("friends_list_empty");
+                noBlockedUl.classList.add("active");
+                noBlockedUl.id = "friends_list_empty";
+    
+                let noBlockedP = document.createElement("p");
+                noBlockedP.id = "friends_list_empty";
+                noBlockedP.textContent = getTranslation("friends_not_friends");
+                
+                noBlockedUl.appendChild(noBlockedP);
+                friendsUl.appendChild(noBlockedUl);   
+            }
         }
     })
     .catch(error => console.error("Error while getting friend list :", error));
@@ -68,23 +141,74 @@ async function fetchPendingUsers() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
+        let pendingUsersUl = document.getElementById("pendingList");
+        pendingUsersUl.innerHTML = "";
         if (data.pending && data.pending.length > 0) {
-            let pendingUsersUl = document.getElementById("pendingList");
-            pendingUsersUl.innerHTML = "";
 
             data.pending.forEach(pendingUser => {
                 let li = document.createElement("li");
-                li.textContent = pendingUser.username;
-                li.classList.add("pending-user-item");
+                li.classList.add("friends_ul", "pending");
+
+                let usernameSpan = document.createElement("span");
+                usernameSpan.classList.add("friends_username");
+                usernameSpan.textContent = pendingUser.username;
+
+                li.appendChild(usernameSpan);
+                function hover(){
+                    setTimeout(() => {
+                        usernameSpan.textContent = "Cancel request";
+                    }, 100);
+                }
+
+                function unhover(){
+                    setTimeout(() => {
+                        usernameSpan.textContent = pendingUser.username;
+                    }, 100);
+                }
+
                 li.dataset.pendingUserId = pendingUser.id;
                 pendingUsersUl.appendChild(li);
 
-                li.addEventListener("click", function () {
-                    window.location.href = `#profile?id=${pendingUser.id}`;
+                li.addEventListener("click", async function () {
+                    try {
+                        console.log("Managing friendship with "+ pendingUser.id);
+            
+                        const response = await fetch('/api/chat/delete_friend_user/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                            body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: pendingUser.id })
+                        });
+                        const data = await response.json();
+                        showNotification(getTranslation("profile_friend_cancelled"), "success");
+                        pendingUsersUl.removeChild(li);
+                        loadFriends();
+                    } catch (error) {
+                        console.error('Error logging out:', error);
+                    }
+                });
+
+                li.addEventListener("mouseenter", () => {
+                    hover();
+                });
+
+                li.addEventListener("mouseleave", () => {
+                    unhover();
                 });
             });
         } else {
-            console.warn("No pending users found.");
+            if (!pendingUsersUl.querySelector(".friends_list_empty")) {
+                let noBlockedUl = document.createElement("ul");
+                noBlockedUl.classList.add("friends_list_empty");
+                noBlockedUl.classList.add("active");
+                noBlockedUl.id = "friends_list_empty";
+
+                let noBlockedP = document.createElement("p");
+                noBlockedP.id = "friends_list_empty";
+                noBlockedP.textContent = getTranslation("friends_not_pending");
+                
+                noBlockedUl.appendChild(noBlockedP);
+                pendingUsersUl.appendChild(noBlockedUl);
+            }
         }
     })
     .catch(error => console.error("Error while getting pending users list:", error));
@@ -99,23 +223,105 @@ async function fetchWaitingUsers() {
     .then(response => response.json())
     .then(data => {
         console.log("Response data:", data);
+        let waitingUsersUl = document.getElementById("waitingList");
+        waitingUsersUl.innerHTML = "";
         if (data.waiting && data.waiting.length > 0) {
-            let waitingUsersUl = document.getElementById("waitingList");
-            waitingUsersUl.innerHTML = "";
 
             data.waiting.forEach(waitingUser => {
                 let li = document.createElement("li");
-                li.textContent = waitingUser.username;
-                li.classList.add("waiting-user-item");
+                li.classList.add("friends_ul");
+
+                let usernameSpan = document.createElement("span");
+                usernameSpan.classList.add("friends_username");
+                usernameSpan.textContent = waitingUser.username;
+                
+                let li1 = document.createElement("li");
+                let li2 = document.createElement("li");
+                let li1text = document.createElement("span");
+                let li2text = document.createElement("span");
+                li1text.classList.add("friends_litext");
+                li2text.classList.add("friends_litext");
+                li1text.textContent = "Accept request";
+                li2text.textContent = "Deny request";
+                li1.classList.add("friends_ul", "visit");
+                li2.classList.add("friends_ul", "remove");
+                li1.appendChild(li1text);
+                li2.appendChild(li2text);
+
+                li.appendChild(li1);
+                li.appendChild(usernameSpan);
+                li.appendChild(li2);
+                function hover(){
+                    li.classList.add("special");
+                    usernameSpan.style.opacity = "0";
+                }
+
+                function unhover(){
+                    li.classList.remove("special");
+                    usernameSpan.style.opacity = "1";
+                }
+
                 li.dataset.waitingUserId = waitingUser.id;
                 waitingUsersUl.appendChild(li);
 
-                li.addEventListener("click", function () {
-                    window.location.href = `#profile?id=${waitingUser.id}`;
+                li1.addEventListener("click", async function () {
+                    try {
+                        console.log("Managing friendship with "+ waitingUser.id);
+            
+                        const response = await fetch('/api/chat/add_friend_user/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                            body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: waitingUser.id })
+                        });
+                        const data = await response.json();
+                        showNotification(getTranslation("profile_friend_accepted"), "success");
+                        waitingUsersUl.removeChild(li);
+                        loadFriends();
+                    } catch (error) {
+                        console.error('Error logging out:', error);
+                    }
+                });
+
+                li2.addEventListener("click", async function () {
+                    try {
+                        console.log("Managing friendship with "+ waitingUser.id);
+            
+                        const response = await fetch('/api/chat/delete_friend_user/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                            body: JSON.stringify({ id_user_0: getCookie("id"), id_user_1: waitingUser.id })
+                        });
+                        const data = await response.json();
+                        showNotification(getTranslation("profile_friend_refused"), "success");
+                        waitingUsersUl.removeChild(li);
+                        loadFriends();
+                    } catch (error) {
+                        console.error('Error logging out:', error);
+                    }
+                });
+
+                li.addEventListener("mouseenter", () => {
+                    hover();
+                });
+
+                li.addEventListener("mouseleave", () => {
+                    unhover();
                 });
             });
         } else {
-            console.warn("No waiting users found.");
+            if (!waitingUsersUl.querySelector(".friends_list_empty")) {
+                let noBlockedUl = document.createElement("ul");
+                noBlockedUl.classList.add("friends_list_empty");
+                noBlockedUl.classList.add("active");
+                noBlockedUl.id = "friends_list_empty";
+
+                let noBlockedP = document.createElement("p");
+                noBlockedP.id = "friends_list_empty";
+                noBlockedP.textContent = getTranslation("friends_not_waiting");
+                
+                noBlockedUl.appendChild(noBlockedP);
+                waitingUsersUl.appendChild(noBlockedUl);
+            }
         }
     })
     .catch(error => console.error("Error while getting waiting users list:", error));

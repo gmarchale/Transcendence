@@ -61,10 +61,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             # Si le match est en cours et qu'un joueur se déconnecte
             if self.active_match.status == 'in_progress':
                 # Détermine le gagnant (l'autre joueur)
-                #winner = self.active_match.player2 if self.user == self.active_match.player1 else self.active_match.player1
-                
+                winner = self.active_match.player2 if self.user == self.active_match.player1 else self.active_match.player1
+
                 # Met à jour le match
-                #self.active_match.winner = winner
+                self.active_match.winner = winner
                 self.active_match.status = 'completed'
                 self.active_match.ended_at = timezone.now()
                 self.active_match.save()
@@ -87,11 +87,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 else:
                     # Vérifie si l'autre match de la paire est terminé
                     next_match_number = (self.active_match.match_number + 1) // 2
-                    
+
                     # Find the paired match in the current round
                     # For match 1, the pair is match 2; for match 3, the pair is match 4, etc.
                     pair_match_number = self.active_match.match_number + 1 if self.active_match.match_number % 2 == 1 else self.active_match.match_number - 1
-                    
+
                     current_round_matches = TournamentMatch.objects.filter(
                         tournament=tournament,
                         round_number=self.active_match.round_number,
@@ -103,14 +103,14 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
                     if all(m.status == 'completed' for m in current_round_matches):
                         winners = [m.winner for m in current_round_matches]
-                        
+
                         # Find the existing match in the next round instead of creating a new one
                         next_match = TournamentMatch.objects.get(
                             tournament=tournament,
                             round_number=self.active_match.round_number + 1,
                             match_number=next_match_number
                         )
-                        
+
                         # Update the match with the winners
                         next_match.player1 = winners[0]
                         next_match.player2 = winners[1] if len(winners) > 1 else None
@@ -184,7 +184,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'round_size': event['round_size'],
             'players': event['players']
         }))
-        
+
 
     async def match_update(self, event):
         # Send match update to client
@@ -234,11 +234,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             message_type = content.get('type')
             logger.info(f"Received WebSocket message: {message_type}")
-            
+
             # Add any WebSocket message handling here if needed in the future
         except Exception as e:
             logger.error(f"Error in receive_json: {str(e)}", exc_info=True)
-    
+
     @database_sync_to_async
     def get_match_by_game_id(self, game_id):
         """Get tournament match by game ID"""
@@ -250,7 +250,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 game_id=game_id,
                 status='in_progress'
             ).first()
-            
+
             if not match:
                 print(f"[DEBUG] No in_progress match found, trying without status filter")
                 # If not found, try without the status filter
@@ -258,7 +258,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     tournament_id=self.tournament_id,
                     game_id=game_id
                 ).first()
-                
+
             if not match:
                 print(f"[DEBUG] No match found in tournament {self.tournament_id}, trying all tournaments")
                 # If still not found, try all tournaments
@@ -267,14 +267,14 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 ).first()
                 if match:
                     print(f"[DEBUG] Found match in tournament {match.tournament_id} instead of {self.tournament_id}")
-            
+
             print(f"[DEBUG] Final match lookup result: {match}")
             return match
         except Exception as e:
             print(f"[DEBUG] Error getting match by game ID: {str(e)}")
             logger.error(f"Error getting match by game ID: {str(e)}")
             return None
-            
+
     @database_sync_to_async
     def get_user_by_id(self, user_id):
         """Get user by ID"""
@@ -285,42 +285,42 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error getting user by ID: {str(e)}")
             return None
-            
+
     @database_sync_to_async
     def update_match_with_winner(self, match, winner):
         """Update match with winner"""
         from django.utils import timezone
-        
+
         try:
             # Set match winner
             match.winner = winner
             match.status = 'completed'
             match.ended_at = timezone.now()
             match.save()
-            
+
             # Update tournament player status
             tournament = match.tournament
             loser = match.player2 if winner == match.player1 else match.player1
-            
+
             # Update the loser's alive status to False
             from tournament.models import TournamentPlayer
             TournamentPlayer.objects.filter(
                 tournament=tournament,
                 player=loser
             ).update(alive=False)
-            
+
             # Update the game status
             if match.game:
                 match.game.status = 'finished'
                 match.game.winner = winner
                 match.game.save()
-            
+
             # Check if there's only one player alive
             alive_players = TournamentPlayer.objects.filter(
                 tournament=tournament,
                 alive=True
             ).count()
-            
+
             # If only one player is alive or this was the final match, complete the tournament
             import math
             if alive_players == 1 or match.round_number == math.ceil(math.log2(tournament.players.count())):
@@ -329,20 +329,20 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 tournament.ended_at = timezone.now()
                 tournament.save()
                 return True
-            
+
             # Create next round match if needed
             next_match_number = (match.match_number + 1) // 2
-            
+
             # Find the paired match in the current round
             # For match 1, the pair is match 2; for match 3, the pair is match 4, etc.
             pair_match_number = match.match_number + 1 if match.match_number % 2 == 1 else match.match_number - 1
-            
+
             current_round_matches = TournamentMatch.objects.filter(
                 tournament=tournament,
                 round_number=match.round_number,
                 match_number__in=[match.match_number, pair_match_number]
             )
-            
+
             # First, check if there are any pending matches in the current round that need a game created for them
             next_pending_match = TournamentMatch.objects.filter(
                 tournament=tournament,
@@ -350,7 +350,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 status='pending',
                 game__isnull=True
             ).order_by('match_number').first()
-            
+
             if next_pending_match:
                 # Create a game for the next pending match in the current round
                 from game.models import Game
@@ -359,26 +359,26 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     player2=next_pending_match.player2,
                     status='waiting'
                 )
-                
+
                 # Link the game to the match
                 next_pending_match.game = game
                 next_pending_match.status = 'in_progress'
                 next_pending_match.started_at = timezone.now()
                 next_pending_match.save()
-                
+
                 # Initialize game state in memory
                 from game.game_state_manager import GameStateManager
                 GameStateManager.create_game(str(game.id), str(next_pending_match.player1.id), next_pending_match.player1.username)
                 if next_pending_match.player2:
                     GameStateManager.join_game(str(game.id), str(next_pending_match.player2.id), next_pending_match.player2.username)
-                
+
                 # Notify players through WebSocket that their tournament match is ready
                 from channels.layers import get_channel_layer
                 from asgiref.sync import async_to_sync
                 channel_layer = get_channel_layer()
                 tournament_group = f'tournament_{tournament.id}'
                 game_group = f'game_{game.id}'
-                
+
                 # Send tournament match ready notification
                 async_to_sync(channel_layer.group_send)(
                     tournament_group,
@@ -390,7 +390,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'player2_id': next_pending_match.player2.id if next_pending_match.player2 else None
                     }
                 )
-                
+
                 # Send game start notification through game WebSocket
                 async_to_sync(channel_layer.group_send)(
                     game_group,
@@ -405,7 +405,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             elif all(m.status == 'completed' for m in current_round_matches):
                 # All matches in the current round are completed, update the next round match
                 winners = [m.winner for m in current_round_matches]
-                
+
                 # Find the existing match in the next round
                 try:
                     next_match = TournamentMatch.objects.get(
@@ -413,15 +413,15 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         round_number=match.round_number + 1,
                         match_number=next_match_number
                     )
-                    
+
                     # Update the match with the winners
                     next_match.player1 = winners[0]
                     next_match.player2 = winners[1] if len(winners) > 1 else None
                     next_match.save()
-                    
+
                     # Check if this is the first match of the next round
                     is_first_match_of_round = next_match.match_number == 1
-                    
+
                     # If this is the first match of the next round, create a game for it
                     if is_first_match_of_round:
                         # Create a game for this match
@@ -431,26 +431,26 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                             player2=winners[1] if len(winners) > 1 else None,
                             status='waiting'
                         )
-                        
+
                         # Link the game to the match
                         next_match.game = game
                         next_match.status = 'in_progress'
                         next_match.started_at = timezone.now()
                         next_match.save()
-                        
+
                         # Initialize game state in memory
                         from game.game_state_manager import GameStateManager
                         GameStateManager.create_game(str(game.id), str(winners[0].id), winners[0].username)
                         if len(winners) > 1 and winners[1]:
                             GameStateManager.join_game(str(game.id), str(winners[1].id), winners[1].username)
-                        
+
                         # Notify players through WebSocket that their tournament match is ready
                         from channels.layers import get_channel_layer
                         from asgiref.sync import async_to_sync
                         channel_layer = get_channel_layer()
                         tournament_group = f'tournament_{tournament.id}'
                         game_group = f'game_{game.id}'
-                        
+
                         # Send tournament match ready notification
                         async_to_sync(channel_layer.group_send)(
                             tournament_group,
@@ -462,7 +462,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                                 'player2_id': winners[1].id if len(winners) > 1 and winners[1] else None
                             }
                         )
-                        
+
                         # Send game start notification through game WebSocket
                         async_to_sync(channel_layer.group_send)(
                             game_group,
@@ -477,13 +477,13 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 except TournamentMatch.DoesNotExist:
                     # If the match doesn't exist, log an error
                     logger.error(f"Next round match not found: round {match.round_number + 1}, match number {next_match_number}")
-            
+
             return False
-            
+
         except Exception as e:
             logger.error(f"Error updating match with winner: {str(e)}", exc_info=True)
             return False
-            
+
     async def handle_game_end(self, content):
         """Handle game end notification"""
         try:
@@ -492,42 +492,42 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             game_id = content.get('game_id')
             winner_id = content.get('winner_id')
             tournament_id = content.get('tournament_id')
-            
+
             print(f"[DEBUG] Extracted game_id: {game_id}, winner_id: {winner_id}, tournament_id: {tournament_id}")
-            
+
             # If tournament_id is provided in the message and different from self.tournament_id,
             # update self.tournament_id to match
             if tournament_id and str(tournament_id) != str(getattr(self, 'tournament_id', None)):
                 print(f"[DEBUG] Updating tournament_id from {getattr(self, 'tournament_id', None)} to {tournament_id}")
                 self.tournament_id = str(tournament_id)
                 self.tournament_group_name = f'tournament_{self.tournament_id}'
-            
+
             if not game_id or not winner_id:
                 print(f"[DEBUG] Missing game_id or winner_id in game_end message: {content}")
                 logger.error(f"Missing game_id or winner_id in game_end message: {content}")
                 return
-                
+
             # Find match associated with this game
             match = await self.get_match_by_game_id(game_id)
             if not match:
                 logger.error(f"No match found for game {game_id}")
                 return
-                
+
             # Get winner user
             winner = await self.get_user_by_id(winner_id)
             if not winner:
                 logger.error(f"No user found with ID {winner_id}")
                 return
-                
+
             # Update match with winner
             tournament_completed = await self.update_match_with_winner(match, winner)
-            
+
             # Get winner's display name
             from tournament.models import TournamentPlayer
             winner_display_name = await database_sync_to_async(
                 lambda: TournamentPlayer.objects.get(tournament=match.tournament, player=winner).display_name
             )()
-            
+
             # Send update to all clients in tournament group
             await self.channel_layer.group_send(
                 self.tournament_group_name,
@@ -540,10 +540,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'id': winner.id,
                         'display_name': winner_display_name
                     },
-                    'status': 'completed'
+                    'status': 'completed',
+                    'tournament_id': match.tournament.id
                 }
             )
-            
+
             # If tournament completed, send additional message
             if tournament_completed:
                 await self.channel_layer.group_send(
@@ -555,7 +556,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'message': f"Tournament completed! Winner: {winner.username}"
                     }
                 )
-                
+
         except Exception as e:
             logger.error(f"Error handling game end: {str(e)}", exc_info=True)
-    

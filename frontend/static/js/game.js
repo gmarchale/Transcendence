@@ -19,6 +19,9 @@ function getPage() {
 
 class PongGame {
     constructor() {
+        this.player1username = null;
+        this.player2username = null;
+
         // Bind methods to this instance first
         this.handleKeyPress = this.handleKeyPress.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -328,32 +331,9 @@ class PongGame {
         window.removeEventListener('popstate', this.handlePopState);
         window.removeEventListener('beforeunload', this.handleBeforeUnloadListener);
     }
-    destroy() {
 
-        if (this.gameId) {
-            console.log(`Sending request to end game ${this.gameId}`);
-            fetch(`/api/game/end/${this.gameId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                credentials: 'include',
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to end game: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Game ended successfully:', data);
-            })
-            .catch(error => {
-                console.error('Error ending game:', error);
-            });
-        }
+    destroy() {
+        // Nettoyage des timers, sockets et listeners existants
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -373,7 +353,95 @@ class PongGame {
             this.heartbeatInterval = null;
         }
         this.cleanupEventListeners();
+
+        // Réinitialisation des éléments de la page de jeu (#play)
+        const player1Avatar = document.getElementById("player1_avatar");
+        const player2Avatar = document.getElementById("player2_avatar");
+        const player1Name = document.getElementById("player1_name");
+        const player2Name = document.getElementById("player2_name");
+        const player1Ready = document.getElementById("player1_ready");
+        const player2Ready = document.getElementById("player2_ready");
+        const player1Score = document.getElementById("game_player1Score");
+        const player2Score = document.getElementById("game_player2Score");
+        const canvas = document.getElementById("game_Canvas");
+
+        // Vider les noms
+        if (player1Name) player1Name.textContent = "";
+        if (player2Name) player2Name.textContent = "";
+
+        // Réinitialiser les boutons ready (utilisez getTranslation si disponible)
+        if (player1Ready) {
+             player1Ready.textContent = typeof getTranslation === "function" ? getTranslation("global_notready") : "Not Ready";
+             player1Ready.disabled = false;
+             player1Ready.classList.remove("ready");
+        }
+        if (player2Ready) {
+             player2Ready.textContent = typeof getTranslation === "function" ? getTranslation("global_notready") : "Not Ready";
+             player2Ready.disabled = true;
+             player2Ready.classList.remove("ready");
+        }
+
+        // Remettre le score à zéro
+        if (player1Score) player1Score.textContent = "0";
+        if (player2Score) player2Score.textContent = "0";
+
+        // Effacer le canvas et le remplir en noir
+        if (canvas && canvas.getContext) {
+             const ctx = canvas.getContext("2d");
+             ctx.clearRect(0, 0, canvas.width, canvas.height);
+             ctx.fillStyle = "#000000";
+             ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Réinitialiser les avatars (vous pouvez ajouter une image par défaut si besoin)
+        if (player1Avatar) {
+             player1Avatar.src = "";
+             player1Avatar.style.backgroundImage = "";
+        }
+        if (player2Avatar) {
+             player2Avatar.src = "";
+             player2Avatar.style.backgroundImage = "";
+        }
+
+        const originalHTML = `
+        <div class="game_lobby">
+            <div class="game_lobby-players">
+                <!-- Player 1 -->
+                <div class="game_lobby-player" id="player1_container">
+                    <div class="profile_avatar-container">
+                        <img id="player1_avatar" alt="User Avatar" class="profile_avatar">
+                    </div>
+                    <div class="game_lobby-name" id="player1_name"></div>
+                    <button class="game_lobby-ready" id="player1_ready"></button>
+                </div>
+
+                <!-- VS Separator -->
+                <div class="game_lobby-vs">VS</div>
+
+                <!-- Player 2 -->
+                <div class="game_lobby-player" id="player2_container">
+                    <div class="profile_avatar-container">
+                        <img id="player2_avatar" alt="User Avatar" class="profile_avatar">
+                    </div>
+                    <div class="game_lobby-name" id="player2_name"></div>
+                    <button class="game_lobby-ready" id="player2_ready" disabled></button>
+                </div>
+            </div>
+        </div>
+        <div id="game_CanvasContainer" class="game_canvas-container">
+            <div class="game_score-container">
+                <div id="game_player1Score" class="player-score">0</div>
+                <div id="game_player2Score" class="player-score">0</div>
+            </div>
+            <canvas id="game_Canvas"></canvas>
+        </div>
+    `;
+    const playContainer = document.getElementById("play");
+    if (playContainer) {
+        playContainer.innerHTML = originalHTML;
     }
+    }
+
 
 
     handleNavigation() {
@@ -518,6 +586,10 @@ class PongGame {
     {
         if (message.game_state.players.player1)
         {
+            if (!this.player1username)
+            {
+                this.player1username = message.game_state.players.player1.username;
+            }
             fetch("/api/users/get_avatar/" + message.game_state.players.player1.id + "/", {
                  method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
             })
@@ -530,8 +602,7 @@ class PongGame {
                     placeholder.className = "profile_avatar";
                     placeholder.style.backgroundImage = `url('${data2.avatar}')`;
                     placeholder.id = "profile_avatar";
-                    if (imgElement)
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 else {
                     let imgElement = document.getElementById("player1_avatar");
@@ -539,8 +610,7 @@ class PongGame {
                     placeholder.className = "profile_placeholder";
                     placeholder.textContent = message.game_state.players.player1.username[0];
                     placeholder.id = "player1_avatar";
-                    if (imgElement)
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 })
             .catch(error => console.error("Error while getting avatar:", error));
@@ -556,6 +626,10 @@ class PongGame {
         }
         if (message.game_state.players.player2)
             {
+                if (!this.player2username)
+                {
+                    this.player2username = message.game_state.players.player2.username;
+                }
                 fetch("/api/users/get_avatar/" + message.game_state.players.player2.id + "/", {
                      method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 })
@@ -568,7 +642,8 @@ class PongGame {
                         placeholder.className = "profile_avatar";
                         placeholder.style.backgroundImage = `url('${data2.avatar}')`;
                         placeholder.id = "profile_avatar";
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                        if (imgElement)
+                            imgElement.parentNode.replaceChild(placeholder, imgElement);
                     }
                     else {
                         let imgElement = document.getElementById("player2_avatar");
@@ -576,7 +651,8 @@ class PongGame {
                         placeholder.className = "profile_placeholder";
                         placeholder.textContent = message.game_state.players.player2.username[0];
                         placeholder.id = "player2_avatar";
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                        if (imgElement)
+                            imgElement.parentNode.replaceChild(placeholder, imgElement);
                     }
                     })
                 .catch(error => console.error("Error while getting avatar:", error));
@@ -588,7 +664,8 @@ class PongGame {
                 placeholder0.className = "profile_placeholder";
                 placeholder0.textContent = "?";
                 placeholder0.id = "player2_avatar";
-                imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+                if (imgElement0)
+                    imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
             }
     }
 
@@ -823,6 +900,11 @@ class PongGame {
             // Parse gameId as integer
             this.gameId = parseInt(gameId, 10);
             // Send join_game message through UI socket
+            if (!this.gameId)
+                throw error("No game id");
+            if (!this.uiSocket)
+                throw error("No socket id");
+
             this.uiSocket.send(JSON.stringify({
                 'type': 'join_game',
                 'game_id': this.gameId
@@ -1140,7 +1222,7 @@ class PongGame {
         resultText.style.color = '#fff';
         resultText.style.marginBottom = '20px';
         resultText.style.fontSize = '2.5em';
-        resultText.innerText = `${winner === 'player1' ? 'Player 1' : 'Player 2'} Wins!`;
+        resultText.innerText = `${winner === 'player1' ? this.player1username : this.player2username} Wins!`;
 
         // Create score text
         const scoreText = document.createElement('h2');
@@ -1176,25 +1258,37 @@ class PongGame {
             homeButton.onclick = () => {
                 document.body.removeChild(overlay);
                 // Get tournament ID from localStorage if available
-                const tournamentId = localStorage.getItem('currentTournamentId');
+                //const tournamentId = localStorage.getItem('currentTournamentId');
 
                 // Clear localStorage values
+
+                const tournamentId = data.tournament_id || localStorage.getItem('currentTournamentId');
+
                 localStorage.removeItem('fromTournament');
                 localStorage.removeItem('currentTournamentId');
 
-                if (this.playerId == data.winner_id) { // Si le joueur a gagne
-                    if (tournamentId) {
-                        window.location.href = `#tournament/${tournamentId}`;
-                    } else {
-                        // Fallback to tournaments list
-                        window.location.href = '#tournaments';
-                    }
-
+                if (this.uiSocket) {
+                    console.log('Closing WebSocket connection in handleGameEnd');
+                    this.uiSocket.onclose = null; // Remove onclose handler to prevent reconnection
+                    this.destroy();
+                    gameInitialized = false;
+                    this.uiSocket = null;
+                    this.connected = false;
                 }
-                else // si le joueur a perdu
-                {
-                    window.location.href = `#game`;
-                    // need to fix boutons when getting redirected (just reload page?)
+
+                if (this.playerId == data.winner_id) { // si le joueur gagnant
+                    if (globTournament) {
+                        console.log("ICI C'EST LE AAA");
+                        console.log(globTournament);
+                        //game = null;
+                        //gameInitialized = false;
+                        //loadGame();
+                        window.location.href = `#tournament/${globTournament}`;
+                    } else {
+                        window.location.href = '#tournament';
+                    }
+                } else {
+                    window.location.href = '#game';
                 }
             };
         } else {
@@ -1382,70 +1476,6 @@ class PongGame {
 
         console.log('Identity check results - isPlayer1:', isPlayer1, 'isPlayer2:', isPlayer2);
 
-
-        // Update player 1 ready button and name
-        console.log(players.player1.id)
-        console.log(players.player1.username[0])
-
-            // if (players.player1 && this.player1ProfileLoaded == false)
-            // {
-            //     this.player1ProfileLoaded = true;
-            //     fetch("/api/users/get_avatar/" + players.player1.id + "/", {
-            //         method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            //     })
-            //     .then(response => response.json())
-            //     .then(data2 => {
-            //         if (data2.avatar != null)
-            //         {
-            //             let imgElement = document.getElementById("player1_avatar");
-            //             let placeholder = document.createElement("div");
-            //             placeholder.className = "profile_avatar";
-            //             placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-            //             placeholder.id = "profile_avatar";
-            //             imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //         }
-            //         else {
-            //             let imgElement = document.getElementById("player1_avatar");
-            //             let placeholder = document.createElement("div");
-            //             placeholder.className = "profile_placeholder";
-            //             placeholder.textContent = players.player1.username[0];
-            //             placeholder.id = "player1_avatar";
-            //             imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //         }
-
-            //     })
-            //     .catch(error => console.error("Error while getting avatar:", error));
-            // }
-
-            // if (players.player2 && this.player2ProfileLoaded == false)
-            // {
-            //     this.player2ProfileLoaded = true;
-            //         fetch("/api/users/get_avatar/" + players.player2.id + "/", {
-            //             method: "GET",headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            //         })
-            //         .then(response => response.json())
-            //         .then(data2 => {
-            //             if (data2.avatar != null)
-            //             {
-            //                 let imgElement = document.getElementById("player2_avatar");
-            //                 let placeholder = document.createElement("div");
-            //                 placeholder.className = "profile_avatar";
-            //                 placeholder.style.backgroundImage = `url('${data2.avatar}')`;
-            //                 placeholder.id = "profile_avatar";
-            //                 imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //             }
-            //             else {
-            //                 let imgElement = document.getElementById("player2_avatar");
-            //                 let placeholder = document.createElement("div");
-            //                 placeholder.className = "profile_placeholder";
-            //                 placeholder.textContent = players.player2.username[0];
-            //                 placeholder.id = "player2_avatar";
-            //                 imgElement.parentNode.replaceChild(placeholder, imgElement);
-            //             }
-
-            //         })
-            //         .catch(error => console.error("Error while getting avatar:", error));
-            // }
 
         if (players.player1 && this.player1Ready) {
             // Update name

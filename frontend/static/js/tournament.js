@@ -1,4 +1,5 @@
 let currentSocket = null;
+let globTournament = null;
 
 function getTournamentId() {
     const hash = window.location.hash;
@@ -10,20 +11,20 @@ function initTournament() {
     const tournamentId = getTournamentId();
     const notFoundElement = document.getElementById('tournamentNotFound');
     const contentElement = document.getElementById('tournamentContent');
-    
+
     if (!tournamentId) {
         notFoundElement.style.display = 'block';
         contentElement.style.display = 'none';
         return;
     }
-    
+
     notFoundElement.style.display = 'none';
     contentElement.style.display = 'flex';
     resetButtonListeners();
 
     // Initialize WebSocket connection once when tournament page loads
     initSocket(tournamentId);
-    
+
     loadTournament(tournamentId).then(tournament => {
         if (tournament) {
             initTournamentPageList();
@@ -46,70 +47,68 @@ function initSocket(tournamentId) {
         currentSocket.close();
     }
 
+    //if (ws)
+    //    return ;
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/tournament/${tournamentId}/`);
     currentSocket = ws;
-    
+
     ws.onmessage = async function(event) {
         const data = JSON.parse(event.data);
-        
-        if (data.type === 'player_joined' || data.type === 'player_ready' || data.type === 'tournament_started' || data.type === 'remove_player') {
-            loadTournament(tournamentId).then(tournament => {
-                if (tournament) {
-                    displayTournamentName(tournament.name);
-                    displayPlayers(tournament);
-                    initTournamentActions(tournament);
-                }
-            });
-        } else if (data.type === 'match_ready_notification') {
-            const userId = await getid();
-            const opponent = data.players[0].id === userId ? 
-                data.players[1]?.display_name : // si c'est le joueur 1, on stock son display name
-                data.players[0].display_name;
-            
-            const roundName = getRoundName(data.round_size);
-            loadTournament(tournamentId).then(tournament => {
-                if (tournament) {
-                    const message = getTranslation("global_tournament")+`: ${tournament.name}\n${roundName} vs ${opponent}\n`+getTranslation("tournament_five_min");
-                    showNotification(message, 'success', 5000);
-                }
-            });
-        } else if (data.type === 'tournament_update') {
-            // Handle tournament updates (completion, winner announcement, etc.)
-            if (data.status === 'completed' && data.winner_id) {
-                // Reload tournament data to get the latest state
+
+        // Si le match est mis à jour, on rafraîchit le tournoi
+        if (data.type === 'player_joined' ||
+            data.type === 'player_ready' ||
+            data.type === 'tournament_started' ||
+            data.type === 'remove_player' ||
+            data.type === 'match_update') {  // Ajout de match_update ici
                 loadTournament(tournamentId).then(tournament => {
                     if (tournament) {
-                        // Update the UI
                         displayTournamentName(tournament.name);
                         displayPlayers(tournament);
                         displayMatches(tournament);
                         initTournamentActions(tournament);
-                        
-                        // Instead of showing a notification, automatically redirect to game lobby
-                        // Close WebSocket connection
+                    }
+                });
+        } else if (data.type === 'match_ready_notification') {
+            // Notification spécifique pour le lancement du match
+            const userId = await getid();
+            const opponent = data.players[0].id === userId ?
+                data.players[1]?.display_name : data.players[0].display_name;
+            const roundName = getRoundName(data.round_size);
+            loadTournament(tournamentId).then(tournament => {
+                if (tournament) {
+                    const message = getTranslation("global_tournament") + `: ${tournament.name}\n` +
+                                    roundName + ` vs ${opponent}\n` + getTranslation("tournament_five_min");
+                    showNotification(message, 'success', 5000);
+                }
+            });
+        } else if (data.type === 'tournament_update') {
+            // Gérer la fin du tournoi
+            if (data.status === 'completed' && data.winner_id) {
+                loadTournament(tournamentId).then(tournament => {
+                    if (tournament) {
+                        displayTournamentName(tournament.name);
+                        displayPlayers(tournament);
+                        displayMatches(tournament);
+                        initTournamentActions(tournament);
                         if (currentSocket) {
                             currentSocket.close();
                             currentSocket = null;
                         }
-                        
-                        // Get winner name
                         let winnerName = 'Unknown';
                         if (tournament.winner) {
                             winnerName = tournament.winner.display_name || tournament.winner.username;
                         }
-                        
-                        // Create a simple notification that will appear in the game lobby
                         const message = `Tournament completed! ${winnerName} has won the tournament.`;
                         localStorage.setItem('tournament_completion_message', message);
-                        
-                        // Navigate to game lobby
                         window.location.hash = '#game';
                     }
                 });
             }
         }
     };
+
 
     ws.onclose = function(e) {
         console.log('Tournament WebSocket connection closed');
@@ -129,7 +128,7 @@ function displayMatches(tournament) {
         gamesListElement.innerHTML = '<div class="tournament_no-games">'+getTranslation("tournament_no_game")+'</div>';
         return;
     }
-    
+
     const matchesByRound = {};
     tournament.matches.forEach(match => {
         if (!matchesByRound[match.round_number]) {
@@ -141,7 +140,7 @@ function displayMatches(tournament) {
     Object.keys(matchesByRound).sort((a, b) => a - b).forEach(roundNumber => {
         const roundDiv = document.createElement('div');
         roundDiv.className = 'tournament_round';
-        
+
         const roundTitle = document.createElement('h4');
         roundTitle.className = 'tournament_round-title';
         roundTitle.textContent = `Round ${roundNumber}`;
@@ -155,16 +154,16 @@ function displayMatches(tournament) {
             if (match.game && match.game.id) {
                 matchDiv.dataset.gameId = match.game.id;
             }
-            
+
             // Marquer le match comme actif si le joueur actuel est impliqué et que le match est en cours
-            if (match.status === 'in_progress' && 
+            if (match.status === 'in_progress' &&
                 (match.player1_id === tournament.current_user_id || match.player2_id === tournament.current_user_id)) {
                 matchDiv.classList.add('tournament_match-active');
             }
-            
+
             const playersDiv = document.createElement('div');
             playersDiv.className = 'tournament_match-players';
-            
+
             const player1Span = document.createElement('span');
             player1Span.className = 'tournament_match-player';
             if (match.winner_display_name === match.player1_display_name) {
@@ -172,11 +171,11 @@ function displayMatches(tournament) {
             }
             player1Span.textContent = match.player1_display_name;
             if (match.player1_ready) player1Span.classList.add('tournament_player-ready');
-            
+
             const vsSpan = document.createElement('span');
             vsSpan.className = 'tournament_match-vs';
             vsSpan.textContent = 'VS';
-            
+
             const player2Span = document.createElement('span');
             player2Span.className = 'tournament_match-player';
             if (match.winner_display_name === match.player2_display_name) {
@@ -184,23 +183,23 @@ function displayMatches(tournament) {
             }
             player2Span.textContent = match.player2_display_name;
             if (match.player2_ready) player2Span.classList.add('tournament_player-ready');
-            
+
             playersDiv.appendChild(player1Span);
             playersDiv.appendChild(vsSpan);
             playersDiv.appendChild(player2Span);
-            
+
             const statusDiv = document.createElement('div');
             statusDiv.className = 'tournament_match-status';
-            
+
             if (match.winner_display_name) {
                 statusDiv.textContent = getTranslation("global_winner")+`: ${match.winner_display_name}`;
             } else {
                 statusDiv.textContent = match.status.replace(/_/g, ' ');
             }
-            
+
             matchDiv.appendChild(playersDiv);
             matchDiv.appendChild(statusDiv);
-            
+
             roundDiv.appendChild(matchDiv);
         });
 
@@ -225,9 +224,10 @@ async function loadTournament(tournamentId) {
         const tournament = await response.json();
         console.log('Tournament:', tournament);
         displayTournamentName(tournament.name);
+        globTournament = tournament.id;
         displayPlayers(tournament);
         displayMatches(tournament);
-        
+
         // WebSocket is now initialized only once in initTournament()
         return tournament;
     } catch (error) {
@@ -288,7 +288,7 @@ function displayTournamentsPage(tournaments) {
         button.addEventListener('click', async () => {
             window.location.hash = `#tournament/${tournament.id}`;
             document.getElementById('tournamentPageListModal').style.display = 'none';
-            
+
             // reset les boutons pour pas afficher immediatement des mauvais boutons
             const startButton = document.getElementById('tournamentStart');
             const GoToGameButton = document.getElementById('GoToGame');
@@ -311,7 +311,7 @@ function displayPlayers(tournament) {
         playersListElement.innerHTML = '<div class="tournament_no-players">'+getTranslation("tournament_no_players")+'</div>';
         return;
     }
-    
+
     tournament.players.forEach(player => {
         const playerItem = document.createElement('div');
         const isCreator = player.player.id === tournament.creator.id;
@@ -328,11 +328,11 @@ function displayPlayers(tournament) {
         let playerContent = `
             <span class="tournament_player-name">${player.display_name || 'Anonymous'}</span>
         `;
- 
+
         if (isCreator) {
             playerContent += `<span class="tournament_player-badge">Creator</span>`;
         }
-        
+
         playerItem.innerHTML = playerContent;
         playersListElement.appendChild(playerItem);
     });
@@ -345,13 +345,13 @@ function displayPlayers(tournament) {
 
 function resetButtonListeners() {
     const elements = [
-        'tournamentStart', 
-        'GoToGame', 
+        'tournamentStart',
+        'GoToGame',
         'tournamentforfeit',
         'tournamentTitle',
         'closeTournamentPageList'
     ];
-    
+
     elements.forEach(elementId => {
         const element = document.getElementById(elementId);
         if (element) { // clone and replace pattern: cree une copie de l'element et remplace l'element original par la copie ce qui enleve les event listeners
@@ -359,7 +359,7 @@ function resetButtonListeners() {
             element.parentNode.replaceChild(newElement, element);
         }
     });
-    
+
     const modal = document.getElementById('tournamentPageListModal');
     if (modal) {
         const newModal = modal.cloneNode(true);
@@ -372,14 +372,14 @@ async function initTournamentActions(tournament) {
     const GoToGameButton = document.getElementById('GoToGame');
     const forfeitButton = document.getElementById('tournamentforfeit');
     const userId = await getid();
-    
+
     const isCreator = userId === tournament.creator.id;
-    
+
     if (isCreator) {
         startButton.style.display = 'block';
-        
+
         const isTournamentFull = tournament.players.length >= tournament.max_players;
-        
+
         if (!isTournamentFull) {
             startButton.disabled = true;
             startButton.classList.add('tournament_btn-disabled');
@@ -389,7 +389,7 @@ async function initTournamentActions(tournament) {
             startButton.classList.remove('tournament_btn-disabled');
             startButton.title = getTranslation("tournament_start_btn");
         }
-        
+
         startButton.addEventListener('click', async function() {
             if (isTournamentFull) {
                 const tournamentId = getTournamentId();
@@ -414,11 +414,11 @@ async function initTournamentActions(tournament) {
     }
 
     GoToGameButton.addEventListener('click', async function() {
-        
+
         // Initialize gameManager if it doesn't exist
         if (!window.gameManager) {
             window.gameManager = new PongGame();
-            
+
             // Wait for the WebSocket connection to be established
             console.log('Waiting for WebSocket connection to be established...');
             await new Promise(resolve => {
@@ -430,7 +430,7 @@ async function initTournamentActions(tournament) {
                         resolve();
                     }
                 }, 100);
-                
+
                 // Set a timeout of 5 seconds
                 setTimeout(() => {
                     clearInterval(checkInterval);
@@ -439,18 +439,18 @@ async function initTournamentActions(tournament) {
                 }, 5000);
             });
         }
-        
+
         // Get the current match from the DOM
         const domMatch = getCurrentMatch();
         if (!domMatch) {
             alert('No active match found');
             return;
         }
-        
+
         // Get the latest match details directly from the server
         const serverMatch = await getMatchDetailsFromServer(domMatch.id);
         console.log('Match details from server:', serverMatch);
-        
+
         // Verify if the current user is one of the players in this match
         const currentUserId = window.gameManager.currentUser?.id;
         if (!currentUserId) {
@@ -458,52 +458,52 @@ async function initTournamentActions(tournament) {
             alert(getTranslation('tournament_error') || 'An error occurred');
             return;
         }
-        
+
         // Check if current user is player1 or player2 in this match
         if (serverMatch.player1_id !== currentUserId && serverMatch.player2_id !== currentUserId) {
             console.warn(`Current user (${currentUserId}) is not a player in this match (players: ${serverMatch.player1_id}, ${serverMatch.player2_id})`);
             alert(getTranslation('tournament_not_your_match') || 'You are not a player in this match');
             return;
         }
-        
+
         // Check if the match has a game ID in the database
         if (serverMatch && serverMatch.game_id) {
             console.log(`Found game ID ${serverMatch.game_id} in the database, joining game`);
-            
+
             // Store information that this game is from a tournament
             localStorage.setItem('fromTournament', 'true');
             localStorage.setItem('currentTournamentId', getTournamentId());
-            
+
             // Un game_id existe déjà, ce joueur doit rejoindre la partie
             window.gameManager.joinGame(serverMatch.game_id);
-            
+
             // Rediriger vers la page du jeu
             window.location.hash = 'play/' + serverMatch.game_id;
         } else {
             console.log('No game ID found in the database, creating new game');
             // Aucun game_id n'existe encore, ce joueur doit créer la partie
             await window.gameManager.startGame();
-            
+
             // Récupérer le game_id généré
             const gameId = window.gameManager.gameId;
-            
+
             // Après création, mettre à jour le match avec le game_id
             const updateSuccess = await updateMatchGameId(domMatch.id, gameId);
-            
+
             if (updateSuccess) {
                 console.log(`Successfully updated match ${domMatch.id} with game ID ${gameId}, redirecting to game`);
             } else {
                 console.warn(`Failed to update match with game ID, but still redirecting to game`);
             }
-            
+
             // Rediriger vers la page du jeu
-            window.location.hash = 'play/' + serverMatch.game_id;
+            window.location.hash = 'play/' + gameId;
         }
     });
 
     forfeitButton.addEventListener('click', async function() {
         const tournamentId = getTournamentId();
-        
+
         const response = await fetch(`api/tournaments/${tournamentId}/forfeit/`, {
             method: 'POST',
             headers: {
@@ -526,22 +526,22 @@ function getCurrentMatch() {
     // Récupérer le match actif dans le DOM
     const activeMatch = document.querySelector('.tournament_match-active');
     console.log('Active match element:', activeMatch);
-    
+
     if (!activeMatch) {
         alert(getTranslation("tournament_no_game"));
         return null;
     }
-    
+
     console.log('Match data attributes:', {
         matchId: activeMatch.dataset.matchId,
         gameId: activeMatch.dataset.gameId
     });
-    
+
     // Récupérer les données du match depuis les attributs data-*
     // Only use gameId if it's actually defined and not the string 'undefined'
-    const gameId = activeMatch.dataset.gameId && activeMatch.dataset.gameId !== 'undefined' ? 
+    const gameId = activeMatch.dataset.gameId && activeMatch.dataset.gameId !== 'undefined' ?
                    activeMatch.dataset.gameId : null;
-                   
+
     return {
         id: activeMatch.dataset.matchId,
         game_id: gameId
@@ -566,9 +566,9 @@ async function getMatchDetailsFromServer(matchId) {
             },
             credentials: 'include' // Include cookies for authentication
         });
-        
+
         console.log(`Server response status: ${response.status}`);
-        
+
         if (response.ok) {
             const matchData = await response.json();
             return matchData;
@@ -580,7 +580,7 @@ async function getMatchDetailsFromServer(matchId) {
             } catch (e) {
                 console.error(`Failed to fetch match details: ${response.statusText}`);
             }
-            
+
             // If the match doesn't exist in the database, return a minimal object
             return { id: matchId, game_id: null };
         }
@@ -603,10 +603,10 @@ async function updateMatchGameId(matchId, gameId) {
             },
             body: JSON.stringify({ game_id: gameId })
         });
-        
+
         if (response.ok) {
             console.log(`Successfully updated match ${matchId} with game ID ${gameId}`);
-            
+
             // Update the DOM element with the new game ID
             const matchElement = document.querySelector(`.tournament_match[data-match-id="${matchId}"]`);
             if (matchElement) {
@@ -615,7 +615,7 @@ async function updateMatchGameId(matchId, gameId) {
             } else {
                 console.error(`Could not find match element with ID ${matchId}`);
             }
-            
+
             return true;
         } else {
             const errorData = await response.json();
