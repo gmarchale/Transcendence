@@ -1203,10 +1203,13 @@ class PongGame {
         const referrer = document.referrer;
         const currentHash = window.location.hash;
         const fromTournament = this.fromTournament || localStorage.getItem('fromTournament') === 'true';
-
         if (fromTournament || currentHash.includes('tournament')) {
             // Tournament game button
-            homeButton.innerText = 'Go to Tournament';
+            if (this.playerId == data.winner_id && globTournament.status != "completed")
+                homeButton.innerText = 'Go to Tournament';
+            else
+                homeButton.innerText = 'Go back to Loby';
+
             homeButton.style.backgroundColor = '#2196F3'; // Blue for tournament
             homeButton.onclick = () => {
                 document.body.removeChild(overlay);
@@ -1229,14 +1232,23 @@ class PongGame {
                     this.connected = false;
                 }
 
-                if (this.playerId == data.winner_id) { // si le joueur gagnant
-                    if (globTournament) {
+                if (this.playerId == data.winner_id)
+                {
+                    if (globTournament.status == "completed")
+                    {
+                        if (currentSocket) {
+                            currentSocket.close();
+                            currentSocket = null;
+                        }
+                        window.location.href = '#game';
+                    }
+                    else if (globTournament) {
                         console.log("ICI C'EST LE AAA");
-                        console.log(globTournament);
+                        console.log(globTournament.id);
                         //game = null;
                         //gameInitialized = false;
                         //loadGame();
-                        window.location.href = `#tournament/${globTournament}`;
+                        window.location.href = `#tournament/${globTournament.id}`;
                         this.player1username = null;
                         this.player2username = null;
 
@@ -1269,7 +1281,7 @@ class PongGame {
                         this.canvas = null;
                         this.ctx = null;
                         this.keyState = { w: false, s: false };
-
+                        this.gameRole = undefined;
                         this.paddleSpeed = 25; // pixels to move per keypress
 
                         // Add a timestamp to limit logging frequency
@@ -1318,6 +1330,10 @@ class PongGame {
                         window.location.href = '#tournament';
                     }
                 } else {
+                    if (currentSocket) {
+                        currentSocket.close();
+                        currentSocket = null;
+                    }
                     window.location.href = '#game';
                 }
             };

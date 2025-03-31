@@ -224,7 +224,7 @@ async function loadTournament(tournamentId) {
         const tournament = await response.json();
         console.log('Tournament:', tournament);
         displayTournamentName(tournament.name);
-        globTournament = tournament.id;
+        globTournament = tournament;
         displayPlayers(tournament);
         displayMatches(tournament);
 
