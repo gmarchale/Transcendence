@@ -1,4 +1,5 @@
 let currentSocket = null;
+let globTournament = null;
 
 function getTournamentId() {
     const hash = window.location.hash;
@@ -223,6 +224,7 @@ async function loadTournament(tournamentId) {
         const tournament = await response.json();
         console.log('Tournament:', tournament);
         displayTournamentName(tournament.name);
+        globTournament = tournament.id;
         displayPlayers(tournament);
         displayMatches(tournament);
 

@@ -1181,12 +1181,12 @@ class PongGame {
                 }
 
                 if (this.playerId == data.winner_id) { // si le joueur gagnant
-                    if (tournamentId) {
+                    if (globTournament) {
                         console.log("ICI C'EST LE AAA");
-                        console.log(tournamentId);
-                        window.location.href = `#tournament/${tournamentId}`;
+                        console.log(globTournament);
+                        window.location.href = `#tournament/${globTournament}`;
                     } else {
-                        window.location.href = '#caca';
+                        window.location.href = '#tournament';
                     }
                 } else {
                     window.location.href = '#game';
