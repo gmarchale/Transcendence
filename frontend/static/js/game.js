@@ -331,9 +331,9 @@ class PongGame {
         window.removeEventListener('popstate', this.handlePopState);
         window.removeEventListener('beforeunload', this.handleBeforeUnloadListener);
     }
+
     destroy() {
-
-
+        // Nettoyage des timers, sockets et listeners existants
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -353,7 +353,95 @@ class PongGame {
             this.heartbeatInterval = null;
         }
         this.cleanupEventListeners();
+
+        // Réinitialisation des éléments de la page de jeu (#play)
+        const player1Avatar = document.getElementById("player1_avatar");
+        const player2Avatar = document.getElementById("player2_avatar");
+        const player1Name = document.getElementById("player1_name");
+        const player2Name = document.getElementById("player2_name");
+        const player1Ready = document.getElementById("player1_ready");
+        const player2Ready = document.getElementById("player2_ready");
+        const player1Score = document.getElementById("game_player1Score");
+        const player2Score = document.getElementById("game_player2Score");
+        const canvas = document.getElementById("game_Canvas");
+
+        // Vider les noms
+        if (player1Name) player1Name.textContent = "";
+        if (player2Name) player2Name.textContent = "";
+
+        // Réinitialiser les boutons ready (utilisez getTranslation si disponible)
+        if (player1Ready) {
+             player1Ready.textContent = typeof getTranslation === "function" ? getTranslation("global_notready") : "Not Ready";
+             player1Ready.disabled = false;
+             player1Ready.classList.remove("ready");
+        }
+        if (player2Ready) {
+             player2Ready.textContent = typeof getTranslation === "function" ? getTranslation("global_notready") : "Not Ready";
+             player2Ready.disabled = true;
+             player2Ready.classList.remove("ready");
+        }
+
+        // Remettre le score à zéro
+        if (player1Score) player1Score.textContent = "0";
+        if (player2Score) player2Score.textContent = "0";
+
+        // Effacer le canvas et le remplir en noir
+        if (canvas && canvas.getContext) {
+             const ctx = canvas.getContext("2d");
+             ctx.clearRect(0, 0, canvas.width, canvas.height);
+             ctx.fillStyle = "#000000";
+             ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Réinitialiser les avatars (vous pouvez ajouter une image par défaut si besoin)
+        if (player1Avatar) {
+             player1Avatar.src = "";
+             player1Avatar.style.backgroundImage = "";
+        }
+        if (player2Avatar) {
+             player2Avatar.src = "";
+             player2Avatar.style.backgroundImage = "";
+        }
+
+        const originalHTML = `
+        <div class="game_lobby">
+            <div class="game_lobby-players">
+                <!-- Player 1 -->
+                <div class="game_lobby-player" id="player1_container">
+                    <div class="profile_avatar-container">
+                        <img id="player1_avatar" alt="User Avatar" class="profile_avatar">
+                    </div>
+                    <div class="game_lobby-name" id="player1_name"></div>
+                    <button class="game_lobby-ready" id="player1_ready"></button>
+                </div>
+
+                <!-- VS Separator -->
+                <div class="game_lobby-vs">VS</div>
+
+                <!-- Player 2 -->
+                <div class="game_lobby-player" id="player2_container">
+                    <div class="profile_avatar-container">
+                        <img id="player2_avatar" alt="User Avatar" class="profile_avatar">
+                    </div>
+                    <div class="game_lobby-name" id="player2_name"></div>
+                    <button class="game_lobby-ready" id="player2_ready" disabled></button>
+                </div>
+            </div>
+        </div>
+        <div id="game_CanvasContainer" class="game_canvas-container">
+            <div class="game_score-container">
+                <div id="game_player1Score" class="player-score">0</div>
+                <div id="game_player2Score" class="player-score">0</div>
+            </div>
+            <canvas id="game_Canvas"></canvas>
+        </div>
+    `;
+    const playContainer = document.getElementById("play");
+    if (playContainer) {
+        playContainer.innerHTML = originalHTML;
     }
+    }
+
 
 
     handleNavigation() {
@@ -554,7 +642,8 @@ class PongGame {
                         placeholder.className = "profile_avatar";
                         placeholder.style.backgroundImage = `url('${data2.avatar}')`;
                         placeholder.id = "profile_avatar";
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                        if (imgElement)
+                            imgElement.parentNode.replaceChild(placeholder, imgElement);
                     }
                     else {
                         let imgElement = document.getElementById("player2_avatar");
@@ -562,7 +651,8 @@ class PongGame {
                         placeholder.className = "profile_placeholder";
                         placeholder.textContent = message.game_state.players.player2.username[0];
                         placeholder.id = "player2_avatar";
-                        imgElement.parentNode.replaceChild(placeholder, imgElement);
+                        if (imgElement)
+                            imgElement.parentNode.replaceChild(placeholder, imgElement);
                     }
                     })
                 .catch(error => console.error("Error while getting avatar:", error));
@@ -574,7 +664,8 @@ class PongGame {
                 placeholder0.className = "profile_placeholder";
                 placeholder0.textContent = "?";
                 placeholder0.id = "player2_avatar";
-                imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+                if (imgElement0)
+                    imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
             }
     }
 
@@ -809,6 +900,11 @@ class PongGame {
             // Parse gameId as integer
             this.gameId = parseInt(gameId, 10);
             // Send join_game message through UI socket
+            if (!this.gameId)
+                throw error("No game id");
+            if (!this.uiSocket)
+                throw error("No socket id");
+
             this.uiSocket.send(JSON.stringify({
                 'type': 'join_game',
                 'game_id': this.gameId
@@ -1184,6 +1280,9 @@ class PongGame {
                     if (globTournament) {
                         console.log("ICI C'EST LE AAA");
                         console.log(globTournament);
+                        //game = null;
+                        //gameInitialized = false;
+                        //loadGame();
                         window.location.href = `#tournament/${globTournament}`;
                     } else {
                         window.location.href = '#tournament';
