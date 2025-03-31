@@ -61,3 +61,17 @@ function isAuthenticated(){
 	});
     return 0;
 }
+
+function isRegexUsername(value, showErr) {
+    var regex = /^[a-zA-Z0-9_]+$/;
+
+    if (regex.test(value)) {
+        return 1;
+    } else {
+        if(showErr == 1)
+            showError(getTranslation("global_regexusername"));
+        else
+            showNotification(getTranslation("global_regexusername"), "error");
+        return 0;
+    }
+}
