@@ -54,6 +54,7 @@ function initSocket(tournamentId) {
     currentSocket = ws;
 
     ws.onmessage = async function(event) {
+        console.log('Tournament WebSocket FORFEITTTTTTTTTT message received:', event.data);
         const data = JSON.parse(event.data);
 
         // Si le match est mis à jour, on rafraîchit le tournoi
@@ -84,14 +85,21 @@ function initSocket(tournamentId) {
                 }
             });
         } else if (data.type === 'tournament_update') {
-            // Gérer la fin du tournoi
-            if (data.status === 'completed' && data.winner_id) {
-                loadTournament(tournamentId).then(tournament => {
-                    if (tournament) {
-                        displayTournamentName(tournament.name);
-                        displayPlayers(tournament);
-                        displayMatches(tournament);
-                        initTournamentActions(tournament);
+            // Always refresh the tournament UI for any tournament update
+            loadTournament(tournamentId).then(tournament => {
+                if (tournament) {
+                    displayTournamentName(tournament.name);
+                    displayPlayers(tournament);
+                    displayMatches(tournament);
+                    initTournamentActions(tournament);
+                    
+                    // Show notification if provided
+                    if (data.message) {
+                        showNotification(data.message, 'info', 5000);
+                    }
+                    
+                    // Handle tournament completion
+                    if (data.status === 'completed' && data.winner_id) {
                         if (currentSocket) {
                             currentSocket.close();
                             currentSocket = null;
@@ -104,8 +112,8 @@ function initSocket(tournamentId) {
                         localStorage.setItem('tournament_completion_message', message);
                         window.location.hash = '#game';
                     }
-                });
-            }
+                }
+            });
         }
     };
 
