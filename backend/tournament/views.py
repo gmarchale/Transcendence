@@ -13,6 +13,9 @@ from game.models import Game
 from game.game_state_manager import GameStateManager  # Import from the correct module
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -570,44 +573,72 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 # Déclarer l'autre joueur comme vainqueur
                 winner = match.player2 if request.user == match.player1 else match.player1
                 
-                # Mettre à jour le match
-                match.winner = winner
-                match.status = 'completed'
-                match.ended_at = timezone.now()
-                match.save()
+                # Instead of duplicating the disconnect logic, use the WebSocket consumer's disconnect handler
+                from tournament.consumers import TournamentConsumer
                 
-                # Mettre à jour le jeu si existant
-                if match.game:
-                    match.game.status = 'finished'
-                    match.game.winner = winner
-                    match.game.save()
-                    
-                # Notifier via WebSocket
+                # Create a temporary consumer instance to handle the forfeit
+                consumer = TournamentConsumer()
+                
+                # Set the necessary attributes
+                consumer.user = request.user
+                consumer.active_match = match
+                consumer.tournament_group_name = f'tournament_{tournament.id}'
+                
+                # Get the channel layer
                 channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f'tournament_{tournament.id}',
-                    {
-                        'type': 'match_update',
-                        'match_id': match.id,
-                        'status': 'completed',
-                        'winner_id': winner.id,
-                        'forfeit': True,
-                        'forfeited_by': request.user.id
-                    }
-                )
+                consumer.channel_layer = channel_layer
                 
-                # Si c'était le dernier match, terminer le tournoi
-                if match.round_number == math.ceil(math.log2(tournament.players.count())):
-                    tournament.status = 'completed'
-                    tournament.winner = winner
-                    tournament.ended_at = timezone.now()
-                    tournament.save()
+                # Call the disconnect handler
+                result = async_to_sync(consumer.handle_player_disconnect)()
+                
+                # Notify all clients about the forfeit
+                if result:
+                    # First, send a tournament update to refresh all clients
+                    # This ensures the UI is updated before any WebSocket connections are closed
+                    tournament_update_data = {
+                        'type': 'tournament_update',
+                        'status': tournament.status,
+                        'message': f"Player {request.user.username} forfeited their match"
+                    }
+                    
+                    # Add winner_id if the tournament is completed
+                    if tournament.status == 'completed' and tournament.winner:
+                        tournament_update_data['winner_id'] = tournament.winner.id
+                    
+                    # Send the tournament update
+                    async_to_sync(channel_layer.group_send)(
+                        f'tournament_{tournament.id}',
+                        tournament_update_data
+                    )
+                    
+                    # Log the tournament update for debugging
+                    logger.info(f"Sending tournament update: {tournament_update_data}")
+                    
+                    # Then send the match update
+                    async_to_sync(channel_layer.group_send)(
+                        f'tournament_{tournament.id}',
+                        {
+                            'type': 'match_update',
+                            'match_id': result['match_id'],
+                            'status': 'completed',
+                            'winner_id': result['winner_id'],
+                            'forfeit': True,
+                            'forfeited_by': request.user.id,
+                            'reason': 'forfeited'
+                        }
+                    )
+                
+                # Check if the tournament is completed after the forfeit
+                tournament.refresh_from_db()  # Refresh to get the latest status
+                if tournament.status == 'completed':
                     return Response({
                         'status': 'tournament completed', 
-                        'winner': winner.username,
+                        'winner': tournament.winner.username if tournament.winner else None,
                         'creator_changed': is_creator and tournament.status != 'cancelled'
                     })
                     
+                # The disconnect handler already takes care of all the tournament progression logic
+                
                 return Response({
                     'status': 'match forfeited',
                     'creator_changed': is_creator and tournament.status != 'cancelled'

@@ -130,8 +130,41 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                             # This is the match we should set to in_progress
                             next_match = paired_match
                         else:
-                            # If the paired match is not pending, check the next round match
-                            logger.info(f"[DISCONNECT] Paired match is not pending, checking next round match")
+                            # If the paired match is not pending, check if all matches in the current round are completed
+                            logger.info(f"[DISCONNECT] Paired match is not pending, checking if all matches in the round are completed")
+                            if all_completed:
+                                # Only check the next round match if all matches in the current round are completed
+                                logger.info(f"[DISCONNECT] All matches in current round are completed, checking next round match")
+                                try:
+                                    next_match = TournamentMatch.objects.get(
+                                        tournament=tournament,
+                                        round_number=self.active_match.round_number + 1,
+                                        match_number=next_match_number
+                                    )
+                                    logger.info(f"[DISCONNECT] Found next round match {next_match.id} with status {next_match.status}")
+                                except TournamentMatch.DoesNotExist:
+                                    logger.error(f"[DISCONNECT] Next match not found in round {self.active_match.round_number + 1} with number {next_match_number}")
+                                    return {  # Return early if next match doesn't exist
+                                        'match_id': self.active_match.id,
+                                        'winner_id': winner.id,
+                                        'tournament_id': tournament.id,
+                                        'status': tournament.status
+                                    }
+                            else:
+                                # If not all matches are completed, just return the result without creating a next match
+                                logger.info(f"[DISCONNECT] Not all matches in current round are completed, not creating next match")
+                                return {
+                                    'match_id': self.active_match.id,
+                                    'winner_id': winner.id,
+                                    'tournament_id': tournament.id,
+                                    'status': tournament.status
+                                }
+                    except TournamentMatch.DoesNotExist:
+                        # If there's no paired match, check if all matches in the current round are completed
+                        logger.info(f"[DISCONNECT] No paired match found, checking if all matches in the round are completed")
+                        if all_completed:
+                            # Only check the next round match if all matches in the current round are completed
+                            logger.info(f"[DISCONNECT] All matches in current round are completed, checking next round match")
                             try:
                                 next_match = TournamentMatch.objects.get(
                                     tournament=tournament,
@@ -147,19 +180,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                                     'tournament_id': tournament.id,
                                     'status': tournament.status
                                 }
-                    except TournamentMatch.DoesNotExist:
-                        # If there's no paired match, check the next round match
-                        logger.info(f"[DISCONNECT] No paired match found, checking next round match")
-                        try:
-                            next_match = TournamentMatch.objects.get(
-                                tournament=tournament,
-                                round_number=self.active_match.round_number + 1,
-                                match_number=next_match_number
-                            )
-                            logger.info(f"[DISCONNECT] Found next round match {next_match.id} with status {next_match.status}")
-                        except TournamentMatch.DoesNotExist:
-                            logger.error(f"[DISCONNECT] Next match not found in round {self.active_match.round_number + 1} with number {next_match_number}")
-                            return {  # Return early if next match doesn't exist
+                        else:
+                            # If not all matches are completed, just return the result without creating a next match
+                            logger.info(f"[DISCONNECT] Not all matches in current round are completed, not creating next match")
+                            return {
                                 'match_id': self.active_match.id,
                                 'winner_id': winner.id,
                                 'tournament_id': tournament.id,
@@ -374,6 +398,12 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             'winner_id': event.get('winner_id'),
             'message': event.get('message')
         }))
+        
+    async def remove_player(self, event):
+        # Handle remove_player message
+        logger.info(f"[TOURNAMENT] Received remove_player message: {event}")
+        # Just acknowledge the message, no need to forward it to the client
+        # This is called when a player is removed from a tournament
 
     async def player_joined(self, event):
         """
