@@ -353,56 +353,6 @@ class PongGame {
             this.heartbeatInterval = null;
         }
         this.cleanupEventListeners();
-
-        // Réinitialisation des éléments de la page de jeu (#play)
-        const player1Avatar = document.getElementById("player1_avatar");
-        const player2Avatar = document.getElementById("player2_avatar");
-        const player1Name = document.getElementById("player1_name");
-        const player2Name = document.getElementById("player2_name");
-        const player1Ready = document.getElementById("player1_ready");
-        const player2Ready = document.getElementById("player2_ready");
-        const player1Score = document.getElementById("game_player1Score");
-        const player2Score = document.getElementById("game_player2Score");
-        const canvas = document.getElementById("game_Canvas");
-
-        // Vider les noms
-        if (player1Name) player1Name.textContent = "";
-        if (player2Name) player2Name.textContent = "";
-
-        // Réinitialiser les boutons ready (utilisez getTranslation si disponible)
-        if (player1Ready) {
-             player1Ready.textContent = typeof getTranslation === "function" ? getTranslation("global_notready") : "Not Ready";
-             player1Ready.disabled = false;
-             player1Ready.classList.remove("ready");
-        }
-        if (player2Ready) {
-             player2Ready.textContent = typeof getTranslation === "function" ? getTranslation("global_notready") : "Not Ready";
-             player2Ready.disabled = true;
-             player2Ready.classList.remove("ready");
-        }
-
-        // Remettre le score à zéro
-        if (player1Score) player1Score.textContent = "0";
-        if (player2Score) player2Score.textContent = "0";
-
-        // Effacer le canvas et le remplir en noir
-        if (canvas && canvas.getContext) {
-             const ctx = canvas.getContext("2d");
-             ctx.clearRect(0, 0, canvas.width, canvas.height);
-             ctx.fillStyle = "#000000";
-             ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // Réinitialiser les avatars (vous pouvez ajouter une image par défaut si besoin)
-        if (player1Avatar) {
-             player1Avatar.src = "";
-             player1Avatar.style.backgroundImage = "";
-        }
-        if (player2Avatar) {
-             player2Avatar.src = "";
-             player2Avatar.style.backgroundImage = "";
-        }
-
         const originalHTML = `
         <div class="game_lobby">
             <div class="game_lobby-players">
@@ -602,7 +552,8 @@ class PongGame {
                     placeholder.className = "profile_avatar";
                     placeholder.style.backgroundImage = `url('${data2.avatar}')`;
                     placeholder.id = "profile_avatar";
-                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    if (imgElement)
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 else {
                     let imgElement = document.getElementById("player1_avatar");
@@ -610,7 +561,8 @@ class PongGame {
                     placeholder.className = "profile_placeholder";
                     placeholder.textContent = message.game_state.players.player1.username[0];
                     placeholder.id = "player1_avatar";
-                    imgElement.parentNode.replaceChild(placeholder, imgElement);
+                    if (imgElement)
+                        imgElement.parentNode.replaceChild(placeholder, imgElement);
                 }
                 })
             .catch(error => console.error("Error while getting avatar:", error));
@@ -622,7 +574,8 @@ class PongGame {
             placeholder0.className = "profile_placeholder";
             placeholder0.textContent = "?";
             placeholder0.id = "player1_avatar";
-            imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
+            if (imgElement0)
+                imgElement0.parentNode.replaceChild(placeholder0, imgElement0);
         }
         if (message.game_state.players.player2)
             {
@@ -1284,6 +1237,83 @@ class PongGame {
                         //gameInitialized = false;
                         //loadGame();
                         window.location.href = `#tournament/${globTournament}`;
+                        this.player1username = null;
+                        this.player2username = null;
+
+                        // Bind methods to this instance first
+                        this.handleKeyPress = this.handleKeyPress.bind(this);
+                        this.handleKeyUp = this.handleKeyUp.bind(this);
+                        this.animate = this.animate.bind(this);
+                        this.draw = this.draw.bind(this);
+                        this.handleWebSocketMessage = this.handleWebSocketMessage.bind(this);
+
+                        // Initialize properties
+                        this.player1ProfileLoaded = false;
+                        this.player2ProfileLoaded = false;
+
+                        this.chatInterface = false;
+                        this.connected = false;
+                        this.connectionAttempt = false;
+                        this.reconnectAttempts = 0;
+                        this.maxReconnectAttempts = 5;
+                        this.reconnectDelay = 5000;
+                        this.heartbeatInterval = null;
+                        this.gameSocket = null;
+                        this.uiSocket = null;
+                        this.currentUser = null;
+                        this.gameId = null;
+                        this.gameState = null;
+                        this.animationFrameId = null;
+                        this.gameStarted = false;
+                        this.isCreatingGame = false;
+                        this.canvas = null;
+                        this.ctx = null;
+                        this.keyState = { w: false, s: false };
+
+                        this.paddleSpeed = 25; // pixels to move per keypress
+
+                        // Add a timestamp to limit logging frequency
+                        this.lastLogTime = 0;
+                        this.lastPaddleUpdate = 0;
+                        this.paddleUpdateInterval = 16; // Update paddle every 16ms (approximately 60fps)
+
+                        // Initialize ready button handlers
+                            this.startGameHandler = this.startGame.bind(this);
+                        this.player1Ready = document.getElementById('player1_ready');
+                        this.player2Ready = document.getElementById('player2_ready');
+                        this.player1Name = document.getElementById('player1_name');
+                        this.player2Name = document.getElementById('player2_name');
+                        this.player2Name.textContent = getTranslation("play_waiting_player");
+
+
+                        this.player1Avatar = document.getElementById('player1_avatar');
+                        this.player2Avatar = document.getElementById('player2_avatar');
+
+                        if (this.player1Ready) {
+                            this.player1Ready.addEventListener('click', () => this.handleReadyClick());
+                        }
+                        if (this.player2Ready) {
+                            this.player2Ready.addEventListener('click', () => this.handleReadyClick());
+                        }
+
+                        this.handleStartGameClick = this.startGame.bind(this);
+                        this.handleChatDropdownClick = () => {
+                            if (chat_currentlyWith != null) {
+                                this.chatInterface = true;
+                                this.startGame();
+                            }
+                        };
+                        this.handleJoinGameClick = this.showJoinGameForm.bind(this);
+                        this.handleKeyDown = this.handleKeyPress.bind(this);
+                        this.handleKeyUpListener = this.handleKeyUp.bind(this);
+                        this.handlePopState = this.handleNavigation.bind(this);
+                        this.handleBeforeUnloadListener = this.handleBeforeUnload.bind(this);
+
+                        // Start initialization
+                        this.init().catch(error => {
+                            console.error('Failed to initialize game:', error);
+                        });
+
                     } else {
                         window.location.href = '#tournament';
                     }
@@ -1393,7 +1423,7 @@ class PongGame {
         }));
 
         // Set an optimistic ready flag that we'll use in updateReadyState
-        this._optimisticReady = true;
+        this._optimisticReady = false;
         console.log('Setting optimistic ready flag');
 
         // Optimistically update our own ready state in the UI
