@@ -55,19 +55,23 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     def handle_player_disconnect(self):
         """Gère la déconnexion d'un joueur pendant un match"""
         if not self.active_match:
+            logger.error("No active match found for player disconnect handler")
             return
 
         try:
             # Si le match est en cours et qu'un joueur se déconnecte
+            logger.info(f"[DISCONNECT] Processing disconnect for match {self.active_match.id}, current status: {self.active_match.status}")
             if self.active_match.status == 'in_progress':
                 # Détermine le gagnant (l'autre joueur)
                 winner = self.active_match.player2 if self.user == self.active_match.player1 else self.active_match.player1
 
                 # Met à jour le match
+                logger.info(f"[DISCONNECT] Setting winner for match {self.active_match.id} to {winner.username} (ID: {winner.id})")
                 self.active_match.winner = winner
                 self.active_match.status = 'completed'
                 self.active_match.ended_at = timezone.now()
                 self.active_match.save()
+                logger.info(f"[DISCONNECT] Match {self.active_match.id} updated to status: {self.active_match.status}")
 
                 # Met à jour le jeu associé
                 if self.active_match.game:
@@ -87,11 +91,14 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 else:
                     # Vérifie si l'autre match de la paire est terminé
                     next_match_number = (self.active_match.match_number + 1) // 2
+                    logger.info(f"[DISCONNECT] Calculated next match number: {next_match_number}")
 
                     # Find the paired match in the current round
                     # For match 1, the pair is match 2; for match 3, the pair is match 4, etc.
                     pair_match_number = self.active_match.match_number + 1 if self.active_match.match_number % 2 == 1 else self.active_match.match_number - 1
+                    logger.info(f"[DISCONNECT] Paired match number: {pair_match_number}")
 
+                    logger.info(f"[DISCONNECT] Querying matches in round {self.active_match.round_number} with numbers {self.active_match.match_number} and {pair_match_number}")
                     current_round_matches = TournamentMatch.objects.filter(
                         tournament=tournament,
                         round_number=self.active_match.round_number,
@@ -100,21 +107,176 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                             pair_match_number
                         ]
                     )
+                    logger.info(f"[DISCONNECT] Found {current_round_matches.count()} matches in current round")
+                    for m in current_round_matches:
+                        logger.info(f"[DISCONNECT] Match {m.id}: round {m.round_number}, number {m.match_number}, status {m.status}")
 
-                    if all(m.status == 'completed' for m in current_round_matches):
-                        winners = [m.winner for m in current_round_matches]
-
-                        # Find the existing match in the next round instead of creating a new one
-                        next_match = TournamentMatch.objects.get(
+                    all_completed = all(m.status == 'completed' for m in current_round_matches)
+                    logger.info(f"[DISCONNECT] All matches in current round completed? {all_completed}")
+                    
+                    # Check if there's a paired match in the current round that should be started
+                    # When a player disconnects, we should start the other match in the same round if it exists
+                    logger.info(f"[DISCONNECT] Looking for paired match in round {self.active_match.round_number} with number {pair_match_number}")
+                    try:
+                        paired_match = TournamentMatch.objects.get(
                             tournament=tournament,
-                            round_number=self.active_match.round_number + 1,
-                            match_number=next_match_number
+                            round_number=self.active_match.round_number,
+                            match_number=pair_match_number
                         )
+                        logger.info(f"[DISCONNECT] Found paired match {paired_match.id} with status {paired_match.status}")
+                        
+                        # Only proceed if the paired match is pending
+                        if paired_match.status == 'pending':
+                            # This is the match we should set to in_progress
+                            next_match = paired_match
+                        else:
+                            # If the paired match is not pending, check the next round match
+                            logger.info(f"[DISCONNECT] Paired match is not pending, checking next round match")
+                            try:
+                                next_match = TournamentMatch.objects.get(
+                                    tournament=tournament,
+                                    round_number=self.active_match.round_number + 1,
+                                    match_number=next_match_number
+                                )
+                                logger.info(f"[DISCONNECT] Found next round match {next_match.id} with status {next_match.status}")
+                            except TournamentMatch.DoesNotExist:
+                                logger.error(f"[DISCONNECT] Next match not found in round {self.active_match.round_number + 1} with number {next_match_number}")
+                                return {  # Return early if next match doesn't exist
+                                    'match_id': self.active_match.id,
+                                    'winner_id': winner.id,
+                                    'tournament_id': tournament.id,
+                                    'status': tournament.status
+                                }
+                    except TournamentMatch.DoesNotExist:
+                        # If there's no paired match, check the next round match
+                        logger.info(f"[DISCONNECT] No paired match found, checking next round match")
+                        try:
+                            next_match = TournamentMatch.objects.get(
+                                tournament=tournament,
+                                round_number=self.active_match.round_number + 1,
+                                match_number=next_match_number
+                            )
+                            logger.info(f"[DISCONNECT] Found next round match {next_match.id} with status {next_match.status}")
+                        except TournamentMatch.DoesNotExist:
+                            logger.error(f"[DISCONNECT] Next match not found in round {self.active_match.round_number + 1} with number {next_match_number}")
+                            return {  # Return early if next match doesn't exist
+                                'match_id': self.active_match.id,
+                                'winner_id': winner.id,
+                                'tournament_id': tournament.id,
+                                'status': tournament.status
+                            }
 
-                        # Update the match with the winners
-                        next_match.player1 = winners[0]
-                        next_match.player2 = winners[1] if len(winners) > 1 else None
-                        next_match.save()
+                    # Only update players if this is a next round match, not a paired match in the same round
+                    if next_match.round_number > self.active_match.round_number:
+                        logger.info(f"[DISCONNECT] This is a next round match, updating players")
+                        if all_completed:
+                            winners = [m.winner for m in current_round_matches]
+                            next_match.player1 = winners[0]
+                            next_match.player2 = winners[1] if len(winners) > 1 else None
+                            logger.info(f"[DISCONNECT] Setting next match players to {winners[0].username} and {winners[1].username if len(winners) > 1 and winners[1] else None}")
+                        else:
+                            # Just set the current winner as player1 for now
+                            next_match.player1 = winner
+                            logger.info(f"[DISCONNECT] Setting next match player1 to {winner.username}")
+                    else:
+                        logger.info(f"[DISCONNECT] This is a paired match in the same round, not updating players")
+                        
+                    # Create a game for this match
+                    from game.models import Game
+                    if next_match.round_number > self.active_match.round_number:
+                        # This is a next round match
+                        if all_completed:
+                            winners = [m.winner for m in current_round_matches]
+                            game = Game.objects.create(
+                                player1=winners[0],
+                                player2=winners[1] if len(winners) > 1 else None,
+                                status='waiting'
+                            )
+                        else:
+                            # If not all matches are completed, just create a game with the current winner
+                            game = Game.objects.create(
+                                player1=winner,
+                                player2=None,  # Will be set when the other match completes
+                                status='waiting'
+                            )
+                    else:
+                        # This is a paired match in the same round, use the existing players
+                        game = Game.objects.create(
+                            player1=next_match.player1,
+                            player2=next_match.player2,
+                            status='waiting'
+                        )
+                        logger.info(f"[DISCONNECT] Created game for paired match with players {next_match.player1.username} and {next_match.player2.username if next_match.player2 else None}")
+
+                    # Link the game to the match
+                    next_match.game = game
+                    next_match.status = 'in_progress'
+                    next_match.started_at = timezone.now()
+                    next_match.save()
+
+                    # Initialize game state in memory
+                    from game.game_state_manager import GameStateManager
+                    if next_match.round_number > self.active_match.round_number:
+                        # This is a next round match
+                        if all_completed:
+                            winners = [m.winner for m in current_round_matches]
+                            GameStateManager.create_game(str(game.id), str(winners[0].id), winners[0].username)
+                            if len(winners) > 1 and winners[1]:
+                                GameStateManager.join_game(str(game.id), str(winners[1].id), winners[1].username)
+                        else:
+                            # Just initialize with the current winner
+                            GameStateManager.create_game(str(game.id), str(winner.id), winner.username)
+                    else:
+                        # This is a paired match in the same round, use the existing players
+                        GameStateManager.create_game(str(game.id), str(next_match.player1.id), next_match.player1.username)
+                        if next_match.player2:
+                            GameStateManager.join_game(str(game.id), str(next_match.player2.id), next_match.player2.username)
+
+                    # Notify players through WebSocket that their tournament match is ready
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+                    channel_layer = get_channel_layer()
+                    tournament_group = f'tournament_{tournament.id}'
+                    game_group = f'game_{game.id}'
+
+                    # Send tournament match ready notification
+                    if next_match.round_number > self.active_match.round_number:
+                        # This is a next round match
+                        if all_completed:
+                            winners = [m.winner for m in current_round_matches]
+                            async_to_sync(channel_layer.group_send)(
+                                tournament_group,
+                                {
+                                    'type': 'match_ready',
+                                    'match_id': next_match.id,
+                                    'game_id': game.id,
+                                    'player1_id': winners[0].id,
+                                    'player2_id': winners[1].id if len(winners) > 1 and winners[1] else None
+                                }
+                            )
+                        else:
+                            async_to_sync(channel_layer.group_send)(
+                                tournament_group,
+                                {
+                                    'type': 'match_ready',
+                                    'match_id': next_match.id,
+                                    'game_id': game.id,
+                                    'player1_id': winner.id,
+                                    'player2_id': None
+                                }
+                            )
+                    else:
+                        # This is a paired match in the same round, use the existing players
+                        async_to_sync(channel_layer.group_send)(
+                            tournament_group,
+                            {
+                                'type': 'match_ready',
+                                'match_id': next_match.id,
+                                'game_id': game.id,
+                                'player1_id': next_match.player1.id,
+                                'player2_id': next_match.player2.id if next_match.player2 else None
+                            }
+                        )
 
                 return {
                     'match_id': self.active_match.id,
@@ -123,7 +285,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     'status': tournament.status
                 }
         except Exception as e:
-            logger.error(f"Error handling player disconnect: {str(e)}")
+            logger.error(f"Error handling player disconnect: {str(e)}", exc_info=True)
+            # Log the full stack trace for debugging
+            import traceback
+            logger.error(f"Stack trace: {traceback.format_exc()}")
             return None
 
     async def disconnect(self, close_code):
@@ -139,7 +304,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                             'type': 'match_update',
                             'match_id': result['match_id'],
                             'status': 'completed',
-                            #'winner_id': result['winner_id'],
+                            'winner_id': result['winner_id'],
                             'forfeit': True,
                             'forfeited_by': self.user.id,
                             'reason': 'disconnected'
