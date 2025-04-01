@@ -333,7 +333,30 @@ class PongGame {
     }
 
     destroy() {
-        // Nettoyage des timers, sockets et listeners existants
+        if (this.gameId) {
+            console.log(`Sending request to end game ${this.gameId}`);
+            fetch(`/api/game/end/${this.gameId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to end game: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Game ended successfully:', data);
+            })
+            .catch(error => {
+                console.error('Error ending game:', error);
+            });
+        }
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -517,7 +540,9 @@ class PongGame {
 
         this.uiSocket.onclose = () => {
             console.log('UI WebSocket connection closed');
-            this.handleWebSocketClose();
+            destroy();
+            //this.handleWebSocketMessage(FINI);
+            //this.handleWebSocketClose();
         };
 
         this.uiSocket.onerror = (error) => {
