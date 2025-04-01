@@ -8,6 +8,7 @@
 		"global_ready" : "Prêt!",
 		"global_regexusername": "Nom d'utilisateur mal formaté.",
 		"global_regexemail": "Email mal formaté.",
+		"global_regexpassw": "Le mot de passe doit contenir au moins 6 characteres dont:\n1 Majuscule\n1 Minuscule\n1 Chiffre\n1 Charactere special",
 
         "profile_block_manage_block": "Bloquer",
 		"profile_block_manage_unblock": "Débloquer",
@@ -89,6 +90,8 @@
 		"global_ready" : "Ready!",
 		"global_regexusername": "Username format is incorrect.",
 		"global_regexemail": "Email format is incorrect.",
+		"global_regexpassw": "Password must contain at least 6 characters long including:\n1 Uppercase\n1 Lowercase\n1 Numeric\n1 Special character",
+
 
         "profile_block_manage_block": "Block",
 		"profile_block_manage_unblock": "Unblock",

@@ -230,6 +230,8 @@ async function initSettings(){
             showNotification(getTranslation("settings_password_empty"), "error");
             return;
         }
+        if(isRegexPassword(message1, 1) == 0)
+            return;
         if (message1 !== message2){
             showNotification(getTranslation("settings_password_not_matching"), "error");
             return;

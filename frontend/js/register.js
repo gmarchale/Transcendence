@@ -33,6 +33,8 @@ function initRegister(){
                 return;
 			if(isRegexEmail(email, 1) == 0)
 				return;
+			if(isRegexPassword(password, 1) == 0)
+                return;
 			if (password !== confirm_password) {
 				showError(getTranslation("register_password_notmatch"));
 				return;

@@ -89,3 +89,17 @@ function isRegexEmail(value, showErr) {
         return 0;
     }
 }
+
+function isRegexPassword(value, showErr) {
+    var regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+
+    if (regex.test(value)) {
+        return 1;
+    } else {
+        if(showErr == 1)
+            showError(getTranslation("global_regexpassw"));
+        else
+            showNotification(getTranslation("global_regexpassw"), "error");
+        return 0;
+    }
+}
