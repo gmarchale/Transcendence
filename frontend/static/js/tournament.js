@@ -72,7 +72,7 @@ function initSocket(tournamentId) {
 
                         if (data.type === 'match_update')
                         {
-                            const message = "Prepare for next match.";
+                            const message = `${tournament.name}: ${getTranslation("tournament_prepare_next_match")}`;
                             showNotification(message, 'success', 5000);
                         }
             }});

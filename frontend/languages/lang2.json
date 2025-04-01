@@ -90,7 +90,8 @@
 		"settings_password_change_success": "Mot de passe mis à jour!\nReconnectez-vous.",
 		"profile_no_match_found": "Aucun match trouvé.",
 		"tournament_error" : "Une erreur est survenue",
-		"tournament_not_your_match" : "Vous n'êtes pas un joueur de ce match"
+		"tournament_not_your_match" : "Vous n'êtes pas un joueur de ce match",
+		"tournament_prepare_next_match" : "Préparez-vous pour le prochain match"
     },
     "en": {
 		"global_try_again" : "Please try again.",
@@ -184,7 +185,8 @@
 		"settings_password_change_success": "Successfully updated your password!\nPlease relog.",
 		"profile_no_match_found": "No match found.",
 		"tournament_error" : "An error occurred",
-		"tournament_not_your_match" : "You are not a player in this match"
+		"tournament_not_your_match" : "You are not a player in this match",
+		"tournament_prepare_next_match" : "Prepare for the next match"
     },
 	"sp": {
 		"global_try_again": "Por favor, inténtelo de nuevo.",
@@ -275,6 +277,9 @@
 		"settings_password_empty": "La contraseña no puede estar vacía.",
 		"settings_password_not_matching": "Las contraseñas no coinciden.",
 		"settings_password_change_success": "¡Contraseña actualizada con éxito!\nPor favor, vuelve a iniciar sesión.",
-		"profile_no_match_found": "No se encontraron partidas."
+		"profile_no_match_found": "No se encontraron partidas.",
+		"tournament_error" : "Ocurrió un error",
+		"tournament_not_your_match" : "No eres un jugador en este partido",
+		"tournament_prepare_next_match" : "Prepárate para el próximo partido"
 	}
 }
