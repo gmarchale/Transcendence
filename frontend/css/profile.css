@@ -217,7 +217,7 @@
 
 #match_table.active {
     opacity: 1;
-    display: block;
+    display: inline-table;
     width: 100%;
     padding: 10px;
     box-sizing: border-box;
