@@ -62,15 +62,21 @@ function initSocket(tournamentId) {
             data.type === 'player_ready' ||
             data.type === 'tournament_started' ||
             data.type === 'remove_player' ||
-            data.type === 'match_update') {  // Ajout de match_update ici
+            data.type === 'match_update') {
                 loadTournament(tournamentId).then(tournament => {
                     if (tournament) {
                         displayTournamentName(tournament.name);
                         displayPlayers(tournament);
                         displayMatches(tournament);
                         initTournamentActions(tournament);
-                    }
-                });
+
+                        if (data.type === 'match_update')
+                        {
+                            const message = "Prepare for next match.";
+                            showNotification(message, 'success', 5000);
+                        }
+            }});
+
         } else if (data.type === 'match_ready_notification') {
             // Notification spécifique pour le lancement du match
             const userId = await getid();
@@ -92,12 +98,12 @@ function initSocket(tournamentId) {
                     displayPlayers(tournament);
                     displayMatches(tournament);
                     initTournamentActions(tournament);
-                    
+
                     // Show notification if provided
                     if (data.message) {
                         showNotification(data.message, 'info', 5000);
                     }
-                    
+
                     // Handle tournament completion
                     if (data.status === 'completed' && data.winner_id) {
                         if (currentSocket) {
@@ -413,7 +419,7 @@ async function initTournamentActions(tournament) {
                     loadTournament(tournamentId);
                 } else {
                     const errorData = await response.json();
-                    showNotification(getTranslation("tournament_start_fail") + (errorData.error || 'Unknown error'), 'error', 5000);
+                    alert(getTranslation("tournament_start_fail") + (errorData.error || 'Unknown error'));
                 }
             }
         });
@@ -451,7 +457,7 @@ async function initTournamentActions(tournament) {
         // Get the current match from the DOM
         const domMatch = getCurrentMatch();
         if (!domMatch) {
-            showNotification('No active match found', 'error', 5000);
+            alert('No active match found');
             return;
         }
 
@@ -463,14 +469,14 @@ async function initTournamentActions(tournament) {
         const currentUserId = window.gameManager.currentUser?.id;
         if (!currentUserId) {
             console.error('Current user ID not available');
-            showNotification(getTranslation('tournament_error') || 'An error occurred', 'error', 5000);
+            alert(getTranslation('tournament_error') || 'An error occurred');
             return;
         }
 
         // Check if current user is player1 or player2 in this match
         if (serverMatch.player1_id !== currentUserId && serverMatch.player2_id !== currentUserId) {
             console.warn(`Current user (${currentUserId}) is not a player in this match (players: ${serverMatch.player1_id}, ${serverMatch.player2_id})`);
-            showNotification(getTranslation('tournament_not_your_match') || 'You are not a player in this match', 'error', 5000);
+            alert(getTranslation('tournament_not_your_match') || 'You are not a player in this match');
             return;
         }
 
@@ -524,7 +530,7 @@ async function initTournamentActions(tournament) {
             window.location.hash = '#game';
         } else {
             const errorData = await response.json();
-            showNotification(getTranslation("tournament_forfeit_fail") + (errorData.error || 'Unknown error'), 'error', 5000);
+            alert(getTranslation("tournament_forfeit_fail") + (errorData.error || 'Unknown error'));
         }
     });
 }
@@ -536,7 +542,7 @@ function getCurrentMatch() {
     console.log('Active match element:', activeMatch);
 
     if (!activeMatch) {
-        showNotification(getTranslation("tournament_no_game"), 'error', 5000);
+        alert(getTranslation("tournament_no_game"));
         return null;
     }
 
