@@ -4,6 +4,10 @@
     transition: opacity 0.5s ease-in-out;
 }
 
+#content {
+    padding-bottom: 50px;
+}
+
 .profile_container.active {
     display: block;
     opacity: 1;
@@ -207,10 +211,30 @@
 }
 
 #match_table {
+    opacity: 0;
+    display: none;
+}
+
+#match_table.active {
+    opacity: 1;
+    display: block;
     width: 100%;
     padding: 10px;
     box-sizing: border-box;
     text-align: center;
+}
+
+#profile_match_not_found {
+    opacity: 0;
+    display: none;
+}
+
+#profile_match_not_found.active {
+    opacity: 1;
+    display: block;
+    text-align: center;
+    color: #dc3545;
+    font-size: 1rem;
 }
 
 #match_table th {

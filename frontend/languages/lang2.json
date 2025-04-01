@@ -79,7 +79,8 @@
 		"settings_username_empty": "Indiquez un nom d'utilisateur.",
 		"settings_password_empty": "Le mot de passe ne peut pas être nul.",
 		"settings_password_not_matching": "Les mots de passe ne correspondent pas.",
-		"settings_password_change_success": "Mot de passe mis à jour!\nReconnectez-vous."
+		"settings_password_change_success": "Mot de passe mis à jour!\nReconnectez-vous.",
+		"profile_no_match_found": "Aucun match trouvé."
     },
     "en": {
 		"global_try_again" : "Please try again.",
@@ -162,6 +163,7 @@
 		"settings_username_empty": "Cannot use an empty username.",
 		"settings_password_empty": "Password can't be nul.",
 		"settings_password_not_matching": "Passwords do not match.",
-		"settings_password_change_success": "Successfully updated your password!\nPlease relog."
+		"settings_password_change_success": "Successfully updated your password!\nPlease relog.",
+		"profile_no_match_found": "No match found."
     }
 }

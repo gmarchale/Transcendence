@@ -179,8 +179,12 @@ async function loadMatchHistory() {
         const data = await response.json();
         const matchHistoryList = document.getElementById('match_history_list');
         matchHistoryList.innerHTML = "";
+        const not_found = document.getElementById("profile_match_not_found");
+        const matchTable = document.getElementById("match_table");
 
         if (data.games && data.games.length > 0) {
+            matchTable.classList.add("active");
+            not_found.classList.remove("active");
             data.games.forEach(game => {
                 let loggedUserId = userId;
                 let isPlayer1 = (game.player1.id == loggedUserId);
@@ -234,7 +238,9 @@ async function loadMatchHistory() {
                     matchHistoryList.appendChild(gameCard);
             });
         } else {
-            matchHistoryList.innerHTML = "<p>Aucun match trouvé.</p>";
+            matchTable.classList.remove("active");
+            not_found.classList.add("active");
+            not_found.innerHTML = "<p>"+getTranslation("profile_no_match_found")+"</p>";
         }
     } catch (error) {
         console.error("Error loading match history:", error);
