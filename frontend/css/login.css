@@ -17,6 +17,40 @@
     text-align: center;
 }
 
+.login_container_lang {
+    margin-top: 2rem;
+    display: block ruby;
+}
+
+.login_language_btn {
+    width: calc(33% - 10px);
+    padding: 2px;
+    border: 2px solid #00ff88;
+    background: #2a2a2a;
+    color: #00ff88;
+    font-size: 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+	color: rgba(0, 255, 136, 0.5);
+
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* Edge */
+}
+
+.login_language_btn:hover {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+}
+
+.login_language_btn.active {
+    background-color: rgba(0, 255, 136, 0.5);
+    color: white;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
 .login_logo {
     color: #00ff88;
     font-size: 3rem;

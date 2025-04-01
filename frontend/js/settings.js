@@ -76,6 +76,11 @@ function loadSettings(){
 		} else console.warn("Error while getting blocked from API");
 	})
 	.catch(error => console.error("Error while getting blocked list :", error));
+
+    let lang = localStorage.getItem("language") || "en";
+    document.getElementById("settings_lang_fr").classList.toggle("active", lang === "fr");
+    document.getElementById("settings_lang_en").classList.toggle("active", lang === "en");
+    document.getElementById("settings_lang_sp").classList.toggle("active", lang === "sp");
 }
 
 async function initSettings(){

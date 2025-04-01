@@ -27,10 +27,58 @@ function loadLogin(){
         	return;
 		}
 	});
+
+    let lang = localStorage.getItem("language") || "en";
+    document.getElementById("login_language_fr").classList.toggle("active", lang === "fr");
+    document.getElementById("login_language_en").classList.toggle("active", lang === "en");
+    document.getElementById("login_language_sp").classList.toggle("active", lang === "sp");
 }
 
-function initLogin(){
+async function initLogin(){
     console.log("Initializing login.")
+
+    let selectedLanguage = localStorage.getItem("language") || "en";
+    fetch("languages/lang.json", { cache: "no-cache" })
+        .then(response => response.json())
+        .then(translations => {
+            updateLanguage(selectedLanguage, translations);
+
+            document.getElementById("login_language_fr").addEventListener("click", function () {
+                updateLanguage("fr", translations);
+            });
+
+            document.getElementById("login_language_en").addEventListener("click", function () {
+                updateLanguage("en", translations);
+            });
+
+            document.getElementById("login_language_sp").addEventListener("click", function () {
+                updateLanguage("sp", translations);
+            });
+        });
+
+    function updateLanguage(lang, translations) {
+        localStorage.setItem("language", lang);
+
+		Object.keys(translations[lang]).forEach(id => {
+            let element = document.getElementById(id);
+            if (element) {
+                if (element.tagName === "INPUT") {
+                    element.placeholder = translations[lang][id];
+                } else {
+                    element.innerText = translations[lang][id];
+                }
+            }
+        });
+        updateChatLanguage();
+        if((location.hash.split('?')[0].slice(1) || 'game') != 'register'
+           && (location.hash.split('?')[0].slice(1) || 'game') != 'login')
+            loadChat();
+        document.getElementById("login_language_fr").classList.toggle("active", lang === "fr");
+        document.getElementById("login_language_en").classList.toggle("active", lang === "en");
+        document.getElementById("login_language_sp").classList.toggle("active", lang === "sp");
+    }
+    await loadTranslations();
+    await loadTranslationsID();
     
     document.getElementById('login_42log').addEventListener('click', async function(event) {
 		checkAuth().then(isAuthenticated => {
