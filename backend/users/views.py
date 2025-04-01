@@ -19,6 +19,7 @@ import os
 from django.utils import timezone
 from datetime import timedelta
 import urllib.parse
+from urllib.parse import urlencode
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ User = get_user_model()
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = "http://localhost:8000/auth/callback/"
+#REDIRECT_URI = "http://localhost:8000/auth/callback/"
 TOKEN_URL = "https://api.intra.42.fr/oauth/token"
 USER_INFO_URL = "https://api.intra.42.fr/v2/me"
 
@@ -46,34 +47,43 @@ def update_user_avatar(user, avatar_url):
 @ensure_csrf_cookie
 @permission_classes([AllowAny])
 def oauth_login(request):
-    auth_url = f"https://api.intra.42.fr/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code"
+    host = request.get_host()
+    base_path = ':8000/auth/callback/'
+    full_url = f"http://{host}{base_path}"
+    auth_url = f"https://api.intra.42.fr/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={full_url}&response_type=code"
     return redirect(auth_url)
 
 @api_view(["GET"])
 @ensure_csrf_cookie
 @permission_classes([AllowAny])
 def oauth_callback(request):
+    host = request.get_host()
+    domain_only = host.split(':')[0]
+    base_path = ':8000/auth/callback/'
+    full_url = f"http://{domain_only}{base_path}"
+
     code = request.GET.get("code")
     if not code:
-        return redirect(f"https://localhost/#login?oauth=failed&error=No authorization code provided")
+        return redirect(f"https://{domain_only}/#login?oauth=failed&error=No authorization code provided")
         # return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
     data = {
         "grant_type": "authorization_code",
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
         "code": code,
-        "redirect_uri": REDIRECT_URI,
+        "redirect_uri": full_url,
     }
     response = requests.post(TOKEN_URL, data=data)
+    print()
     if response.status_code != 200:
-        return redirect(f"https://localhost/#login?oauth=failed&error=Failed to get access token")
+        return redirect(f"https://{domain_only}/#login?oauth=failed&error=Failed to get access token")
         # return Response({"error": "Failed to get access token"}, status=status.HTTP_400_BAD_REQUEST)
     token_data = response.json()
     access_token = token_data.get("access_token")
     headers = {"Authorization": f"Bearer {access_token}"}
     user_info = requests.get(USER_INFO_URL, headers=headers)
     if user_info.status_code != 200:
-        return redirect(f"https://localhost/#login?oauth=failed&error=Failed to fetch user info")
+        return redirect(f"https://{domain_only}/#login?oauth=failed&error=Failed to fetch user info")
         # return Response({"error": "Failed to fetch user info"}, status=status.HTTP_400_BAD_REQUEST)
     user_data = user_info.json()
 
@@ -89,14 +99,14 @@ def oauth_callback(request):
         )
     except Exception as e:
         logger.error(f"Registration failed for user : {str(e)}")
-        return redirect(f"https://localhost/#login?oauth=failed&error=Registration failed")
+        return redirect(f"https://{domain_only}/#login?oauth=failed&error=Registration failed")
         # return Response({'detail': 'Registration failed'}, status=status.HTTP_400_BAD_REQUEST)
 
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     login(request, user)
 
     avatar_url = None
-    username = None    
+    username = None
     if created:
         avatar_url = update_user_avatar(user, user_data["image"]["link"])
         username = user_data["login"]
@@ -104,10 +114,10 @@ def oauth_callback(request):
         username = user.get_username()
         if user.avatar:
             avatar_url = user.avatar.url
-            if not avatar_url.startswith('http'):
+            if not avatar_url.startswith('https'):
                 avatar_url = request.build_absolute_uri(avatar_url)
 
-    return redirect("https://localhost/#login?oauth=true&id="+str(user.id)+"&username="+(username)+"&avatar="+(avatar_url or "null"))
+    return redirect(f"https://{domain_only}/#login?oauth=true&id="+str(user.id)+"&username="+(username)+"&avatar="+(avatar_url or "null"))
 
 
 @api_view(["GET"])
