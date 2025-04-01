@@ -94,6 +94,10 @@ async function initSettings(){
             document.getElementById("settings_lang_en").addEventListener("click", function () {
                 updateLanguage("en", translations);
             });
+
+            document.getElementById("settings_lang_sp").addEventListener("click", function () {
+                updateLanguage("sp", translations);
+            });
         });
 
     function updateLanguage(lang, translations) {
@@ -111,6 +115,7 @@ async function initSettings(){
         });
         document.getElementById("settings_lang_fr").classList.toggle("active", lang === "fr");
         document.getElementById("settings_lang_en").classList.toggle("active", lang === "en");
+        document.getElementById("settings_lang_sp").classList.toggle("active", lang === "sp");
         updateChatLanguage();
         if((location.hash.split('?')[0].slice(1) || 'game') != 'register'
            && (location.hash.split('?')[0].slice(1) || 'game') != 'login')

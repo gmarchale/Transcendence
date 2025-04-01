@@ -62,8 +62,8 @@ async function fetchFriends() {
                 let li2text = document.createElement("span");
                 li1text.classList.add("friends_litext");
                 li2text.classList.add("friends_litext");
-                li1text.textContent = "Visit profile";
-                li2text.textContent = "Remove friend";
+                li1text.textContent = getTranslation("friends_visitprofile");
+                li2text.textContent = getTranslation("friends_remove");
                 li1.classList.add("friends_ul", "visit");
                 li2.classList.add("friends_ul", "remove");
                 li1.appendChild(li1text);
@@ -158,7 +158,7 @@ async function fetchPendingUsers() {
                 li.appendChild(usernameSpan);
                 function hover(){
                     setTimeout(() => {
-                        usernameSpan.textContent = "Cancel request";
+                        usernameSpan.textContent = getTranslation("friends_cancelrequest");
                     }, 100);
                 }
 
@@ -243,8 +243,8 @@ async function fetchWaitingUsers() {
                 let li2text = document.createElement("span");
                 li1text.classList.add("friends_litext");
                 li2text.classList.add("friends_litext");
-                li1text.textContent = "Accept request";
-                li2text.textContent = "Deny request";
+                li1text.textContent = getTranslation("friends_acceptrequest");
+                li2text.textContent = getTranslation("friends_denyrequest");
                 li1.classList.add("friends_ul", "visit");
                 li2.classList.add("friends_ul", "remove");
                 li1.appendChild(li1text);

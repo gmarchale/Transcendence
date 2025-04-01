@@ -198,19 +198,19 @@ async function loadMatchHistory() {
                 }
                 if (!opponent)
                 {}
-                let opponentName = opponent ? opponent.username : "In Game";
-                let gameResult = "In Game";
+                let opponentName = opponent ? opponent.username : getTranslation("profile_history_ingame");
+                let gameResult = getTranslation("profile_history_ingame");
                 if (isPlayer1) {
                     if (game.winner && game.winner.id == game.player1.id) {
-                        gameResult = "Win";
+                        gameResult = getTranslation("profile_history_win");
                     } else if (game.winner) {
-                        gameResult = "Lose";
+                        gameResult = getTranslation("profile_history_lose");
                     }
                 } else if (isPlayer2) {
                     if (game.winner && game.winner.id == game.player2.id) {
-                        gameResult = "Win";
+                        gameResult = getTranslation("profile_history_win");
                     } else if (game.winner) {
-                        gameResult = "Lose";
+                        gameResult = getTranslation("profile_history_lose");
                     }
                 }
                 let scoreDisplay = "";
