@@ -51,6 +51,7 @@ services:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
       - CLIENT_ID=${CLIENT_ID}
       - CLIENT_SECRET=${CLIENT_SECRET}
+      - SECRET_KEY=${SECRET_KEY}
 
     ports:
       - "8000:8000"

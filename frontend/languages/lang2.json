@@ -15,7 +15,7 @@
 		"profile_friend_manage_add": "Demander en ami",
 		"profile_friend_manage_remove": "Retirer l'ami",
 		"profile_friend_manage_pending": "Annuler la demande d'ami",
-		"profile_friend_manage_accept": "Accepter la demnade d'ami",
+		"profile_friend_manage_accept": "Accepter la demande d'ami",
 		"profile_user_not_found" : "Utilisateur inconnu.",
 		"profile_cant_friend_yourself": "Vous ne pouvez pas être ami avec vous même.",
 		"profile_friend_cancelled": "Demande d'ami annulée.",
