@@ -88,7 +88,9 @@
 		"settings_password_empty": "Le mot de passe ne peut pas être nul.",
 		"settings_password_not_matching": "Les mots de passe ne correspondent pas.",
 		"settings_password_change_success": "Mot de passe mis à jour!\nReconnectez-vous.",
-		"profile_no_match_found": "Aucun match trouvé."
+		"profile_no_match_found": "Aucun match trouvé.",
+		"tournament_error" : "Une erreur est survenue",
+		"tournament_not_your_match" : "Vous n'êtes pas un joueur de ce match"
     },
     "en": {
 		"global_try_again" : "Please try again.",
@@ -180,7 +182,9 @@
 		"settings_password_empty": "Password can't be nul.",
 		"settings_password_not_matching": "Passwords do not match.",
 		"settings_password_change_success": "Successfully updated your password!\nPlease relog.",
-		"profile_no_match_found": "No match found."
+		"profile_no_match_found": "No match found.",
+		"tournament_error" : "An error occurred",
+		"tournament_not_your_match" : "You are not a player in this match"
     },
 	"sp": {
 		"global_try_again": "Por favor, inténtelo de nuevo.",

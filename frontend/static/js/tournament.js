@@ -413,7 +413,7 @@ async function initTournamentActions(tournament) {
                     loadTournament(tournamentId);
                 } else {
                     const errorData = await response.json();
-                    alert(getTranslation("tournament_start_fail") + (errorData.error || 'Unknown error'));
+                    showNotification(getTranslation("tournament_start_fail") + (errorData.error || 'Unknown error'), 'error', 5000);
                 }
             }
         });
@@ -451,7 +451,7 @@ async function initTournamentActions(tournament) {
         // Get the current match from the DOM
         const domMatch = getCurrentMatch();
         if (!domMatch) {
-            alert('No active match found');
+            showNotification('No active match found', 'error', 5000);
             return;
         }
 
@@ -463,14 +463,14 @@ async function initTournamentActions(tournament) {
         const currentUserId = window.gameManager.currentUser?.id;
         if (!currentUserId) {
             console.error('Current user ID not available');
-            alert(getTranslation('tournament_error') || 'An error occurred');
+            showNotification(getTranslation('tournament_error') || 'An error occurred', 'error', 5000);
             return;
         }
 
         // Check if current user is player1 or player2 in this match
         if (serverMatch.player1_id !== currentUserId && serverMatch.player2_id !== currentUserId) {
             console.warn(`Current user (${currentUserId}) is not a player in this match (players: ${serverMatch.player1_id}, ${serverMatch.player2_id})`);
-            alert(getTranslation('tournament_not_your_match') || 'You are not a player in this match');
+            showNotification(getTranslation('tournament_not_your_match') || 'You are not a player in this match', 'error', 5000);
             return;
         }
 
@@ -524,7 +524,7 @@ async function initTournamentActions(tournament) {
             window.location.hash = '#game';
         } else {
             const errorData = await response.json();
-            alert(getTranslation("tournament_forfeit_fail") + (errorData.error || 'Unknown error'));
+            showNotification(getTranslation("tournament_forfeit_fail") + (errorData.error || 'Unknown error'), 'error', 5000);
         }
     });
 }
@@ -536,7 +536,7 @@ function getCurrentMatch() {
     console.log('Active match element:', activeMatch);
 
     if (!activeMatch) {
-        alert(getTranslation("tournament_no_game"));
+        showNotification(getTranslation("tournament_no_game"), 'error', 5000);
         return null;
     }
 
